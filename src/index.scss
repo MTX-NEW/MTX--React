@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+body {
+  @apply font-inter;
+}
+
+h1 {
+  @apply text-MTX-blue text-custom-h1 font-bold;
+}
