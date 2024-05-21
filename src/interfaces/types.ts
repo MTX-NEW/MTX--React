@@ -10,3 +10,20 @@ interface SideBarItem {
   icon: string;
   hoverIcon?: string;
 }
+interface RadioboxItem {
+  value: string;
+  label: string;
+}
+
+interface RadioboxGroup {
+  items: RadioboxItem[];
+  title: string;
+}
+interface DropdownItem {
+  value: string;
+  label: string;
+}
+interface Dropdowns {
+  items: DropdownItem[];
+  title: string;
+}

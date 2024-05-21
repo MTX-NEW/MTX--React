@@ -77,7 +77,7 @@ const Layout = () => {
               { title: "User types", path: "usertypes", parent: "manageusers" },
               {
                 title: "Manage Programs",
-                path: "manage",
+                path: "manageprograms",
                 parent: "manageusers",
               },
             ]}

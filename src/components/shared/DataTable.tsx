@@ -10,6 +10,7 @@ import {
 
 interface DataTableProps {
   cells: any[];
+  sortable?: boolean;
 }
 
 let rows = [{ name: "Name", age: 0 }];
@@ -21,9 +22,10 @@ const DataTable: React.FC<DataTableProps> = ({ cells }) => {
       color: "white",
     },
   };
+
   return (
     <TableContainer component={Paper}>
-      <Table sx={{ maxWidth: "100%" }} aria-label="simple table">
+      <Table sx={{ maxWidth: "100%" }}>
         <TableHead>
           <TableRow>
             {cells.map((cell, index) => (
@@ -42,6 +44,7 @@ const DataTable: React.FC<DataTableProps> = ({ cells }) => {
               <TableCell component="th" scope="row">
                 {row.name}
               </TableCell>
+              <TableCell>{row.age}</TableCell>
               <TableCell>{row.age}</TableCell>
             </TableRow>
           ))}

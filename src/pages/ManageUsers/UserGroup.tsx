@@ -4,64 +4,64 @@ import DataTable from "../../components/shared/DataTable";
 import Header from "../../components/shared/Header";
 import SideModal from "../../components/shared/SideModal";
 
-const AllUsers = () => {
+const UserGroup = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   return (
     <div className="flex flex-col gap-y-4">
       <Header
-        title="All Users"
-        addBtnText="Add new user"
+        title="User Groups"
+        addBtnText="Add new group"
         onClickBtn={() => setIsOpen(true)}
       />
-      <Accordion title="Users">
+      <Accordion title="Group 1">
         <DataTable
           cells={[
+            "Group 1",
             "Full name",
-            "Last name",
-            "Username",
+            "Common name",
+            "Short name",
             "Email",
             "Phone",
-            "EMP code",
-            "User type",
-            "User group",
+            "Parent group",
+            "Auto routing",
             "Status",
             "Action",
           ]}
         />
         <SideModal
           isOpen={isOpen}
-          title="Add Users"
+          title="Add new groups"
           onClickClose={() => setIsOpen(false)}
           textBoxes={[
-            "First Name",
-            "Last Name",
-            "Email",
+            "Group ID",
+            "Full Name",
+            "Common name",
             "Phone",
-            "Password",
-            "EMP Code",
+            "Short name",
+            "Phone",
+            "Email",
+            "Parent ID",
           ]}
           radioBoxes={[
             {
-              title: "Sex",
+              title: "Status",
               items: [
-                { label: "Male", value: "male" },
-                { label: "Female", value: "female" },
+                { label: "Active", value: "active" },
+                { label: "Inactive", value: "Inactive" },
               ],
             },
-          ]}
-          dropdowns={[
             {
+              title: "Send PDF",
               items: [
-                { label: "1", value: "one" },
-                { label: "2", value: "two" },
+                { label: "Yes", value: "yes" },
+                { label: "No", value: "no" },
               ],
-              title: "User groups",
             },
           ]}
-          addBtnText="Add user"
+          addBtnText="Create group"
         />
       </Accordion>
     </div>
   );
 };
-export default AllUsers;
+export default UserGroup;

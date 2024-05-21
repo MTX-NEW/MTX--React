@@ -8,6 +8,7 @@ export default {
       },
       fontSize: {
         "custom-h1": "1.5rem",
+        "custom-h2": "1rem",
       },
       fontWeight: {
         bold: "700",
@@ -18,6 +19,10 @@ export default {
         "MTX-lightblue": "#f3faff",
         "MTX-mediumblue": "#dbe9f5",
         "MTX-greytext": "#8E8E8E",
+        "MTX-greenHover": "#1fa981",
+        "MTX-blueHover": "#003f73",
+        "MTX-lightblueHover": "#e6f7ff",
+        "MTX-mediumblueHover": "#c3dff0",
       },
     },
   },

@@ -51,7 +51,11 @@ const SideNavBar: React.FC<SideNavBarProps> = ({ items, onItemClick }) => {
         <img src="/svgs/profile.svg" />
         <label className="text-MTX-blue font-bold">Profile</label>
       </div>
-      <Button className="ml-10 w-[180px] fixed bottom-8">
+      <Button
+        className="ml-10 w-[180px] fixed bottom-8"
+        color="blue"
+        onClick={() => {}}
+      >
         Switch to TS panel
       </Button>
     </div>
