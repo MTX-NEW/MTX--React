@@ -16,7 +16,13 @@ const Button: React.FC<ButtonProps> = ({
   const [isHovered, setIsHovered] = useState<boolean>(false);
   return (
     <button
-      className={`${color === "blue" ? "bg-MTX-blue" : "bg-MTX-green"} ${
+      className={`${
+        color === "blue"
+          ? "bg-MTX-blue"
+          : color === "green"
+          ? "bg-MTX-green"
+          : "bg-[#FF3A29]"
+      } ${
         isHovered && color === "blue"
           ? "bg-MTX-blueHover"
           : isHovered && color === "green"

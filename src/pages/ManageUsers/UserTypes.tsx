@@ -14,7 +14,11 @@ const UserTypes = () => {
         onClickBtn={() => setIsOpen(true)}
       />
       <Accordion title="User type">
-        <DataTable cells={["Type ID", "Type Name", "Status", "Action"]} />
+        <DataTable
+          cells={["Type ID", "Type Name", "Status", "Action"]}
+          onClickDelete={() => {}}
+          onClickEdit={() => {}}
+        />
         <SideModal
           isOpen={isOpen}
           title="Add new user type"

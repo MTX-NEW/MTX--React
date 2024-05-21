@@ -7,14 +7,28 @@ import {
   TableCell,
   TableBody,
 } from "@mui/material";
+import ActionRow from "./ActionRow";
 
 interface DataTableProps {
   cells: any[];
+  onClickEdit: () => void;
+  onClickDelete: () => void;
 }
 
-let rows = [{ name: "Name", age: 0 }];
-
-const DataTable: React.FC<DataTableProps> = ({ cells }) => {
+const DataTable: React.FC<DataTableProps> = ({
+  cells,
+  onClickEdit,
+  onClickDelete,
+}) => {
+  let rows = [
+    {
+      name: "Name",
+      age: 0,
+      action: (
+        <ActionRow onClickDelete={onClickDelete} onClickEdit={onClickEdit} />
+      ),
+    },
+  ];
   const style = {
     "&.MuiTableCell-root": {
       backgroundColor: "#005399",
@@ -44,7 +58,7 @@ const DataTable: React.FC<DataTableProps> = ({ cells }) => {
                 {row.name}
               </TableCell>
               <TableCell>{row.age}</TableCell>
-              <TableCell>{row.age}</TableCell>
+              <TableCell>{row.action}</TableCell>
             </TableRow>
           ))}
         </TableBody>

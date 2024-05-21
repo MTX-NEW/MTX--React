@@ -15,6 +15,8 @@ const UserGroup = () => {
       />
       <Accordion title="Group 1">
         <DataTable
+          onClickDelete={() => {}}
+          onClickEdit={() => {}}
           cells={[
             "Group 1",
             "Full name",

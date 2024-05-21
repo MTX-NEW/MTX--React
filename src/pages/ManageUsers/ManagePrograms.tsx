@@ -14,7 +14,11 @@ const ManagePrograms = () => {
         onClickBtn={() => setIsOpen(true)}
       />
       <Accordion title="User Type">
-        <DataTable cells={["Program ID", "Program Name", "Action"]} />
+        <DataTable
+          cells={["Program ID", "Program Name", "Action"]}
+          onClickDelete={() => {}}
+          onClickEdit={() => {}}
+        />
         <SideModal
           isOpen={isOpen}
           title="Add Program"

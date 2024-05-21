@@ -14,6 +14,10 @@ const Radiobox: React.FC<RadioboxProps> = ({ group, title }) => {
     "&.Mui-checked	": {
       color: "#005399",
     },
+    "& .MuiFormControlLabel-label": {
+      fontSize: "0.875rem",
+      fontWeight: "semibold",
+    },
   };
   return (
     <div className="flex flex-col gap-y-2">
@@ -27,6 +31,7 @@ const Radiobox: React.FC<RadioboxProps> = ({ group, title }) => {
           <FormControlLabel
             key={index}
             value={item.value}
+            sx={radioboxStyle}
             control={<Radio sx={radioboxStyle} />}
             label={item.label}
           />
