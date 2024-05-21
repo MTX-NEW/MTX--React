@@ -10,7 +10,6 @@ import {
 
 interface DataTableProps {
   cells: any[];
-  sortable?: boolean;
 }
 
 let rows = [{ name: "Name", age: 0 }];
