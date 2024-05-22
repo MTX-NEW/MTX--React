@@ -48,7 +48,7 @@ const SideModal: React.FC<SideModalProps> = ({
         PaperProps={{
           style: {
             height: "100vh",
-            width: "calc(100vw - 1400px)",
+            width: "27%",
             marginLeft: "auto",
           },
         }}

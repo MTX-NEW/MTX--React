@@ -36,7 +36,7 @@ const AllUsers = () => {
         />
         <SideModal
           isOpen={isOpenAdd}
-          title="Edit User"
+          title="Add User"
           onClickClose={() => setIsOpenAdd(false)}
           textBoxes={[
             "First Name",
@@ -164,6 +164,7 @@ const AllUsers = () => {
         />
         <DeleteDialog
           open={isOpenDelete}
+          description="Are you sure you want to delete this user?"
           onClose={() => setIsOpenDelete(false)}
           onConfirm={() => setIsOpenDelete(false)}
           title="Delete Confirmation"

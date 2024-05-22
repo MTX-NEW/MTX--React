@@ -4,11 +4,14 @@ import AllUsers from "../pages/ManageUsers/AllUsers";
 import UserGroup from "../pages/ManageUsers/UserGroup";
 import UserTypes from "../pages/ManageUsers/UserTypes";
 import ManagePrograms from "../pages/ManageUsers/ManagePrograms";
+import Login from "../pages/Login";
 
 const AppRouter: React.FC = () => {
   return (
     <Router>
       <Routes>
+        <Route path="login" element={<Login />} />
+
         <Route path="/main" element={<Layout />}>
           <Route path="manageusers" element={<AllUsers />} />
           <Route path="manageusers/users" element={<AllUsers />} />

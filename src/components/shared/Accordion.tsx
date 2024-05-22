@@ -18,14 +18,14 @@ const Accordion: React.FC<AccordionProps> = ({ title, children, size }) => {
       className={`accordion w-full bg-MTX-mediumblue rounded-md h-[50px] ${
         isHovered ? "bg-MTX-mediumblueHover" : ""
       }`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="accordion-item">
         <div className="accordion-title">
           <button
             className="flex items-center justify-between w-full h-[50px] p-4 border-b border-gray-200"
             onClick={toggleAccordion}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
           >
             <h2>{title}</h2>
             <span className="icon ">

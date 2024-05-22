@@ -8,7 +8,7 @@ interface DeleteDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  description?: string;
+  description: string;
 }
 
 const Transition = React.forwardRef(function Transition(
@@ -25,7 +25,7 @@ const DeleteDialog: React.FC<DeleteDialogProps> = ({
   onClose,
   onConfirm,
   title,
-  description = "Are you sure you want to delete?",
+  description,
 }) => {
   return (
     <Dialog
@@ -39,13 +39,16 @@ const DeleteDialog: React.FC<DeleteDialogProps> = ({
       <div className="p-10">
         <div className="flex flex-col gap-y-2">
           <img src="/svgs/danger.svg" className="w-10 h-10" />
-          <label className="text-[#FF3A29] font-bold">Delete User</label>
-          <label className="text-MTX-greytext">
-            Are you sure you want to delete this user
-          </label>
-          <Button color="red" onClick={onConfirm}>
-            Delete
-          </Button>
+          <label className="text-[#FF3A29] font-bold">{title}</label>
+          <label className="text-MTX-greytext">{description}</label>
+          <div className="flex gap-x-2 mt-4">
+            <Button color="grey" onClick={onConfirm} className="w-[200px]">
+              Cancel
+            </Button>
+            <Button color="red" onClick={onConfirm} className="w-[200px]">
+              Delete
+            </Button>{" "}
+          </div>
         </div>
       </div>
     </Dialog>
