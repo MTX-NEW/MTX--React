@@ -1,15 +1,60 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Accordion from "../../components/shared/Accordion";
 import DataTable from "../../components/shared/DataTable";
 import Header from "../../components/shared/Header";
 import SideModal from "../../components/shared/SideModal";
 import DeleteDialog from "../../components/shared/DeleteDialog";
+import { useGetUsers } from "../../queryClient/hooks/user.hook";
+import { Chip, TableCell, TableRow } from "@mui/material";
+import ActionRow from "../../components/shared/ActionRow";
 
 const AllUsers = () => {
   const [isOpenAdd, setIsOpenAdd] = useState<boolean>(false);
   const [isOpenEdit, setIsOpenEdit] = useState<boolean>(false);
   const [isOpenDelete, setIsOpenDelete] = useState<boolean>(false);
+  const [pagination, setPagination] = useState<PaginatedReq>({
+    page: 1,
+    rowsPerPage: 2,
+  });
+  const handlePageChange = (newPage: number) => {
+    let updatedPagination = { ...pagination };
+    updatedPagination.page = newPage;
+    setPagination(updatedPagination);
+  };
 
+  const handleRowsPerPageChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    let updatedPagination = { ...pagination };
+    updatedPagination.rowsPerPage = parseInt(event.target.value, 10);
+    setPagination(updatedPagination);
+  };
+  const {
+    data: allUsersData,
+    isLoading: isLoadingAllUsers,
+    isError: isErrorAllUsers,
+    refetch: refetchUsers,
+  } = useGetUsers(pagination);
+
+  const allUsers = allUsersData?.users || [];
+  const totalCount = allUsersData?.totalCount || 0;
+
+  let cells = [
+    "ID",
+    "Full name",
+    "Last name",
+    "Username",
+    "Email",
+    "Phone",
+    "EMP code",
+    "User type",
+    "User group",
+    "Status",
+    "Action",
+  ];
+  useEffect(() => {
+    refetchUsers();
+  }, [pagination, refetchUsers]);
   return (
     <div className="flex flex-col gap-y-4">
       <Header
@@ -17,23 +62,41 @@ const AllUsers = () => {
         addBtnText="Add new user"
         onClickBtn={() => setIsOpenAdd(true)}
       />
-      <Accordion title="Users">
+      <Accordion title="Users" loading={isLoadingAllUsers}>
         <DataTable
-          onClickEdit={() => setIsOpenEdit(true)}
-          onClickDelete={() => setIsOpenDelete(true)}
-          cells={[
-            "Full name",
-            "Last name",
-            "Username",
-            "Email",
-            "Phone",
-            "EMP code",
-            "User type",
-            "User group",
-            "Status",
-            "Action",
-          ]}
-        />
+          cells={cells}
+          rowsLength={totalCount}
+          onChangePage={handlePageChange}
+          onChangeRowsPerPage={handleRowsPerPageChange}
+          pagination={pagination}
+        >
+          {allUsers?.map((user, index) => (
+            <TableRow key={index}>
+              <TableCell>{user.id}</TableCell>
+              <TableCell>{user.firstName + user.lastName}</TableCell>
+              <TableCell>{user.lastName}</TableCell>
+              <TableCell>{user.username}</TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>{user.phoneNumber}</TableCell>
+              <TableCell>{user.empCode}</TableCell>
+              <TableCell>User type</TableCell>
+              <TableCell>User group</TableCell>
+              <TableCell>
+                {user.active ? (
+                  <Chip label="Active" color="success" />
+                ) : (
+                  <Chip label="In-Active" color="error" />
+                )}
+              </TableCell>
+              <TableCell>
+                <ActionRow
+                  onClickDelete={() => setIsOpenDelete(true)}
+                  onClickEdit={() => setIsOpenEdit(true)}
+                />
+              </TableCell>
+            </TableRow>
+          ))}
+        </DataTable>
         <SideModal
           isOpen={isOpenAdd}
           title="Add User"

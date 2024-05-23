@@ -1,11 +1,18 @@
+import { CircularProgress } from "@mui/material";
 import React, { useState } from "react";
 
 interface AccordionProps {
   title: string;
   children: any;
+  loading?: boolean;
   size?: any;
 }
-const Accordion: React.FC<AccordionProps> = ({ title, children, size }) => {
+const Accordion: React.FC<AccordionProps> = ({
+  title,
+  children,
+  size,
+  loading,
+}) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isHovered, setIsHovered] = useState<boolean>(false);
 
@@ -23,13 +30,15 @@ const Accordion: React.FC<AccordionProps> = ({ title, children, size }) => {
         <div className="accordion-title">
           <button
             className="flex items-center justify-between w-full h-[50px] p-4 border-b border-gray-200"
-            onClick={toggleAccordion}
+            onClick={loading ? () => {} : toggleAccordion}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
             <h2>{title}</h2>
-            <span className="icon ">
-              {isOpen ? (
+            <span className="icon">
+              {loading ? (
+                <CircularProgress className="icon mt-1" size={20} />
+              ) : isOpen ? (
                 <img src={`/svgs/blueArrowUp.svg`} className="w-6 h-6 mt-1" />
               ) : (
                 <img src={`/svgs/blueArrowDown.svg`} className="w-6 h-6 mt-1" />

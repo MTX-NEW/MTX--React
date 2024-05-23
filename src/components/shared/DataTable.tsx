@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   TableContainer,
   Paper,
@@ -9,31 +8,24 @@ import {
   TableBody,
   TablePagination,
 } from "@mui/material";
-import ActionRow from "./ActionRow";
 
 interface DataTableProps {
   cells: any[];
-  onClickEdit: () => void;
-  onClickDelete: () => void;
+  rowsLength: number;
+  children: React.ReactNode;
+  onChangePage: (page: number) => void;
+  onChangeRowsPerPage: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  pagination: PaginatedReq;
 }
 
 const DataTable: React.FC<DataTableProps> = ({
   cells,
-  onClickEdit,
-  onClickDelete,
+  rowsLength,
+  children,
+  pagination,
+  onChangePage,
+  onChangeRowsPerPage,
 }) => {
-  const [page, setPage] = useState<number>(0);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(5);
-
-  let rows = [
-    {
-      name: "Name",
-      age: 0,
-      action: (
-        <ActionRow onClickDelete={onClickDelete} onClickEdit={onClickEdit} />
-      ),
-    },
-  ];
   const style = {
     "&.MuiTableCell-root": {
       backgroundColor: "#005399",
@@ -42,14 +34,13 @@ const DataTable: React.FC<DataTableProps> = ({
   };
 
   const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
+    onChangePage(newPage);
   };
 
   const handleChangeRowsPerPage = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    onChangeRowsPerPage(event);
   };
 
   return (
@@ -65,31 +56,19 @@ const DataTable: React.FC<DataTableProps> = ({
               ))}
             </TableRow>
           </TableHead>
-          <TableBody>
-            {rows
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row, index) => (
-                <TableRow
-                  key={index}
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                >
-                  <TableCell component="th" scope="row">
-                    {row.name}
-                  </TableCell>
-                  <TableCell>{row.age}</TableCell>
-                  <TableCell>{row.action}</TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
+          <TableBody>{children}</TableBody>
         </Table>
       </TableContainer>
       <TablePagination
-        rowsPerPageOptions={[5, 10, 15]}
+        rowsPerPageOptions={[2, 4, 6]}
         component="div"
-        count={rows.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
+        count={rowsLength}
+        rowsPerPage={pagination.rowsPerPage}
+        page={pagination.page}
         onPageChange={handleChangePage}
+        backIconButtonProps={{
+          disabled: pagination.page === 1,
+        }}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
     </div>

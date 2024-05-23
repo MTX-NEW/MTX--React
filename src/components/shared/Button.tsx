@@ -1,9 +1,11 @@
+import { CircularProgress } from "@mui/material";
 import { useState } from "react";
 
 interface ButtonProps {
   children: React.ReactNode;
   className?: string;
   onClick: () => void;
+  loading: boolean;
   color: string;
 }
 
@@ -12,6 +14,7 @@ const Button: React.FC<ButtonProps> = ({
   className,
   color,
   onClick,
+  loading,
 }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   return (
@@ -39,8 +42,9 @@ const Button: React.FC<ButtonProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}
+      disabled={loading}
     >
-      {children}
+      {loading ? <CircularProgress size={20} /> : `${children}`}
     </button>
   );
 };
