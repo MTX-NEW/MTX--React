@@ -1,4 +1,4 @@
-interface User {
+export interface User {
   id?: number;
   empCode: string;
   firstName: string;
@@ -22,3 +22,27 @@ interface User {
   practiceID: number;
   createdBy: number;
 }
+
+export const initialUser: User = {
+  empCode: "",
+  firstName: "",
+  lastName: "",
+  email: "",
+  gender: "",
+  dob: "",
+  address1: "",
+  address2: "",
+  city: "",
+  state: "",
+  zipcode: "",
+  phoneNumber: "",
+  martialStatus: "",
+  joinDate: "",
+  username: "",
+  password: "",
+  active: false,
+  role: 0,
+  payStructure: 0,
+  practiceID: 0,
+  createdBy: 0,
+};

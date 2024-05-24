@@ -1,10 +1,11 @@
+import { PaginatedReq } from "../interfaces/apiTypes";
+import { User } from "../models/userModel";
 import { authApi } from "./authApi.service";
 
 export const getAllUsers = async (
   signal: AbortSignal,
   pagination: PaginatedReq
 ): Promise<{ users: User[]; totalCount: number }> => {
-  console.log(pagination);
   const response = await authApi.get(
     `users/get_users?limit=${pagination.rowsPerPage}&page=${pagination.page}`,
     true,

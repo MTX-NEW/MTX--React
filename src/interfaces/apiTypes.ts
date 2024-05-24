@@ -1,18 +1,20 @@
-interface LoginRequest {
+import { User } from "../models/userModel";
+
+export interface LoginRequest {
   user_name: string;
   password: string;
 }
 
-interface LoginResponse {
+export interface LoginResponse {
   token: string;
   user: User;
 }
 
-interface GetUsersResponse {
+export interface GetUsersResponse {
   users: User[];
 }
 
-interface PaginatedReq {
+export interface PaginatedReq {
   page: number;
   rowsPerPage: number;
 }

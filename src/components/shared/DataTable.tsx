@@ -8,6 +8,7 @@ import {
   TableBody,
   TablePagination,
 } from "@mui/material";
+import { PaginatedReq } from "../../interfaces/apiTypes";
 
 interface DataTableProps {
   cells: any[];

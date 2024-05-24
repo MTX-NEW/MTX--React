@@ -1,12 +1,17 @@
 import React from "react";
 import { FormControlLabel, Radio, RadioGroup } from "@mui/material";
+import { RadioboxItem } from "../../interfaces/types";
 
 interface RadioboxProps {
   group: RadioboxItem[];
   title: string;
+  onChange: (value: any) => void;
 }
 
-const Radiobox: React.FC<RadioboxProps> = ({ group, title }) => {
+const Radiobox: React.FC<RadioboxProps> = ({ group, title, onChange }) => {
+  const handleChange = (value: any) => {
+    onChange(value);
+  };
   const radioboxStyle = {
     "&.MuiRadio-root": {
       color: "#d9e2ef",
@@ -26,6 +31,7 @@ const Radiobox: React.FC<RadioboxProps> = ({ group, title }) => {
         row
         aria-labelledby="demo-row-radio-buttons-group-label"
         name="row-radio-buttons-group"
+        onChange={handleChange}
       >
         {group.map((item, index) => (
           <FormControlLabel

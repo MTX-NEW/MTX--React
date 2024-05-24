@@ -1,9 +1,9 @@
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import Layout from "../layouts/Layout";
-import AllUsers from "../pages/ManageUsers/AllUsers";
-import UserGroup from "../pages/ManageUsers/UserGroup";
-import UserTypes from "../pages/ManageUsers/UserTypes";
-import ManagePrograms from "../pages/ManageUsers/ManagePrograms";
+import AllUsers from "../pages/ManageUsers/AllUsers/AllUsers";
+import UserGroup from "../pages/ManageUsers/UserGroup/UserGroup";
+import UserTypes from "../pages/ManageUsers/UserTypes/UserTypes";
+import ManagePrograms from "../pages/ManageUsers/ManagePrograms/ManagePrograms";
 import Login from "../pages/Login";
 
 const AppRouter: React.FC = () => {

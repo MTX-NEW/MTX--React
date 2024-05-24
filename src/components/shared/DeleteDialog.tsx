@@ -42,10 +42,20 @@ const DeleteDialog: React.FC<DeleteDialogProps> = ({
           <label className="text-[#FF3A29] font-bold">{title}</label>
           <label className="text-MTX-greytext">{description}</label>
           <div className="flex gap-x-2 mt-4">
-            <Button color="grey" onClick={onConfirm} className="w-[200px]">
+            <Button
+              color="grey"
+              onClick={onConfirm}
+              className="w-[200px]"
+              loading={false}
+            >
               Cancel
             </Button>
-            <Button color="red" onClick={onConfirm} className="w-[200px]">
+            <Button
+              color="red"
+              onClick={onConfirm}
+              className="w-[200px]"
+              loading={false}
+            >
               Delete
             </Button>{" "}
           </div>

@@ -6,15 +6,21 @@ import TextBox from "./TextBox";
 import Radiobox from "./Radiobox";
 import Dropbox from "./Dropbox";
 import Button from "./Button";
+import { Dropdowns, RadioboxGroup } from "../../interfaces/types";
 
 interface SideModalProps {
   isOpen: boolean;
   onClickClose: () => void;
   title: string;
   textBoxes: string[];
+  onChangeTextBox: (name: string, value: any) => void;
+  onChangeRadioBox?: (name: string, value: any) => void;
+  onChangeDropbox?: (name: string, value: any) => void;
+  textBoxValues: any;
   radioBoxes?: RadioboxGroup[];
   dropdowns?: Dropdowns[];
   addBtnText: string;
+  onClickBtn: () => void;
 }
 
 const Transition = React.forwardRef(function Transition(
@@ -31,7 +37,12 @@ const SideModal: React.FC<SideModalProps> = ({
   onClickClose,
   textBoxes,
   addBtnText,
+  onChangeTextBox,
+  textBoxValues,
+  onChangeDropbox,
+  onChangeRadioBox,
   dropdowns,
+  onClickBtn,
   radioBoxes,
   title,
 }) => {
@@ -63,24 +74,55 @@ const SideModal: React.FC<SideModalProps> = ({
             />
           </div>
           <div className="flex flex-col gap-y-4">
-            {textBoxes.map((value, index) => (
+            {textBoxes.map((value: any, index) => (
               <div className="flex flex-col gap-y-2" key={index}>
                 <label className="text-black font-bold text-sm">{value}</label>
-                <TextBox placeholder="" />
+                <TextBox
+                  placeholder=""
+                  onChange={(e) =>
+                    onChangeTextBox(
+                      value.toLowerCase().replace(/ /g, ""),
+                      e.target.value
+                    )
+                  }
+                  value={textBoxValues[value]}
+                />
               </div>
             ))}
             {radioBoxes?.map((radiobox, index) => (
               <Radiobox
                 key={index}
+                onChange={
+                  onChangeRadioBox
+                    ? (e) =>
+                        onChangeRadioBox(
+                          radiobox.title.toLowerCase().replace(/ /g, ""),
+                          e.target.value
+                        )
+                    : () => {}
+                }
                 title={radiobox.title}
                 group={radiobox.items}
               />
             ))}
             {dropdowns?.map((record, index) => (
-              <Dropbox key={index} title={record.title} items={record.items} />
+              <Dropbox
+                key={index}
+                title={record.title}
+                items={record.items}
+                onChange={
+                  onChangeDropbox
+                    ? (e) =>
+                        onChangeDropbox(
+                          record.title.toLowerCase().replace(/ /g, ""),
+                          e.target.value
+                        )
+                    : () => {}
+                }
+              />
             ))}
           </div>
-          <Button onClick={() => {}} color="green">
+          <Button onClick={onClickBtn} color="green" loading={false}>
             {addBtnText}
           </Button>
         </div>
