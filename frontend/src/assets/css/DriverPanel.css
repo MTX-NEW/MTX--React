@@ -1,0 +1,215 @@
+/* Driver Panel Styles - Mobile-first approach */
+
+/* Card Styles */
+.trip-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 0.75rem !important;
+  margin-bottom: 1rem;
+}
+
+.trip-card:hover, .trip-card:active {
+  transform: translateY(-2px);
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* User Interface Elements */
+.avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+}
+
+.status-icon-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Status Button Styles */
+.status-btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+.status-btn-primary:hover, .status-btn-primary:active {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+.status-btn-success {
+  background-color: #198754;
+  border-color: #198754;
+  color: white;
+}
+
+.status-btn-success:hover, .status-btn-success:active {
+  background-color: #157347;
+  border-color: #146c43;
+}
+
+.status-btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.status-btn-danger:hover, .status-btn-danger:active {
+  background-color: #bb2d3b;
+  border-color: #b02a37;
+}
+
+/* Date and Time Display */
+.date-separator {
+  position: relative;
+  text-align: center;
+  color: #6c757d;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.date-separator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background-color: #e9ecef;
+  z-index: -1;
+}
+
+/* Trip Details Layout */
+.trip-locations {
+  margin-bottom: 1rem;
+}
+
+.location-item {
+  position: relative;
+  margin-bottom: 0.75rem;
+}
+
+.connection-line {
+  width: 2px;
+  background-color: #dee2e6;
+  margin-left: 27px;
+}
+
+.status-dot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Auto-time badge for status updates */
+.auto-time-badge {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--bs-primary);
+  border-radius: 12px;
+  padding: 1px 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+/* Typography */
+.fs-7 {
+  font-size: 0.875rem !important;
+}
+
+.fs-8 {
+  font-size: 0.75rem !important;
+}
+
+.fw-medium {
+  font-weight: 500 !important;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 576px) {
+  .avatar-circle {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .trip-tabs .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .card-body {
+    padding: 0.75rem !important;
+  }
+  
+  .card-header {
+    padding: 0.75rem !important;
+  }
+  
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .location-item {
+    margin-top: 0.5rem;
+  }
+  
+  .status-action-buttons {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: space-between;
+  }
+  
+  .status-action-buttons .btn {
+    flex: 1 0 48%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Trip Detail Page Specific Styles */
+.trip-detail-container {
+  padding-bottom: 1rem;
+}
+
+.trip-id {
+  background-color: #f8f9fa;
+  color: #495057;
+  padding: 0.20rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.time-badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+}
+
+/* Status badges */
+.status-badge {
+  padding: 0.35rem 0.65rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+} 
