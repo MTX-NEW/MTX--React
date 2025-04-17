@@ -48,7 +48,6 @@ export const useDriver = () => {
     try {
       console.log('Assigning driver to leg:', legId, driverId);
       const response = await tripLegApi.assignDriver(legId, driverId);
-      toast.success('Driver assigned successfully');
       
       // Refresh drivers list after assignment
       fetchDrivers();

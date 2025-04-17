@@ -80,19 +80,16 @@ const NewTripManagementTable = ({
 
   const handleDriverSubmit = async (legId, driverId) => {
     try {
-      console.log('Assigning driver to leg:', { legId, driverId });
+     
+      // First assign the driver (the backend will automatically set status to "Assigned")
       await assignDriverToLeg(legId, driverId);
-      // Refresh trips data after assigning driver
+      
+      // Show success message
+      toast.success(`Driver ${driverId ? 'assigned' : 'removed'} successfully`);
+      
+      // Refresh the data using the parent's onUpdateStatus method
       if (onUpdateStatus) {
-        // Trigger a refresh by updating status with the same value
-        // This is a workaround to refresh data without adding a new function
-        const currentLeg = trips
-          .flatMap(trip => trip.legs || [])
-          .find(leg => leg.leg_id === legId);
-          
-        if (currentLeg) {
-          onUpdateStatus(legId, currentLeg.status || 'Scheduled');
-        }
+        onUpdateStatus(legId, 'refresh');
       }
     } catch (error) {
       console.error('Error assigning driver:', error);

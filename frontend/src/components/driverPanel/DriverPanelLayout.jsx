@@ -29,7 +29,8 @@ import {
   faUser,
   faClock,
   faSignOutAlt,
-  faCog
+  faCog,
+  faCalendarAlt
 } from '@fortawesome/free-solid-svg-icons';
 
 const DriverPanelLayout = () => {
@@ -40,22 +41,7 @@ const DriverPanelLayout = () => {
   // Hardcoded user for temporary use - only using the ID
   const currentUserId = 11;
   
-  // Redirect to login if not authenticated
-  /*
-  useEffect(() => {
-    if (!currentUser) {
-      navigate('/login');
-    }
-  }, [currentUser, navigate]);
 
-  // Check if user is a driver
-  useEffect(() => {
-    if (currentUser?.userType?.type_name !== 'driver') {
-      // Redirect to main app if not a driver
-      navigate('/');
-    }
-  }, [currentUser, navigate]);
-  */
 
   const handleOffcanvasToggle = () => {
     setShowOffcanvas(!showOffcanvas);
@@ -72,6 +58,7 @@ const DriverPanelLayout = () => {
 
   const drawerItems = [
     { text: 'My Trips', icon: <DirectionsCarIcon />, path: '/driver-panel/trips' },
+    { text: 'Time Off Requests', icon: <FontAwesomeIcon icon={faCalendarAlt} />, path: '/driver-panel/time-off' },
   ];
 
   const isActive = (path) => {
@@ -102,7 +89,7 @@ const DriverPanelLayout = () => {
           <Button 
             color="inherit" 
             onClick={handleBackToMain} 
-            startIcon={<ArrowBackIcon />}
+           
             size="small"
             className="text-white"
           >
@@ -171,23 +158,23 @@ const DriverPanelLayout = () => {
       {/* Bottom Navigation for Mobile */}
       <nav className="mobile-bottom-nav shadow">
         <div className="mobile-bottom-nav__item">
-          <Link to="/driver-panel" className={`mobile-bottom-nav__item-content ${isActive('/driver-panel') && !isActive('/trips') && !isActive('/today') && !isActive('/schedule') ? 'active' : ''}`}>
+          <Link to="/driver-panel" className={`mobile-bottom-nav__item-content ${isActive('/driver-panel') && !isActive('/trips') ? 'active' : ''}`}>
             <FontAwesomeIcon icon={faHome} />
             <span>Home</span>
           </Link>
         </div>
-        
-        <div className="mobile-bottom-nav__item">
-          <Link to="/driver-panel/today-trips" className={`mobile-bottom-nav__item-content ${isActive('/today') ? 'active' : ''}`}>
-            <FontAwesomeIcon icon={faCalendarDay} />
-            <span>Today</span>
-          </Link>
-        </div>
-        
+       {/* 
         <div className="mobile-bottom-nav__item">
           <Link to="/driver-panel/trips" className={`mobile-bottom-nav__item-content ${isActive('/trips') ? 'active' : ''}`}>
             <FontAwesomeIcon icon={faCalendarWeek} />
             <span>Trips</span>
+          </Link>
+        </div>
+        */}
+        <div className="mobile-bottom-nav__item">
+          <Link to="/driver-panel/time-off" className={`mobile-bottom-nav__item-content ${isActive('/time-off') ? 'active' : ''}`}>
+            <FontAwesomeIcon icon={faCalendarAlt} />
+            <span>Time Off</span>
           </Link>
         </div>
         

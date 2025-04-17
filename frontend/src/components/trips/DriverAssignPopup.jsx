@@ -14,8 +14,6 @@ const DriverAssignPopup = ({ onSubmit, onClose, legId, currentDriverId }) => {
     }
   });
 
-
-
   // Convert drivers to options format when drivers data changes
   useEffect(() => {
     console.log('Converting drivers to options:', drivers);
@@ -25,7 +23,7 @@ const DriverAssignPopup = ({ onSubmit, onClose, legId, currentDriverId }) => {
         label: `${driver.first_name} ${driver.last_name}`
       }));
       
-      // Add empty option
+      // Add empty option for clearing assignment
       options.unshift({ value: '', label: 'None (Clear assignment)' });
       
       setDriverOptions(options);
@@ -47,7 +45,9 @@ const DriverAssignPopup = ({ onSubmit, onClose, legId, currentDriverId }) => {
 
   const handleSubmit = (data) => {
     console.log('Submitting driver assignment:', { legId, driverId: data.driver_id });
-    onSubmit(legId, data.driver_id);
+    // Convert empty string to null for the API
+    const driverId = data.driver_id === '' ? null : data.driver_id;
+    onSubmit(legId, driverId);
   };
 
   return (
@@ -75,6 +75,8 @@ const DriverAssignPopup = ({ onSubmit, onClose, legId, currentDriverId }) => {
             fields={driverFields} 
             onSubmit={handleSubmit} 
             submitText="Assign Driver"
+            cancelText="Cancel"
+            onCancel={onClose}
           />
         </FormProvider>
       )}

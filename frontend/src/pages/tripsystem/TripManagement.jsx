@@ -186,6 +186,12 @@ const TripManagement = () => {
   const handleUpdateStatus = async (legId, status) => {
     try {
       console.log('Updating leg status:', legId, status);
+      // Special case for 'refresh' - just refresh the data without updating status
+      if (status === 'refresh') {
+        await fetchTrips();
+        return;
+      }
+      
       await updateLegStatus(legId, status);
       // Refresh trips data
       await fetchTrips();

@@ -41,6 +41,9 @@ const driverPanelApi = {
     return axios.put(`${API_BASE_URL}/api/driver-panel/trip-member/${memberId}/signature`, {
       signature
     });
+  },
+  getDriverDetails: (driverId) => {
+    return axios.get(`${API_BASE_URL}/api/users/${driverId}`);
   }
 };
 
@@ -51,6 +54,7 @@ export const useDriverPanel = (driverId = 11) => {
   const [currentTrip, setCurrentTrip] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [driverDetails, setDriverDetails] = useState(null);
 
   // Fetch driver trips with optional status filter - use useCallback to prevent infinite loop
   const fetchTrips = useCallback(async (status = '') => {
@@ -105,8 +109,6 @@ export const useDriverPanel = (driverId = 11) => {
       setWeeklySchedule(response.data);
       return response.data;
     } catch (err) {
-      console.error('Error fetching weekly schedule:', err);
-      setError('Failed to load weekly schedule. Please try again later.');
       toast.error('Failed to load weekly schedule. Please try again later.');
       return {};
     } finally {
@@ -252,11 +254,30 @@ export const useDriverPanel = (driverId = 11) => {
     }
   }, []);
 
+  // Fetch driver details - use useCallback to prevent infinite loop
+  const fetchDriverDetails = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await driverPanelApi.getDriverDetails(driverId);
+      setDriverDetails(response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching driver details:', err);
+      setError('Failed to load driver details. Please try again later.');
+      toast.error('Failed to load driver details. Please try again later.');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [driverId]);
+
   return {
     trips,
     todayTrips,
     weeklySchedule,
     currentTrip,
+    driverDetails,
     loading,
     error,
     fetchTrips,
@@ -266,6 +287,7 @@ export const useDriverPanel = (driverId = 11) => {
     updateTripLegStatus,
     updateTripLegOdometer,
     updateDriverSignature,
-    updateTripMemberSignature
+    updateTripMemberSignature,
+    fetchDriverDetails
   };
 }; 

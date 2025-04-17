@@ -40,7 +40,10 @@ export const tripLegApi = {
   ...createApiService('trip-legs'),
   getByTrip: (tripId) => axios.get(`${API_BASE_URL}/api/trip-legs/trip/${tripId}`),
   updateStatus: (legId, status) => axios.put(`${API_BASE_URL}/api/trip-legs/${legId}`, { status }),
-  assignDriver: (legId, driverId) => axios.put(`${API_BASE_URL}/api/trip-legs/${legId}`, { driver_id: driverId }),
+  assignDriver: (legId, driverId) => axios.put(`${API_BASE_URL}/api/trip-legs/${legId}`, { 
+    driver_id: driverId,
+    updated_at: new Date() 
+  }),
   // New methods for updating leg data
   updateLeg: (legId, legData) => axios.put(`${API_BASE_URL}/api/trip-legs/${legId}`, {
     ...legData,
@@ -63,7 +66,40 @@ export const tripMemberApi = {
   getMemberLocations: (memberId) => 
     axios.get(`${API_BASE_URL}/api/trip-members/${memberId}/locations`),
 };
+
 export const tripLocationApi = createApiService('trip-locations');
+
+// Driver Panel API services
+export const driverPanelApi = {
+  ...createApiService('driver-panel'),
+  getDriverTrips: (driverId, status) => {
+    const queryParams = status ? `?status=${status}` : '';
+    return axios.get(`${API_BASE_URL}/api/driver-panel/trips/${driverId}${queryParams}`);
+  },
+  getTripLeg: (legId, driverId) => 
+    axios.get(`${API_BASE_URL}/api/driver-panel/trip-leg/${legId}/${driverId}`),
+  updateTripLegStatus: (legId, status, driverId) => 
+    axios.put(`${API_BASE_URL}/api/driver-panel/trip-leg/${legId}/status`, { status, driverId }),
+  updateTripLegOdometer: (legId, driverId, pickup_odometer, dropoff_odometer) => 
+    axios.put(`${API_BASE_URL}/api/driver-panel/trip-leg/${legId}/odometer`, {
+      pickup_odometer,
+      dropoff_odometer,
+      driverId
+    }),
+  getTodayTrips: (driverId) => 
+    axios.get(`${API_BASE_URL}/api/driver-panel/today-trips/${driverId}`),
+  getWeeklySchedule: (driverId, startDate) => {
+    const queryParams = startDate ? `?startDate=${startDate}` : '';
+    return axios.get(`${API_BASE_URL}/api/driver-panel/weekly-schedule/${driverId}${queryParams}`);
+  },
+  updateDriverSignature: (driverId, signature) => 
+    axios.put(`${API_BASE_URL}/api/driver-panel/driver/${driverId}/signature`, { signature }),
+  updateTripMemberSignature: (memberId, signature) => 
+    axios.put(`${API_BASE_URL}/api/driver-panel/trip-member/${memberId}/signature`, { signature })
+};
+
+// Trip Special Instructions API
+export const tripSpecialInstructionApi = createApiService('trip-special-instructions');
 
 export const maintenanceApi = {
   ...createApiService('maintenance'),
@@ -154,7 +190,8 @@ export const timeSheetApi = {
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     return axios.get(`${API_BASE_URL}/api/time-sheets?${params.toString()}`);
-  }
+  },
+  getActiveTimesheet: (userId) => axios.get(`${API_BASE_URL}/api/time-sheets/active/${userId}`)
 };
 
 // Time sheet breaks API services

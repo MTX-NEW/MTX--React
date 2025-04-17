@@ -157,7 +157,11 @@ const TripDetails = ({ trip, onEdit, onCopy, onClose }) => {
           <div className="detail-item">
             <span className="detail-label">Trip Type:</span>
             <span className="detail-value">
-              {trip.trip_type === 'round_trip' ? 'Round Trip' : 'One Way'}
+            {trip.trip_type === 'Round Trip' 
+  ? 'Round Trip' 
+  : trip.trip_type === 'Standard' 
+    ? 'One Way' 
+    : trip.trip_type}
             </span>
           </div>
           <div className="detail-item">

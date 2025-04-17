@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { useResource } from '@/hooks/useResource';
 import { tripMemberApi, programApi, tripLocationApi } from '@/api/baseApi';
 import { memberValidationSchema, locationValidationSchema } from '@/validations/inputValidation';
+import { getCityClassification } from '@/utils/arizonaCityClassification';
 
 const useMemberManagement = () => {
   // State management
@@ -76,12 +77,24 @@ const useMemberManagement = () => {
 
   // Debug form values
   useEffect(() => {
-    const pickupSubscription = pickupFormMethods.watch((value) => {
-      // Remove debug logging
+    const pickupSubscription = pickupFormMethods.watch((value, { name }) => {
+      // Set location_type based on city
+      if (name === 'city' && value.city) {
+        const cityClassification = getCityClassification(value.city);
+        if (cityClassification) {
+          pickupFormMethods.setValue('location_type', cityClassification);
+        }
+      }
     });
 
-    const dropoffSubscription = dropoffFormMethods.watch((value) => {
-      // Remove debug logging
+    const dropoffSubscription = dropoffFormMethods.watch((value, { name }) => {
+      // Set location_type based on city
+      if (name === 'city' && value.city) {
+        const cityClassification = getCityClassification(value.city);
+        if (cityClassification) {
+          dropoffFormMethods.setValue('location_type', cityClassification);
+        }
+      }
     });
 
     return () => {
@@ -132,7 +145,7 @@ const useMemberManagement = () => {
     // Set default values from the member data
     if (member.memberPickupLocation) {
       // Remove debug logging
-      pickupFormMethods.reset({
+      const locationData = {
         location_id: member.memberPickupLocation.location_id,
         street_address: member.memberPickupLocation.street_address || '',
         building: member.memberPickupLocation.building || '',
@@ -145,7 +158,18 @@ const useMemberManagement = () => {
         latitude: member.memberPickupLocation.latitude || null,
         longitude: member.memberPickupLocation.longitude || null,
         recipient_default: true // Always set to true for pickup
-      });
+      };
+      
+      // Set the form data
+      pickupFormMethods.reset(locationData);
+      
+      // If we have a city, check if we should update the location_type
+      if (locationData.city) {
+        const cityClassification = getCityClassification(locationData.city);
+        if (cityClassification) {
+          pickupFormMethods.setValue('location_type', cityClassification);
+        }
+      }
     } else {
       // Reset the form to empty values
       pickupFormMethods.reset({
@@ -173,7 +197,7 @@ const useMemberManagement = () => {
     // Set default values from the member data
     if (member.memberDropoffLocation) {
       // Remove debug logging
-      dropoffFormMethods.reset({
+      const locationData = {
         location_id: member.memberDropoffLocation.location_id,
         street_address: member.memberDropoffLocation.street_address || '',
         building: member.memberDropoffLocation.building || '',
@@ -186,7 +210,18 @@ const useMemberManagement = () => {
         latitude: member.memberDropoffLocation.latitude || null,
         longitude: member.memberDropoffLocation.longitude || null,
         recipient_default: true // Always set to true for dropoff
-      });
+      };
+      
+      // Set the form data
+      dropoffFormMethods.reset(locationData);
+      
+      // If we have a city, check if we should update the location_type
+      if (locationData.city) {
+        const cityClassification = getCityClassification(locationData.city);
+        if (cityClassification) {
+          dropoffFormMethods.setValue('location_type', cityClassification);
+        }
+      }
     } else {
       // Reset the form to empty values
       dropoffFormMethods.reset({
@@ -405,7 +440,7 @@ const useMemberManagement = () => {
         type: 'text', 
         isRequired: true,
         validateOnChange: true,
-        helperText: 'City name will be auto-formatted with proper capitalization'
+        helperText: 'Enter an Arizona city. Urban/Rural classification will be set automatically.'
       },
       { 
         name: 'state', 
@@ -433,7 +468,8 @@ const useMemberManagement = () => {
           { value: 'Urban', label: 'Urban' },
           { value: 'Rural', label: 'Rural' }
         ],
-        isRequired: true
+        isRequired: true,
+        helperText: 'This is automatically set based on the city, but can be manually changed if needed.'
       },
       {
         name: 'recipient_default',

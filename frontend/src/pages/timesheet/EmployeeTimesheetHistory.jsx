@@ -54,7 +54,7 @@ const EmployeeTimesheetHistory = () => {
         // Get all breaks for the timesheets
         if (timeSheetResponse.data && timeSheetResponse.data.length > 0) {
           const breakPromises = timeSheetResponse.data.map(timesheet => 
-            timeSheetBreakApi.getByTimesheet(timesheet.id)
+            timeSheetBreakApi.getByTimesheet(timesheet.timesheet_id)
           );
           
           const breakResponses = await Promise.all(breakPromises);
@@ -555,7 +555,7 @@ const EmployeeTimesheetHistory = () => {
                 <tbody>
                   {timeSheets.map((sheet) => {
                     // Find breaks for this timesheet
-                    const timesheetBreaks = breaks.filter(b => b.timesheet_id === sheet.id);
+                    const timesheetBreaks = breaks.filter(b => b.timesheet_id === sheet.timesheet_id);
                     const breakMinutes = timesheetBreaks.reduce((total, breakItem) => {
                       const startTime = parseISO(breakItem.start_time);
                       const endTime = breakItem.end_time ? parseISO(breakItem.end_time) : new Date();

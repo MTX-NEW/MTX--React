@@ -200,11 +200,39 @@ const TripForm = ({
     if (newTripType === 'one_way') {
       // Always set to 1 leg for one way
       setLegCount(1);
-      initializeTripLegs(1);
+      
+      // Get current legs to preserve location data
+      const currentLegs = formMethods.getValues('legs') || [];
+      if (currentLegs.length > 0) {
+        // Keep only the first leg but preserve its data
+        const preservedLeg = {
+          ...currentLegs[0],
+          sequence: 1,
+          is_return: false
+        };
+        
+        formMethods.setValue('legs', [preservedLeg]);
+      } else {
+        initializeTripLegs(1);
+      }
     } else if (newTripType === 'round_trip') {
       // Round trip has 1 visible leg but creates 2 at submission
       setLegCount(1);
-      initializeTripLegs(1);
+      
+      // Get current legs to preserve location data
+      const currentLegs = formMethods.getValues('legs') || [];
+      if (currentLegs.length > 0) {
+        // Keep only the first leg but preserve its data
+        const preservedLeg = {
+          ...currentLegs[0],
+          sequence: 1,
+          is_return: false
+        };
+        
+        formMethods.setValue('legs', [preservedLeg]);
+      } else {
+        initializeTripLegs(1);
+      }
       
       // Set return_pickup_time field
       formMethods.setValue('return_pickup_time', null);
@@ -212,8 +240,38 @@ const TripForm = ({
       // Multiple legs starts with at least 2 legs
       const currentLegs = formMethods.getValues('legs') || [];
       const newCount = Math.max(currentLegs.length, 2);
+      
+      if (currentLegs.length > 0) {
+        // Preserve existing legs and add more if needed
+        if (currentLegs.length < 2) {
+          const preservedLeg = { ...currentLegs[0], sequence: 1, is_return: false };
+          const newLeg = {
+            sequence: 2,
+            status: 'Scheduled',
+            pickup_location: '',
+            dropoff_location: '',
+            scheduled_pickup: null,
+            scheduled_dropoff: null,
+            leg_distance: null,
+            is_return: true
+          };
+          
+          formMethods.setValue('legs', [preservedLeg, newLeg]);
+        } else {
+          // Just update sequence numbers
+          const updatedLegs = currentLegs.map((leg, idx) => ({
+            ...leg,
+            sequence: idx + 1,
+            is_return: idx > 0
+          }));
+          
+          formMethods.setValue('legs', updatedLegs);
+        }
+      } else {
+        initializeTripLegs(newCount);
+      }
+      
       setLegCount(newCount);
-      initializeTripLegs(newCount);
     }
   }, [watchTripType, initializeTripLegs, formMethods, setLegCount]);
 
@@ -277,6 +335,7 @@ const TripForm = ({
   const tripFields = useMemo(() => {
     const currentScheduleType = formMethods.watch('schedule_type');
     const currentTripType = formMethods.watch('is_one_way');
+   // console.log(currentTripType);
     
     const fields = [
       {

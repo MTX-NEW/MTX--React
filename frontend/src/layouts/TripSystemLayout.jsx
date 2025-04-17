@@ -13,7 +13,6 @@ const TripSystemLayout = () => {
     { name: "Trip Requests", path: "/trip-system/trip-requests" },
     { name: "Route Sheet", path: "/trip-system/trip-management" },
     { name: "Members", path: "/trip-system/members" },
-    { name: "New Trip Requests", path: "/trip-system/new-trip-requests" },
     // Additional tabs can be added here in the future
   ];
 

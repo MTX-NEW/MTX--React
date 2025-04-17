@@ -25,15 +25,17 @@ import Members from "@/pages/tripsystem/Members";
 // Import Time Sheet pages
 import EmployeeTimesheet from "@/pages/timesheet/EmployeeTimesheet";
 import EmployeeTimesheetHistory from "@/pages/timesheet/EmployeeTimesheetHistory";
-import StaffDayOff from "@/pages/timesheet/StaffDayOff";
-import SplitShift from "@/pages/timesheet/SplitShift";
 import Payroll from "@/pages/timesheet/Payroll";
+import TimeOffRequest from "@/pages/timesheet/TimeOffRequest";
+import ManageTimeOffRequests from "@/pages/timesheet/ManageTimeOffRequests";
+import TimeOffRequestForm from "@/components/timesheet/TimeOffRequestForm";
 
 // Import Driver Panel components
 import DriverPanelLayout from "@/components/driverPanel/DriverPanelLayout";
 import DriverTrips from "@/components/driverPanel/DriverTrips";
 import TripDetail from "@/components/driverPanel/TripDetail";
 import DriverSettings from "@/components/driverPanel/DriverSettings";
+import DriverTimeOff from "@/components/driverPanel/DriverTimeOff";
 
 const Router = () => {
   return (
@@ -59,8 +61,9 @@ const Router = () => {
         <Route path="employee/:employeeId/history" element={<EmployeeTimesheetHistory />} />
         <Route path="employee/:employeeId/payroll" element={<Payroll />} />
         <Route path="employee-history" element={<Navigate to="/time-sheet/employee" replace />} />
-        <Route path="staff-day-off" element={<StaffDayOff />} />
-        <Route path="split-shift" element={<SplitShift />} />
+
+        <Route path="time-off-request" element={<TimeOffRequest />} />
+        <Route path="manage-time-off" element={<ManageTimeOffRequests />} />
         <Route path="payroll" element={<Payroll />} />
       </Route>
       
@@ -87,11 +90,12 @@ const Router = () => {
         <Route path="parts-suppliers" element={<PartSuppliers />} />
       </Route>
 
-      {/* Driver Panel Routes - Simplified to a single trips view and trip detail */}
+      {/* Driver Panel Routes - Trips view as home */}
       <Route path="/driver-panel" element={<DriverPanelLayout />}>
-        <Route index element={<Navigate to="trips" replace />} />
+        <Route index element={<DriverTrips />} />
         <Route path="trips" element={<DriverTrips />} />
         <Route path="trip-detail/:legId" element={<TripDetail />} />
+        <Route path="time-off" element={<DriverTimeOff />} />
         <Route path="settings" element={<DriverSettings />} />
       </Route>
 

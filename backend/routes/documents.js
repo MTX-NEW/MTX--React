@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Vehicle = require("../models/Vehicle");
-const { Document } = require("../models/Document");
+const documentController = require("../controllers/documentController");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -72,7 +71,7 @@ const upload = multer({
   }
 });
 
-// Update the route to use the handleUpload middleware
+// Update the route to use the handleUpload middleware and controller
 router.post("/", (req, res) => {
   upload.single('document')(req, res, async (err) => {
     if (err) {
@@ -82,67 +81,12 @@ router.post("/", (req, res) => {
         error: err.message
       });
     }
-
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: 'No file uploaded' });
-      }
-
-      const { documentable_type, documentable_id } = req.body;
-      if (!documentable_type || !documentable_id) {
-        if (req.file.path) {
-          fs.unlinkSync(req.file.path);
-        }
-        return res.status(400).json({ message: 'Missing required fields' });
-      }
-
-      const relativePath = path.relative(
-        path.join(__dirname, '../public'), 
-        req.file.path
-      ).replace(/\\/g, '/'); // Convert to forward slashes
-
-      const document = await Document.create({
-        documentable_type,
-        documentable_id,
-        filename: req.file.filename,
-        original_name: req.file.originalname,
-        path: relativePath, // Store relative path from public directory
-        mime_type: req.file.mimetype,
-        size: req.file.size
-      });
-
-      res.status(201).json({
-        message: 'Document uploaded successfully',
-        document
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-      // Clean up the uploaded file if database operation fails
-      if (req.file && req.file.path) {
-        fs.unlinkSync(req.file.path);
-      }
-      res.status(500).json({ 
-        message: "Document upload failed",
-        error: error.message
-      });
-    }
+    
+    documentController.uploadDocument(req, res);
   });
 });
 
-// Add this route if missing
-router.get("/:type/:id", async (req, res) => {
-  try {
-    const documents = await Document.findAll({
-      where: { 
-        documentable_type: req.params.type,
-        documentable_id: req.params.id
-      }
-    });
-    res.json(documents);
-  } catch (error) {
-    console.error("Error fetching documents:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
+// Get documents by type and ID
+router.get("/:type/:id", documentController.getDocuments);
 
 module.exports = router;

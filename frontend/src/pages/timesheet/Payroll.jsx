@@ -101,7 +101,7 @@ const Payroll = () => {
       // Get all breaks for the timesheets
       if (timesheetData.length > 0) {
         const breakPromises = timesheetData.map(timesheet => 
-          timeSheetBreakApi.getByTimesheet(timesheet.id)
+          timeSheetBreakApi.getByTimesheet(timesheet.timesheet_id)
         );
         
         const breakResponses = await Promise.all(breakPromises);
@@ -193,7 +193,7 @@ const Payroll = () => {
       
       // Get breaks for this timesheet
       const timesheetBreaks = timesheet 
-        ? breaks.filter(b => b.timesheet_id === timesheet.id)
+        ? breaks.filter(b => b.timesheet_id === timesheet.timesheet_id)
         : [];
       
       // Calculate total break time in minutes

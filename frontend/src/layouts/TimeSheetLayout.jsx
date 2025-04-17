@@ -13,8 +13,8 @@ const TimeSheetLayout = () => {
   const tabs = [
     { name: "Employee time sheet", path: "/time-sheet/employee" },
     { name: "Employee History", path: "/time-sheet/employee-history", hidden: true }, // New tab, hidden by default
-    { name: "Manage staff day off", path: "/time-sheet/staff-day-off" },
-    { name: "Manage Split-Shift Mode", path: "/time-sheet/split-shift" },
+    { name: "Time Off Requests", path: "/time-sheet/time-off-request" },
+    { name: "Manage Time Off", path: "/time-sheet/manage-time-off" },
     { name: "Payroll", path: "/time-sheet/payroll" },
   ];
 

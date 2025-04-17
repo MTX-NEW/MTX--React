@@ -279,7 +279,7 @@ const DriverTrips = () => {
           <div className="py-3">
             <FontAwesomeIcon icon={faCalendarDay} size="2x" className="text-muted mb-3" />
             <p className="mb-0 fs-7">
-              No trips found.
+              No trips found for {activeTab === 'today' ? 'today' : 'upcoming days'}.
             </p>
           </div>
         </Card>

@@ -48,18 +48,12 @@ export const processTripFormData = (data) => {
   // Convert trip_type from UI format to database format
   if (processedData.is_one_way === true || processedData.is_one_way === "true") {
     processedData.trip_type = 'Standard';
-    // Ensure only the first leg is included for one-way trips
-    if (processedData.legs && processedData.legs.length > 1) {
-      processedData.legs = [processedData.legs[0]]; // Keep only the first leg
-    }
   } else if (processedData.is_one_way === false || processedData.is_one_way === "false") {
     processedData.trip_type = 'Round Trip';
   } else if (processedData.is_one_way === 'multiple') {
     processedData.trip_type = 'Multi-stop';
   }
   delete processedData.is_one_way; // Remove the UI-specific field
-  
-
   
   // Create special instructions object from checkbox arrays
   const special_instructions = {
@@ -123,27 +117,9 @@ export const processTripFormData = (data) => {
     });
   }
   
-  // Handle round trip - create return leg
-  if (processedData.trip_type === 'Round Trip' && processedData.legs && processedData.legs.length > 0) {
-    const firstLeg = processedData.legs[0];
-    const returnPickupTime = processedData.return_pickup_time;
-    
-    // Create return leg by swapping pickup and dropoff
-    processedData.legs.push({
-      sequence: 2,
-      status: 'Scheduled',
-      pickup_location: firstLeg.dropoff_location,
-      dropoff_location: firstLeg.pickup_location,
-      scheduled_pickup: returnPickupTime ? formatTimeForDB(returnPickupTime) : null,
-      scheduled_dropoff: null,
-      leg_distance: firstLeg.leg_distance,
-      is_return: true
-    });
-  }
+  // For round trip, we'll let the backend handle the return leg
+  // We just need to pass the return pickup time along
   
-  // Remove non-model fields
-  delete processedData.return_pickup_time;
-
   return processedData;
 };
 

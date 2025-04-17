@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Button, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSignature, faUser, faInfoCircle, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faSignature, faUser, faInfoCircle, faExclamationTriangle, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { useDriverPanel } from '@/hooks/useDriverPanel';
 import SignaturePad from '@/components/common/SignaturePad';
 
@@ -15,22 +15,29 @@ const DriverSettings = () => {
   const { 
     loading,
     error,
-    updateDriverSignature
+    driverDetails,
+    updateDriverSignature,
+    fetchDriverDetails
   } = useDriverPanel(currentUserId);
 
-  // Fetch driver details (mock implementation - in a real app, you'd fetch from backend)
+  // Fetch driver details
   useEffect(() => {
     setIsLoading(true);
-    // In a real app, you would fetch driver details here
-    // For now, we'll mock a driver object
-    setCurrentDriver({
-      id: currentUserId,
-      first_name: 'John',
-      last_name: 'Doe',
-      signature: null, // This would come from the API
-    });
-    setIsLoading(false);
-  }, [currentUserId]);
+    fetchDriverDetails()
+      .then((driverData) => {
+        if (driverData) {
+          setCurrentDriver({
+            id: driverData.id,
+            first_name: driverData.first_name,
+            last_name: driverData.last_name,
+            signature: driverData.signature
+          });
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [currentUserId, fetchDriverDetails]);
 
   const handleDriverSignature = (signatureData) => {
     setIsLoading(true);

@@ -616,17 +616,37 @@ const TripEditForm = ({
     
     // Process return pickup time if this is a round trip
     if (tripType === 'round_trip' && processedData.return_pickup_time) {
-      // Create a second leg for the return trip
-      processedData.legs.push({
-        sequence: 2,
-        status: 'Scheduled',
-        pickup_location: processedData.legs[0].dropoff_location, // Swap pickup and dropoff
-        dropoff_location: processedData.legs[0].pickup_location,
-        scheduled_pickup: formatTimeForDB(processedData.return_pickup_time),
-        scheduled_dropoff: null,
-        leg_distance: processedData.legs[0].leg_distance,
-        is_return: true
-      });
+      // Get the first leg information
+      const firstLeg = processedData.legs[0];
+      
+      // Only create a return leg if we have valid pickup and dropoff locations
+      if (firstLeg && firstLeg.pickup_location && firstLeg.dropoff_location) {
+        // Create a second leg for the return trip
+        const returnLeg = {
+          sequence: 2,
+          status: 'Scheduled',
+          pickup_location: firstLeg.dropoff_location, // Swap pickup and dropoff
+          dropoff_location: firstLeg.pickup_location,
+          scheduled_pickup: formatTimeForDB(processedData.return_pickup_time),
+          scheduled_dropoff: null,
+          leg_distance: firstLeg.leg_distance,
+          is_return: true
+        };
+        
+        // Verify that we have valid location IDs before adding the leg
+        if (returnLeg.pickup_location && returnLeg.dropoff_location) {
+          processedData.legs.push(returnLeg);
+        } else {
+          console.error('Cannot create return leg: Invalid location data', {
+            pickup: returnLeg.pickup_location,
+            dropoff: returnLeg.dropoff_location
+          });
+        }
+      } else {
+        console.error('Cannot create return leg: Missing leg data or locations', {
+          firstLeg
+        });
+      }
     }
     
     // Process special instructions

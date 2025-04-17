@@ -1032,3 +1032,11 @@ body {
     transform: translateY(0);
   }
 }*/
+@media (max-width: 576px) {
+  .form-label {
+    font-size: 14px; /* Smaller font size for mobile */
+  }
+  .h4 {
+    font-size: 18px; /* Smaller heading for mobile */
+  }
+}
