@@ -1,109 +1,134 @@
-import React, { useState, useEffect } from "react";
-import AccordionGroup from "@/components/users/usersettings/AccordionGroup";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import PagesAccordionGroup from "@/components/users/usersettings/PagesAccordionGroup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { userTypeApi, pagePermissionsApi } from "@/api/baseApi";
-import { CircularProgress } from "@mui/material";
-import { routes } from "@/routesConfig";
+import { CircularProgress, Button } from "@mui/material";
+import SyncIcon from '@mui/icons-material/Sync';
 
 const PagePermissions = () => {
   const [loading, setLoading] = useState(true);
+  const [syncingPages, setSyncingPages] = useState(false);
   const [userTypes, setUserTypes] = useState([]);
-  const [pagePermissions, setPagePermissions] = useState({});
+  const [permissions, setPermissions] = useState([]);
+  const [selectedSection, setSelectedSection] = useState('all');
 
-  // Fetch user types first
+  // Get all data on component mount
   useEffect(() => {
-    const fetchUserTypes = async () => {
-      try {
-        const response = await userTypeApi.getAll();
-        setUserTypes(response.data);
-      } catch (error) {
-        console.error("Error fetching user types:", error);
-        toast.error("Failed to load user types");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserTypes();
+    fetchAllData();
   }, []);
 
-  // Fetch permissions for a specific page
-  const fetchPagePermissions = async (pageName) => {
+  const fetchAllData = async () => {
     try {
-      const response = await pagePermissionsApi.getByPage(pageName);
-      setPagePermissions(prev => ({
-        ...prev,
-        [pageName]: response.data || []
-      }));
+      setLoading(true);
+      // Use Promise.all to fetch data in parallel
+      const [userTypesResponse, permissionsResponse] = await Promise.all([
+        userTypeApi.getAll(),
+        pagePermissionsApi.getAllPermissions()
+      ]);
+      
+      setUserTypes(userTypesResponse.data);
+      setPermissions(permissionsResponse.data);
     } catch (error) {
-      console.error(`Error fetching permissions for ${pageName}:`, error);
-      setPagePermissions(prev => ({
-        ...prev,
-        [pageName]: []
-      }));
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load data");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Effect to fetch initial permissions for all pages
-  useEffect(() => {
-    if (!loading && routes.manageUsers.tabs) {
-      routes.manageUsers.tabs.forEach(page => {
-        fetchPagePermissions(page.name);
-      });
-    }
-  }, [loading]);
-
-  const handleSave = async (pageName, type, isView, selectedTypeIds) => {
-    try {
-      // Get current permissions for the page
-      const currentPermissions = pagePermissions[pageName] || [];
+  // Memoize the processed data to avoid recalculation on each render
+  const { pageMap, uniquePages, sections } = useMemo(() => {
+    // Create a map of page_id -> permissions
+    const pageMap = {};
+    // Track unique pages and sections
+    const pagesSet = new Set();
+    const uniquePagesArray = [];
+    const sectionsSet = new Set();
+    
+    permissions.forEach(perm => {
+      // Build page map
+      if (!pageMap[perm.page_id]) {
+        pageMap[perm.page_id] = [];
+      }
+      pageMap[perm.page_id].push(perm);
       
-      // Create a map of existing permissions
-      const permissionsMap = new Map(
-        currentPermissions.map(p => [p.type_id, { 
-          type_id: p.type_id,
-          page_name: pageName,
-          can_view: Number(p.can_view),
-          can_edit: Number(p.can_edit)
-        }])
-      );
+      // Track page if new
+      const pageId = perm.Page.page_id;
+      if (!pagesSet.has(pageId)) {
+        pagesSet.add(pageId);
+        uniquePagesArray.push(perm.Page);
+        sectionsSet.add(perm.Page.page_section);
+      }
+    });
+    
+    return {
+      pageMap,
+      uniquePages: uniquePagesArray,
+      sections: ['all', ...Array.from(sectionsSet)]
+    };
+  }, [permissions]);
 
-      // Update permissions based on selection
-      userTypes.forEach(userType => {
-        const typeId = userType.type_id;
-        const isSelected = selectedTypeIds.includes(typeId);
-        const existingPermission = permissionsMap.get(typeId);
-        
-        if (!existingPermission) {
-          // If no existing permission, create new one with default values
-          permissionsMap.set(typeId, {
-            type_id: typeId,
-            page_name: pageName,
-            can_view: isView ? (isSelected ? 1 : 0) : 0,
-            can_edit: !isView ? (isSelected ? 1 : 0) : 0
-          });
-        } else {
-          // Update only the relevant permission (view or edit)
-          const updatedPermission = {
-            ...existingPermission,
-            [isView ? 'can_view' : 'can_edit']: isSelected ? 1 : 0
-          };
-          permissionsMap.set(typeId, updatedPermission);
-        }
-      });
+  // Memoize filtered pages based on selected section
+  const filteredPages = useMemo(() => {
+    return selectedSection === 'all' 
+      ? uniquePages 
+      : uniquePages.filter(page => page.page_section === selectedSection);
+  }, [selectedSection, uniquePages]);
 
-      // Convert map back to array
-      const updatedPermissions = Array.from(permissionsMap.values());
+  // Memoize formatted user types for component props
+  const formattedUserTypes = useMemo(() => {
+    return userTypes?.map(type => ({
+      id: type.type_id,
+      label: type.display_name,
+      disabled: type.status === 'Inactive',
+      status: type.status
+    })) || [];
+  }, [userTypes]);
 
-      await pagePermissionsApi.updatePagePermissions(pageName, updatedPermissions);
-      await fetchPagePermissions(pageName);
+  // Sync pages from routes to database
+  const handleSyncPages = async () => {
+    try {
+      setSyncingPages(true);
+      const response = await pagePermissionsApi.syncPages();
+      
+      // Show success message with details
+      const { created, existing } = response.data;
+      toast.success(`Pages synced successfully! Created: ${created}, Already existing: ${existing}`);
+      
+      // Refresh data
+      await fetchAllData();
+    } catch (error) {
+      console.error("Error syncing pages:", error);
+      toast.error("Failed to sync pages");
+    } finally {
+      setSyncingPages(false);
+    }
+  };
+
+  // Memoize the save handler to prevent unnecessary function recreation
+  const handleSavePermissions = useCallback(async (pageId, updatedPermissions) => {
+    try {
+      // If no changes, don't bother updating
+      if (updatedPermissions.length === 0) {
+        toast.info("No changes to save");
+        return;
+      }
+      
+      // Use page ID directly instead of page name for the API call
+      console.log(pageId, updatedPermissions);
+      await pagePermissionsApi.updatePagePermissions(pageId, updatedPermissions);
+      
+      // Refresh permissions only, not full data
+      const permissionsResponse = await pagePermissionsApi.getAllPermissions();
+      setPermissions(permissionsResponse.data);
+      
       toast.success("Permissions updated successfully");
     } catch (error) {
       console.error("Error updating permissions:", error);
       toast.error("Failed to update permissions");
     }
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -113,58 +138,58 @@ const PagePermissions = () => {
     );
   }
 
-  // Filter and map user types
-  const getTypesForPage = () => {
-    return userTypes?.map(type => ({
-      id: type.type_id,
-      label: type.display_name,
-      disabled: type.status === 'Inactive',
-      status: type.status
-    })) || [];
-  };
-
-  // Get permissions for a specific page and type (view/edit)
-  const getPagePermissions = (pageName, isView = true) => {
-    const permissions = pagePermissions[pageName] || [];
-    return permissions
-      .filter(p => isView ? Number(p.can_view) === 1 : Number(p.can_edit) === 1)
-      .map(p => p.type_id);
-  };
-
   return (
     <div className="container mx-auto px-2 min-h-screen">
       <div className="shadow-md rounded-lg p-4">
-        <div className="mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Page Permissions</h2>
-          <p className="text-sm text-gray-600">Manage access rights for each page</p>
+        <div className="mb-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Page Permissions</h2>
+            <p className="text-sm text-gray-600">Manage access rights for each page</p>
+          </div>
+        {/*  <Button
+            variant="contained"
+            color="primary"
+            startIcon={<SyncIcon />}
+            onClick={handleSyncPages}
+            disabled={syncingPages}
+          >
+            {syncingPages ? 'Syncing...' : 'Sync Pages'}
+          </Button> */}
         </div>
 
-        <div className="space-y-2">
-          {routes.manageUsers.tabs.map((page) => (
-            <div key={page.name} className="border rounded-lg p-3">
-              <h3 className="text-lg font-semibold mb-2">{page.name}</h3>
-              
-              {/* View Permissions */}
-              <div className="mb-2">
-                <AccordionGroup
-                  title="View Access"
-                  options={getTypesForPage()}
-                  selectedOptions={getPagePermissions(page.name, true)}
-                  onSave={(selectedOptions) => handleSave(page.name, 'view', true, selectedOptions)}
-                  compactMode={true}
-                />
-              </div>
+        {/* Section filter dropdown */}
+        <div className="mb-4">
+          <label htmlFor="section-filter" className="block text-sm font-medium text-gray-700">Filter by section:</label>
+          <select 
+            id="section-filter"
+            value={selectedSection}
+            onChange={(e) => setSelectedSection(e.target.value)}
+            className="form-select w-25 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          >
+            {sections.map(section => (
+              <option key={section} value={section}>
+                {section === 'all' ? 'All Sections' : section}
+              </option>
+            ))}
+          </select>
+        </div>
 
-              {/* Edit Permissions */}
-              <div>
-                <AccordionGroup
-                  title="Edit Access"
-                  options={getTypesForPage()}
-                  selectedOptions={getPagePermissions(page.name, false)}
-                  onSave={(selectedOptions) => handleSave(page.name, 'edit', false, selectedOptions)}
-                  compactMode={true}
-                />
-              </div>
+        <div className="row row-cols-2 g-4">
+          {filteredPages.map((page) => (
+            <div key={page.page_id} className="border rounded-lg p-3">
+              <h3 className="fs-5 fw-semibold mb-2">
+                {page.page_section} &gt; {page.page_name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+              </h3>
+              <p className="text-xs text-secondary mb-2">ID: {page.page_id}</p>
+              <p className="text-xs text-secondary mb-2">Path: {page.page_path}</p>
+              
+              {/* Combined View/Edit Permissions in one table */}
+              <PagesAccordionGroup
+                title="User Permissions"
+                options={formattedUserTypes}
+                permissions={pageMap[page.page_id] || []}
+                onSave={(updatedPermissions) => handleSavePermissions(page.page_id, updatedPermissions)}
+              />
             </div>
           ))}
         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import DatePicker from '@/components/DatePicker';
 import dayjs from 'dayjs';
 import { Autocomplete, TextField } from '@mui/material';
@@ -11,80 +11,40 @@ const TripFilters = ({
   setDateFilter,
   statusFilter,
   setStatusFilter,
+  driverFilter,
+  setDriverFilter,
+  programFilter,
+  setProgramFilter,
+  driversData = [],
+  programsData = [],
   clearFilters
 }) => {
   // Filter handlers
   const handleCityFilterChange = (city) => {
     setCityFilter(city);
-    // Save to session storage
-    sessionStorage.setItem('tripCityFilter', city || '');
   };
 
   const handleDateFilterChange = (startDate, endDate = null) => {
-    const newDateFilter = { startDate, endDate };
-    setDateFilter(newDateFilter);
-    
-    // Save to session storage
-    sessionStorage.setItem('tripDateFilter', JSON.stringify(newDateFilter));
+    setDateFilter({ startDate, endDate });
   };
 
   const handleStatusFilterChange = (status) => {
     setStatusFilter(status);
-    // Save to session storage
-    sessionStorage.setItem('tripStatusFilter', status || '');
   };
 
-  // Load saved filters from sessionStorage on component mount
-  useEffect(() => {
-    // Try to load saved filters from session storage
-    const savedDateFilter = sessionStorage.getItem('tripDateFilter');
-    const savedStatusFilter = sessionStorage.getItem('tripStatusFilter');
-    const savedCityFilter = sessionStorage.getItem('tripCityFilter');
-    
-    // Apply saved date filter or default to today
-    if (savedDateFilter) {
-      try {
-        const parsedDateFilter = JSON.parse(savedDateFilter);
-        setDateFilter(parsedDateFilter);
-      } catch (e) {
-        console.error('Error parsing saved date filter:', e);
-        // Set today as fallback if no date filter
-        if (!dateFilter.startDate) {
-          const today = dayjs().format('YYYY-MM-DD');
-          handleDateFilterChange(today);
-        }
-      }
-    } else if (!dateFilter.startDate) {
-      // No saved filter and no current date, set to today
-      const today = dayjs().format('YYYY-MM-DD');
-      handleDateFilterChange(today);
-    }
-    
-    // Apply saved status filter
-    if (savedStatusFilter) {
-      setStatusFilter(savedStatusFilter);
-    }
-    
-    // Apply saved city filter
-    if (savedCityFilter) {
-      setCityFilter(savedCityFilter);
-    }
-  }, []);
+  const handleDriverFilterChange = (driverId) => {
+    setDriverFilter(driverId);
+  };
 
-  // Override the clear filters function to also clear session storage
-  const handleClearFilters = () => {
-    clearFilters();
-    // Clear session storage
-    sessionStorage.removeItem('tripDateFilter');
-    sessionStorage.removeItem('tripStatusFilter');
-    sessionStorage.removeItem('tripCityFilter');
+  const handleProgramFilterChange = (programId) => {
+    setProgramFilter(programId);
   };
 
   return (
     <div className="card mb-4">
       <div className="card-body">
         <div className="row g-3">
-          <div className="col-md-3">
+          <div className="col-md-2">
             <div className="form-group">
               <label className="form-label">Filter by City</label>
               <Autocomplete
@@ -123,7 +83,39 @@ const TripFilters = ({
             </div>
           </div>
 
-          <div className="col-md-6">
+          <div className="col-md-2">
+            <div className="form-group">
+              <label className="form-label">Driver</label>
+              <select 
+                className="form-select"
+                value={driverFilter}
+                onChange={(e) => handleDriverFilterChange(e.target.value)}
+              >
+                <option value="">All Drivers</option>
+                {driversData.map(driver => (
+                  <option key={driver.id} value={driver.id}>{driver.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="col-md-2">
+            <div className="form-group">
+              <label className="form-label">Program</label>
+              <select 
+                className="form-select"
+                value={programFilter}
+                onChange={(e) => handleProgramFilterChange(e.target.value)}
+              >
+                <option value="">All Programs</option>
+                {programsData.map(program => (
+                  <option key={program.id} value={program.id}>{program.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="col-md-3">
             <div className="form-group">
               <label className="form-label">Date Range</label>
               <div className="d-flex align-items-center" style={{ marginTop: '4px' }}>
@@ -156,7 +148,7 @@ const TripFilters = ({
           <div className="col-md-1 d-flex align-items-end">
             <button
               className="btn btn-outline-secondary w-100"
-              onClick={handleClearFilters}
+              onClick={clearFilters}
             >
               <i className="material-icons small me-1"></i>
               Clear
@@ -164,7 +156,7 @@ const TripFilters = ({
           </div>
         </div>
         
-        {(cityFilter || dateFilter.startDate || statusFilter) && (
+        {(cityFilter || dateFilter.startDate || statusFilter || driverFilter || programFilter) && (
           <div className="mt-3 d-flex flex-wrap align-items-center">
             <span className="text-muted me-2">Applied:</span>
             
@@ -200,6 +192,30 @@ const TripFilters = ({
                   style={{ fontSize: '0.5rem' }}
                   onClick={() => handleStatusFilterChange('')}
                   aria-label="Remove status filter"
+                ></button>
+              </div>
+            )}
+
+            {driverFilter && driversData.length > 0 && (
+              <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
+                <span>Driver: {driversData.find(d => d.id.toString() === driverFilter.toString())?.name || driverFilter}</span>
+                <button 
+                  className="btn-close btn-close-white ms-2"
+                  style={{ fontSize: '0.5rem' }}
+                  onClick={() => handleDriverFilterChange('')}
+                  aria-label="Remove driver filter"
+                ></button>
+              </div>
+            )}
+
+            {programFilter && programsData.length > 0 && (
+              <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
+                <span>Program: {programsData.find(p => p.id.toString() === programFilter.toString())?.name || programFilter}</span>
+                <button 
+                  className="btn-close btn-close-white ms-2"
+                  style={{ fontSize: '0.5rem' }}
+                  onClick={() => handleProgramFilterChange('')}
+                  aria-label="Remove program filter"
                 ></button>
               </div>
             )}

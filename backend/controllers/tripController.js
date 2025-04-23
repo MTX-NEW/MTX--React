@@ -12,9 +12,35 @@ const { formatTimeForDB, formatDateForDB } = require("../utils/timeUtils");
 // Get all trips with related data
 exports.getAllTrips = async (req, res) => {
   try {
-    const trips = await Trip.findAll({
-      include: [
-        { 
+    // Extract filter parameters from the request query
+    const { city, startDate, endDate, status, search, tripType, driverId, programId } = req.query;
+    
+    // Check if we have any active filters
+    const hasActiveFilters = city || startDate || endDate || status || search || tripType || driverId || programId;
+    
+    // Build the main where clause for Trip
+    const tripWhere = {};
+    
+    // Add date filters to trip where clause
+    if (startDate || endDate) {
+      tripWhere.start_date = {};
+      
+      if (startDate) {
+        tripWhere.start_date[Op.gte] = new Date(startDate);
+      }
+      
+      if (endDate) {
+        tripWhere.start_date[Op.lte] = new Date(endDate);
+      }
+    }
+    
+    // Add trip type filter
+    if (tripType) {
+      tripWhere.trip_type = tripType;
+    }
+    
+    // Add program filter (via trip member)
+    const memberInclude = { 
           model: TripMember,
           include: [
             Program,
@@ -29,7 +55,17 @@ exports.getAllTrips = async (req, res) => {
               attributes: ['location_id', 'street_address', 'city', 'state', 'zip', 'phone', 'latitude', 'longitude']
             }
           ]
-        },
+    };
+    
+    if (programId) {
+      memberInclude.where = {
+        program_id: programId
+      };
+    }
+    
+    // Define the standard includes that will be used in all queries
+    const standardIncludes = [
+      memberInclude,
         { 
           model: User, 
           as: "creator",
@@ -38,8 +74,11 @@ exports.getAllTrips = async (req, res) => {
         {
           model: TripSpecialInstruction,
           as: "specialInstructions"
-        },
-        {
+      }
+    ];
+    
+    // Define the leg include with possible filters
+    const legInclude = {
           model: TripLeg,
           as: "legs",
           include: [
@@ -57,9 +96,73 @@ exports.getAllTrips = async (req, res) => {
               as: "dropoffLocation" 
             }
           ]
-        }
-      ]
+    };
+    
+    // Apply leg filters (status and/or driver)
+    const legWhere = {};
+    
+    // Add status filter to leg where clause
+    if (status) {
+      legWhere.status = status;
+    }
+    
+    // Add driver filter to leg where clause
+    if (driverId) {
+      legWhere.driver_id = driverId;
+    }
+    
+    // Apply where clause to legs if there are any leg filters
+    if (Object.keys(legWhere).length > 0) {
+      legInclude.where = legWhere;
+    }
+    
+    // Add leg include to standard includes
+    const includes = [...standardIncludes, legInclude];
+    
+    // Execute the query
+    let trips = await Trip.findAll({
+      where: tripWhere,
+      include: includes,
+      distinct: true, // Ensure distinct trips when joining with legs
+      order: [['start_date', 'DESC']], // Order by most recent trip first
+      // Add a default limit when no filters are applied to prevent returning too many records
+      ...(hasActiveFilters ? {} : { limit: 100 })
     });
+    
+    // Apply post-query filters
+    
+    // If city filter is provided, filter trips with the specified city in pickup or dropoff locations
+    if (city) {
+      trips = trips.filter(trip => {
+        // Skip trips without legs
+        if (!trip.legs || trip.legs.length === 0) return false;
+        
+        // Check if any leg has the specified city in pickup or dropoff location
+        return trip.legs.some(leg => 
+          (leg.pickupLocation && leg.pickupLocation.city === city) ||
+          (leg.dropoffLocation && leg.dropoffLocation.city === city)
+        );
+      });
+    }
+    
+    // If search filter is provided, filter trips by trip ID or member name
+    if (search) {
+      const searchLower = search.toLowerCase();
+      trips = trips.filter(trip => {
+        // Search by trip ID
+        if (trip.trip_id.toString().includes(searchLower)) return true;
+        
+        // Search by member name
+        if (trip.TripMember && 
+            `${trip.TripMember.first_name} ${trip.TripMember.last_name}`.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        
+        // No match found
+        return false;
+      });
+    }
+    
     res.json(trips);
   } catch (error) {
     console.error("Error fetching trips:", error);

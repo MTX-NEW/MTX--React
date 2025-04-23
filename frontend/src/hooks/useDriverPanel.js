@@ -47,7 +47,7 @@ const driverPanelApi = {
   }
 };
 
-export const useDriverPanel = (driverId = 11) => {
+export const useDriverPanel = (driverId) => {
   const [trips, setTrips] = useState([]);
   const [todayTrips, setTodayTrips] = useState([]);
   const [weeklySchedule, setWeeklySchedule] = useState({});

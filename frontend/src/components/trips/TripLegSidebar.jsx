@@ -14,7 +14,7 @@ const TripLegSidebar = ({
   isOpen, 
   onClose, 
   trip, 
-  onSuccess 
+  onSubmit 
 }) => {
   const { createTripLeg } = useTripLeg();
   const { data: locations, loading: loadingLocations } = useResource(tripLocationApi);
@@ -124,10 +124,15 @@ const TripLegSidebar = ({
   // Handle form submission
   const handleSubmit = async (data) => {
     try {
-      await createTripLeg(data);
+      // Create the trip leg and get the response data
+      const newLeg = await createTripLeg(data);
+      
       toast.success('New leg added successfully');
       formMethods.reset();
-      if (onSuccess) onSuccess();
+      
+      // Pass the created leg data to the onSubmit callback
+      if (onSubmit) onSubmit(newLeg);
+      
       onClose();
     } catch (err) {
       console.error('Error adding leg:', err);

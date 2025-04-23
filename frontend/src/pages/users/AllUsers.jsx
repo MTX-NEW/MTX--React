@@ -46,11 +46,13 @@ const AllUsers = () => {
   // Watch for group changes in add form
   const addFormMethods = useForm({
     resolver: yupResolver(userValidationSchema),
+    context: { isEditing: false },
     mode: "onChange",
   });
 
   const editFormMethods = useForm({
     resolver: yupResolver(userValidationSchema),
+    context: { isEditing: true },
     mode: "onChange",
   });
 
@@ -100,7 +102,11 @@ const AllUsers = () => {
           lastEmploymentDate: itemToEdit.lastEmploymentDate,
           sex: itemToEdit.sex,
           spanishSpeaking: itemToEdit.spanishSpeaking,
-          paymentStructure: itemToEdit.paymentStructure
+          paymentStructure: itemToEdit.paymentStructure,
+          profile_image: itemToEdit.profile_image,
+          // Leave password blank to avoid overwriting
+          password: '', // Ensure password is blank
+          confirm_password: '' // Ensure confirm password is blank
         };
         editFormMethods.reset(formData);
       });
@@ -131,6 +137,89 @@ const AllUsers = () => {
       { label: "Email", name: "email", type: "email" },
       { label: "Phone", name: "phone", type: "text" },
       {
+        label: "Profile Image",
+        name: "profile_image",
+        type: "custom",
+        render: ({ field }) => (
+          <div className="profile-image-input">
+            {field.value && (
+              <div className="image-preview mb-2">
+                <img 
+                  src={field.value} 
+                  alt="Profile preview" 
+                  className="profile-preview"
+                  style={{ maxWidth: '100px', maxHeight: '100px', borderRadius: '50%', objectFit: 'cover' }} 
+                />
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  // Compress and resize image before uploading
+                  const compressImage = (file) => {
+                    return new Promise((resolve) => {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                          // Create canvas for resizing
+                          const canvas = document.createElement('canvas');
+                          // Calculate new dimensions (max 400px width/height while maintaining aspect ratio)
+                          let width = img.width;
+                          let height = img.height;
+                          const maxSize = 400;
+                          
+                          if (width > height && width > maxSize) {
+                            height = Math.round((height * maxSize) / width);
+                            width = maxSize;
+                          } else if (height > maxSize) {
+                            width = Math.round((width * maxSize) / height);
+                            height = maxSize;
+                          }
+                          
+                          canvas.width = width;
+                          canvas.height = height;
+                          
+                          // Draw resized image to canvas
+                          const ctx = canvas.getContext('2d');
+                          ctx.drawImage(img, 0, 0, width, height);
+                          
+                          // Convert to base64 with reduced quality
+                          const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality JPEG
+                          resolve(dataUrl);
+                        };
+                        img.src = event.target.result;
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                  };
+                  
+                  if (file.size > 5 * 1024 * 1024) { // 5MB
+                    toast.error("Image too large. Maximum size is 5MB");
+                    return;
+                  }
+                  
+                  if (file.type.match(/image.*/)) {
+                    compressImage(file).then(compressedImage => {
+                      field.onChange(compressedImage);
+                    });
+                  } else {
+                    toast.error("Please select an image file");
+                  }
+                }
+              }}
+              className="form-control"
+            />
+            <small className="form-text text-muted">
+              Upload a profile picture (max 5MB, will be compressed)
+            </small>
+          </div>
+        )
+      },
+      {
         label: "User Group",
         name: "user_group",
         type: "select",
@@ -147,6 +236,21 @@ const AllUsers = () => {
         type: "select",
         options: getAvailableUserTypes(selectedGroupId),
         disabled: !selectedGroupId
+      },
+      // Password fields
+      {
+        label: "Password",
+        name: "password",
+        type: "password",
+        helperText: isEditMode ? "Leave blank to keep current password" : "Password must be at least 5 characters",
+        required: !isEditMode
+      },
+      {
+        label: "Confirm Password",
+        name: "confirm_password",
+        type: "password",
+        helperText: "Re-enter your password to confirm",
+        required: !isEditMode
       },
       { label: "Hiring Date", name: "hiringDate", type: "date" },
       { label: "Last Employment Date", name: "lastEmploymentDate", type: "date" },
@@ -218,15 +322,40 @@ const AllUsers = () => {
   const columns = [
     { header: "First Name", accessor: "first_name" },
     { header: "Last Name", accessor: "last_name" },
+    { 
+      header: "Profile",
+      accessor: "profile_image",
+      render: (value, row) => (
+        <div className="user-profile-thumbnail">
+          {value ? (
+            <img 
+              src={value} 
+              alt={`${row.first_name}'s profile`}
+              className="profile-img-small" 
+              style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div className="profile-placeholder" 
+                 style={{ 
+                   width: '40px', 
+                   height: '40px', 
+                   borderRadius: '50%', 
+                   backgroundColor: '#e0e0e0',
+                   display: 'flex',
+                   alignItems: 'center',
+                   justifyContent: 'center',
+                   color: '#666'
+                 }}>
+              {row.first_name?.charAt(0)}{row.last_name?.charAt(0)}
+            </div>
+          )}
+        </div>
+      ),
+    },
     { header: "Username", accessor: "username" },
     { header: "Email", accessor: "email" },
     { header: "Phone", accessor: "phone" },
     { header: "EMP Code", accessor: "emp_code" },
-    { 
-      header: "User Group", 
-      accessor: "UserGroup",
-      render: (value) => value?.common_name || 'N/A'
-    },
     { 
       header: "User Type", 
       accessor: "UserType",
@@ -276,7 +405,15 @@ const AllUsers = () => {
 
   const handleEditSubmit = async (data) => {
     try {
-      await update(itemToEdit.id, data);
+      // Remove the confirm_password field before sending to the API
+      const { confirm_password, ...userDataToUpdate } = data;
+      
+      // If password is empty, don't send it to the API to avoid overwriting with empty string
+      if (!userDataToUpdate.password) {
+        delete userDataToUpdate.password; // Ensure password is not included if blank
+      }
+      
+      await update(itemToEdit.id, userDataToUpdate);
       await refresh();
       toast.success(`User ${data.first_name} updated!`);
       setShowEditPopup(false);
@@ -288,7 +425,10 @@ const AllUsers = () => {
 
   const handleAddUser = async (data) => {
     try {
-      await create(data);
+      // Remove the confirm_password field before sending to the API
+      const { confirm_password, ...userData } = data;
+      
+      await create(userData);
       await refresh();
       addFormMethods.reset();
       toast.success(`User ${data.first_name} added!`);
@@ -337,7 +477,7 @@ const AllUsers = () => {
             fetchAllowedTypes(null);
           }}
         >
-          <FormProvider {...addFormMethods}>
+          <FormProvider {...addFormMethods} isEditing={false}>
             <FormComponent
               fields={getUserFields(addFormMethods)}
               onSubmit={handleAddUser}
@@ -357,7 +497,7 @@ const AllUsers = () => {
             editFormMethods.reset();
           }}
         >
-          <FormProvider {...editFormMethods}>
+          <FormProvider {...editFormMethods} isEditing={true}>
             <FormComponent
               fields={getUserFields(editFormMethods)}
               onSubmit={handleEditSubmit}

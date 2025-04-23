@@ -14,12 +14,31 @@ export const userValidationSchema = Yup.object().shape({
   email: Yup.string()
     .required("Email is required")
     .email("Invalid email address"),
+  password: Yup.string()
+    .when('$isEditing', {
+      is: true,
+      then: () => Yup.string()
+        .notRequired()
+        .test('password-length', 'Password must be at least 5 characters', value => 
+          value === undefined || value === '' || value.length >= 5
+        ),
+      otherwise: () => Yup.string()
+        .required('Password is required')
+        .min(8, 'Password must be at least 8 characters')
+        .matches(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .matches(/[0-9]/, 'Password must contain at least one number'),
+    }),
+  confirm_password: Yup.string()
+    .when('password', {
+      is: (val) => val && val.length > 0,
+      then: () => Yup.string()
+        .required('Confirm password is required')
+        .oneOf([Yup.ref('password')], 'Passwords must match'),
+    }),
   phone: Yup.string()
     .required("Phone number is required")
     .matches(/^\d{10,15}$/, "Phone number must be between 10-15 digits"),
-  password: Yup.string()
-    .notRequired() // Only validate if present
-    .min(8, "Password must be at least 8 characters"),
   emp_code: Yup.string()
     .strip() // This will remove the field from the data before validation
     .nullable(),

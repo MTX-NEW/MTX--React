@@ -21,14 +21,9 @@ exports.getAllVehicles = async (req, res) => {
       nest: true
     });
 
-    const formattedVehicles = vehicles.map(vehicle => ({
-      ...vehicle,
-      assigned_ts: vehicle.assigned_user 
-        ? `${vehicle.assigned_user.first_name} ${vehicle.assigned_user.last_name}`
-        : 'Unassigned'
-    }));
-
-    res.json(formattedVehicles);
+    // Remove the transformation that overwrites assigned_ts
+    // Let the frontend handle display formatting
+    res.json(vehicles);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

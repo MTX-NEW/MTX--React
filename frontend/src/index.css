@@ -60,13 +60,13 @@ body {
   gap: 12px;
   font-size: 14px;
   font-weight: 400;
-  padding: 10px;
+  padding: 12px;
   color: #5A7184;
   /* Default text color */
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
   border-radius: 8px;
-  margin-bottom: 3px;
+  margin-bottom: 5px;
 }
 
 .nav-item .icon {
@@ -1032,6 +1032,69 @@ body {
     transform: translateY(0);
   }
 }*/
+@media (max-width: 576px) {
+  .form-label {
+    font-size: 14px; /* Smaller font size for mobile */
+  }
+  .h4 {
+    font-size: 18px; /* Smaller heading for mobile */
+  }
+}
+
+/* Employee Timesheet Cards Styling */
+.employee-card {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 8px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  overflow: hidden !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  cursor: pointer;
+}
+
+.employee-card:hover {
+ /* transform: translateY(-3px);*/
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.08) !important;
+}
+
+.card-status-header {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.employee-details {
+  flex: 1;
+}
+
+.time-actions {
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Make sure cards maintain good size on wider screens */
+@media (min-width: 1400px) {
+  .col-lg-4 {
+    flex: 0 0 auto;
+    width: 33.33333%;
+    max-width: 420px;
+  }
+  
+  .row {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1700px) {
+  .col-lg-4 {
+    flex: 0 0 auto;
+    width: 25%;
+    max-width: 420px;
+  }
+}
+
 @media (max-width: 576px) {
   .form-label {
     font-size: 14px; /* Smaller font size for mobile */

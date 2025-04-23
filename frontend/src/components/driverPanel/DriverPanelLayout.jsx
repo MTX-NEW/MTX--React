@@ -32,17 +32,16 @@ import {
   faCog,
   faCalendarAlt
 } from '@fortawesome/free-solid-svg-icons';
+import useAuth from '@/hooks/useAuth';
 
 const DriverPanelLayout = () => {
   const [showOffcanvas, setShowOffcanvas] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
-  // Hardcoded user for temporary use - only using the ID
-  const currentUserId = 11;
+  const currentUserId = user?.id;
   
-
-
   const handleOffcanvasToggle = () => {
     setShowOffcanvas(!showOffcanvas);
   };
@@ -199,7 +198,7 @@ const DriverPanelLayout = () => {
         pauseOnHover
       />
       
-      <style jsx>{`
+      <style jsx="true">{`
         /* Mobile optimizations */
         @media (max-width: 576px) {
           :global(.navbar-brand) {

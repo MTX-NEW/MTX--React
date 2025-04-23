@@ -12,17 +12,12 @@ export const useTrip = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log("Fetching trips with filters:", filters);
+      // Pass filters to the API to implement backend filtering
+      const response = await tripApi.getAll(filters);
       
-      // Note: Use API without query params for now since the backend may not support filtering
-      const response = await tripApi.getAll();
-      console.log("Received trips data from API:", response.data?.length || 0, "trips");
-      
-      let filteredData = response.data || [];      
-     // Update trips state with possibly filtered data
-      setTrips(filteredData);
-      console.log("Setting filtered trips:", filteredData.length);
-      return filteredData;
+      // Update trips state with data from API
+      setTrips(response.data || []);
+      return response.data || [];
     } catch (err) {
       console.error('Error fetching trips:', err);
       setError('Failed to load trips. Please try again.');

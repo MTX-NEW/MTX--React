@@ -1,18 +1,52 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import dayjs from 'dayjs';
 
 const useTripFilters = (trips) => {
-  // Current date for default filter
-  const today = dayjs().format('YYYY-MM-DD');
+  // Load initial filter states from localStorage or use defaults
+  const loadFilterFromStorage = (key, defaultValue) => {
+    const storedValue = localStorage.getItem(`tripFilters_${key}`);
+    return storedValue !== null ? JSON.parse(storedValue) : defaultValue;
+  };
 
-  // Filter States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [cityFilter, setCityFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState({ startDate: today, endDate: null });
-  const [statusFilter, setStatusFilter] = useState('');
-  const [tripTypeFilter, setTripTypeFilter] = useState('');
+  // Initialize filter states from localStorage
+  const [searchQuery, setSearchQuery] = useState(loadFilterFromStorage('searchQuery', ''));
+  const [cityFilter, setCityFilter] = useState(loadFilterFromStorage('cityFilter', ''));
+  const [dateFilter, setDateFilter] = useState(loadFilterFromStorage('dateFilter', { startDate: null, endDate: null }));
+  const [statusFilter, setStatusFilter] = useState(loadFilterFromStorage('statusFilter', ''));
+  const [tripTypeFilter, setTripTypeFilter] = useState(loadFilterFromStorage('tripTypeFilter', ''));
+  const [driverFilter, setDriverFilter] = useState(loadFilterFromStorage('driverFilter', ''));
+  const [programFilter, setProgramFilter] = useState(loadFilterFromStorage('programFilter', ''));
 
-  // Extract available cities from trip data for filtering
+  // Save filter changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('tripFilters_searchQuery', JSON.stringify(searchQuery));
+  }, [searchQuery]);
+
+  useEffect(() => {
+    localStorage.setItem('tripFilters_cityFilter', JSON.stringify(cityFilter));
+  }, [cityFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('tripFilters_dateFilter', JSON.stringify(dateFilter));
+  }, [dateFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('tripFilters_statusFilter', JSON.stringify(statusFilter));
+  }, [statusFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('tripFilters_tripTypeFilter', JSON.stringify(tripTypeFilter));
+  }, [tripTypeFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('tripFilters_driverFilter', JSON.stringify(driverFilter));
+  }, [driverFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('tripFilters_programFilter', JSON.stringify(programFilter));
+  }, [programFilter]);
+
+  // Extract available cities from trip data for filter options
   const availableCities = useMemo(() => {
     const cities = new Set();
     
@@ -32,78 +66,52 @@ const useTripFilters = (trips) => {
     return Array.from(cities).sort();
   }, [trips]);
 
-  // Apply filters to trips
-  const filteredTrips = useMemo(() => {
-    return trips.filter(trip => {
-      // Apply search query filter
-      if (searchQuery && !trip.trip_id.toString().includes(searchQuery) && 
-          !(trip.TripMember && (`${trip.TripMember.first_name} ${trip.TripMember.last_name}`).toLowerCase().includes(searchQuery.toLowerCase()))) {
-        return false;
+  // Extract available drivers from trip data for filter options
+  const availableDrivers = useMemo(() => {
+    const drivers = new Map();
+    
+    trips.forEach(trip => {
+      if (trip.legs) {
+        trip.legs.forEach(leg => {
+          if (leg.driver && leg.driver_id) {
+            drivers.set(leg.driver_id, `${leg.driver.first_name} ${leg.driver.last_name}`);
+          }
+        });
       }
-      
-      // Apply city filter
-      if (cityFilter && !(
-        (trip.legs?.some(leg => leg.pickupLocation?.city === cityFilter)) ||
-        (trip.legs?.some(leg => leg.dropoffLocation?.city === cityFilter))
-      )) {
-        return false;
-      }
-      
-      // Apply date filter
-      if (dateFilter.startDate) {
-        const startDate = new Date(dateFilter.startDate);
-        startDate.setHours(0, 0, 0, 0);
-        
-        const endDate = dateFilter.endDate 
-          ? new Date(dateFilter.endDate)
-          : new Date(dateFilter.startDate);
-        endDate.setHours(23, 59, 59, 999);
-        
-        const tripDate = trip.start_date ? new Date(trip.start_date) : null;
-        
-        if (!tripDate || tripDate < startDate || tripDate > endDate) {
-          return false;
-        }
-      }
-      
-      // Apply status filter
-      if (statusFilter && trip.legs) {
-        const hasLegWithStatus = trip.legs.some(leg => leg.status === statusFilter);
-        if (!hasLegWithStatus) {
-          return false;
-        }
-      }
-      
-      // Apply trip type filter
-      if (tripTypeFilter) {
-        // For round trip
-        if (tripTypeFilter === "Round Trip" && !trip.is_round_trip) {
-          return false;
-        }
-        
-        // For multi-stop trips (those with more than 1 leg)
-        if (tripTypeFilter === "Multi-stop" && 
-            (!trip.legs || trip.legs.length <= 1)) {
-          return false;
-        }
-        
-        // For standard trips (1 leg, not round trip)
-        if (tripTypeFilter === "Standard" && 
-            (trip.is_round_trip || (trip.legs && trip.legs.length > 1))) {
-          return false;
-        }
-      }
-      
-      return true;
     });
-  }, [trips, searchQuery, cityFilter, dateFilter, statusFilter, tripTypeFilter]);
+    
+    return Array.from(drivers).map(([id, name]) => ({ id, name }));
+  }, [trips]);
 
-  // Clear filters function
+  // Extract available programs from trip data for filter options
+  const availablePrograms = useMemo(() => {
+    const programs = new Map();
+    
+    trips.forEach(trip => {
+      if (trip.TripMember?.Program && trip.TripMember.program_id) {
+        programs.set(trip.TripMember.program_id, trip.TripMember.Program.program_name);
+        }
+    });
+    
+    return Array.from(programs).map(([id, name]) => ({ id, name }));
+  }, [trips]);
+
+  // Clear filters function - also clear from localStorage
   const clearFilters = () => {
     setCityFilter('');
-    setDateFilter({ startDate: today, endDate: null });
+    setDateFilter({ startDate: null, endDate: null });
     setStatusFilter('');
     setTripTypeFilter('');
+    setDriverFilter('');
+    setProgramFilter('');
+    
+    // Clear localStorage items
+    localStorage.removeItem('tripFilters_cityFilter');
+    localStorage.removeItem('tripFilters_dateFilter');
+    localStorage.removeItem('tripFilters_statusFilter');
+    localStorage.removeItem('tripFilters_tripTypeFilter');
+    localStorage.removeItem('tripFilters_driverFilter');
+    localStorage.removeItem('tripFilters_programFilter');
   };
 
   return {
@@ -117,8 +125,13 @@ const useTripFilters = (trips) => {
     setStatusFilter,
     tripTypeFilter,
     setTripTypeFilter,
+    driverFilter,
+    setDriverFilter,
+    programFilter,
+    setProgramFilter,
     availableCities,
-    filteredTrips,
+    availableDrivers,
+    availablePrograms,
     clearFilters
   };
 };

@@ -18,7 +18,7 @@ import {
   faExclamationTriangle,
   faSignature
 } from '@fortawesome/free-solid-svg-icons';
-//import { useAuth } from '../../contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { useDriverPanel } from '@/hooks/useDriverPanel';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
@@ -34,8 +34,10 @@ const TripDetail = () => {
   const [odometerType, setOdometerType] = useState(''); // 'pickup' or 'dropoff'
   const navigate = useNavigate();
   
-  // Hardcoded user for temporary use
-  const currentUserId = 11;
+  const { user } = useAuth();
+  
+  // Replace hardcoded user ID with authenticated user ID
+  const currentUserId = user?.id;
 
   // Use the driver panel hook
   const { 

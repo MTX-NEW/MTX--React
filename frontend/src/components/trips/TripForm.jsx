@@ -28,7 +28,7 @@ const TripForm = ({
       program_id: '',
       company_id: '',
       schedule_type: 'Once',
-      is_one_way: true,
+      trip_type: 'one_way',
       start_date: dayjs().format('YYYY-MM-DD'),
       return_pickup_time: null,
       legs: [{
@@ -57,7 +57,7 @@ const TripForm = ({
 
   // Watch for changes
   const selectedMemberId = formMethods.watch('member_id');
-  const watchTripType = formMethods.watch('is_one_way');
+  const watchTripType = formMethods.watch('trip_type');
 
   // Initialize from initial data if provided
   useEffect(() => {
@@ -65,8 +65,16 @@ const TripForm = ({
       // Set trip type based on initialData
       if (initialData.is_one_way === true) {
         setTripType('one_way');
+        formMethods.setValue('trip_type', 'one_way');
       } else if (initialData.is_one_way === false) {
         setTripType('round_trip');
+        formMethods.setValue('trip_type', 'round_trip');
+      } else if (initialData.is_one_way === 'multiple') {
+        setTripType('multiple');
+        formMethods.setValue('trip_type', 'multiple');
+      } else if (initialData.trip_type) {
+        // If trip_type is directly provided in initialData
+        setTripType(initialData.trip_type);
       }
 
       // Set leg count
@@ -82,7 +90,7 @@ const TripForm = ({
         }
       }
     }
-  }, [initialData, members]);
+  }, [initialData, members, formMethods]);
 
 
   
@@ -189,12 +197,8 @@ const TripForm = ({
 
   // Handle trip type changes
   useEffect(() => {
-    const newTripType = watchTripType === true ? 'one_way' : 
-                        watchTripType === false ? 'round_trip' : 
-                        'multiple';
-    
+    const newTripType = watchTripType; // This will be 'one_way', 'round_trip', or 'multiple'
     setTripType(newTripType);
-    
     
     // Initialize legs based on trip type
     if (newTripType === 'one_way') {
@@ -334,7 +338,7 @@ const TripForm = ({
   // Now use the optimized useMemo with fewer dependencies
   const tripFields = useMemo(() => {
     const currentScheduleType = formMethods.watch('schedule_type');
-    const currentTripType = formMethods.watch('is_one_way');
+    const currentTripType = formMethods.watch('trip_type');
    // console.log(currentTripType);
     
     const fields = [
@@ -378,17 +382,17 @@ const TripForm = ({
         col: 12
       },
       {
-        name: 'is_one_way',
+        name: 'trip_type',
         label: 'Trip Type',
         type: 'radio',
         options: [
-          { value: true, label: 'One Way' },
-          { value: false, label: 'Round Trip' },
+          { value: 'one_way', label: 'One Way' },
+          { value: 'round_trip', label: 'Round Trip' },
           { value: 'multiple', label: 'Multiple Legs' }
         ],
         required: true,
         col: 12,
-        defaultValue: true
+        defaultValue: 'one_way'
       },
       {
         name: 'start_date',
@@ -472,7 +476,7 @@ const TripForm = ({
     );
     
     // For round trip, add return pickup time
-    if (currentTripType === false) { // Round Trip
+    if (currentTripType === 'round_trip') {
       fields.push(
         {
           heading: 'Return Trip',
@@ -629,14 +633,26 @@ const TripForm = ({
     addLeg, 
     removeLeg,
     formMethods.watch('schedule_type'),
-    formMethods.watch('is_one_way'),
+    formMethods.watch('trip_type'),
     locationOptions,
     memberLocations,
     isLoadingLocations
   ]);
 
   const handleSubmitForm = (data) => {
-    onSubmit(data);
+    // Convert trip_type to is_one_way for backend compatibility
+    const submissionData = { ...data };
+    
+    // Map trip_type to is_one_way for backend compatibility
+    if (data.trip_type === 'one_way') {
+      submissionData.is_one_way = true;
+    } else if (data.trip_type === 'round_trip') {
+      submissionData.is_one_way = false;
+    } else if (data.trip_type === 'multiple') {
+      submissionData.is_one_way = 'multiple';
+    }
+    
+    onSubmit(submissionData);
   };
 
   return (

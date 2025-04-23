@@ -3,6 +3,7 @@ const sequelize = require("../db");
 const UserGroup = require("./UserGroup");
 const UserType = require("./UserType");
 const GroupPermission = require("./GroupPermission");
+const bcrypt = require("bcrypt");
 
 const User = sequelize.define(
   "User",
@@ -30,6 +31,10 @@ const User = sequelize.define(
       allowNull: false,
       unique: true,
     },
+    password: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
     phone: {
       type: DataTypes.STRING(15),
       allowNull: false,
@@ -53,7 +58,7 @@ const User = sequelize.define(
       },
     },
     status: {
-      type: DataTypes.ENUM('Active', 'Inactive', 'Suspended'),
+      type: DataTypes.ENUM('Active', 'Inactive', 'Suspended', 'Pending'),
       defaultValue: 'Active',
     },
     hiringDate: {
@@ -86,6 +91,11 @@ const User = sequelize.define(
       allowNull: true,
       comment: 'Base64 encoded signature image',
     },
+    profile_image: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Base64 encoded or file path to profile image',
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -105,9 +115,21 @@ const User = sequelize.define(
     hooks: {
       beforeCreate: async (user) => {
         await validateUserGroupType(user);
+        
+        // Hash password before saving
+        if (user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, 10);
+        }
       },
       beforeUpdate: async (user) => {
         await validateUserGroupType(user);
+        
+        // Hash password before updating if it has changed
+        if (user.changed('password') && user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, 10);
+        }
       }
     }
   }

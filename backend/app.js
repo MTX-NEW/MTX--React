@@ -25,12 +25,14 @@ const timeSheetBreakRoutes = require("./routes/timesheet_breaks");
 const timeOffRequestRoutes = require("./routes/time_off_requests");
 const driverRoutes = require("./routes/drivers");
 const driverPanelRoutes = require("./routes/driverPanel");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static('public'));  // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
@@ -40,6 +42,7 @@ app.get("/", (req, res) => {
 });
 
 // Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/user-groups", userGroupRoutes);
 app.use("/api/user-types", userTypeRoutes);

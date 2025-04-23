@@ -17,7 +17,7 @@ import {
   faTimes,
   faTachometerAlt
 } from '@fortawesome/free-solid-svg-icons';
-//import { useAuth } from '../../contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { useDriverPanel } from '@/hooks/useDriverPanel';
 import { format, parseISO, isToday, isAfter, isBefore, startOfDay } from 'date-fns';
 import { toast } from 'react-toastify';
@@ -32,11 +32,10 @@ const DriverTrips = () => {
   const [odometerType, setOdometerType] = useState(''); // 'pickup' or 'dropoff'
   const [selectedLegId, setSelectedLegId] = useState(null);
   
-  //const { currentUser } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Hardcoded user for temporary use - only using the ID
-  const currentUserId = 11;
+  const currentUserId = user?.id;
 
   // Use the driver panel hook
   const { 
@@ -288,7 +287,7 @@ const DriverTrips = () => {
           {Object.entries(tripsByDate).map(([dateKey, dateTrips]) => (
             <div key={dateKey} className="mb-3">
               <h6 className="date-separator mb-2">
-                <span className="bg-light px-3 py-1 rounded-pill">
+                <span className="bg-light px-3 py-1 ">
                   <FontAwesomeIcon icon={faCalendarAlt} className="me-2 text-muted" />
                   {formatDate(dateKey)}
                 </span>

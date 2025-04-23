@@ -60,13 +60,7 @@ const Vehicles = () => {
     { 
       label: "Make", 
       name: "make", 
-      type: "select",
-      options: [
-        { label: "Select Make", value: "" },
-        { label: "Dodge", value: "Dodge" },
-        { label: "Hyundai", value: "Hyundai" },
-        { label: "Toyota", value: "Toyota" }
-      ],
+      type: "text",
       validation: { required: "Make is required" }
     },
     { 
@@ -166,7 +160,7 @@ const Vehicles = () => {
     { 
       label: "Assigned TS", 
       name: "assigned_ts", 
-      type: "select",
+      type: "autocomplete",
       options: [
         ...(users?.map(user => ({
           label: `${user.first_name} ${user.last_name} ( ${user.id})`,
@@ -268,9 +262,9 @@ const Vehicles = () => {
       accessor: "assigned_ts",
       width: "15%",
       render: (value, row) => {
-        const user = row.assigned_user || users?.find(u => u.id === value);
-        return user 
-          ? `${user.first_name} ${user.last_name} (${user.id})`
+        const assignedUser = row.assigned_user;
+        return assignedUser 
+          ? `${assignedUser.first_name} ${assignedUser.last_name} (${assignedUser.id})`
           : 'Unassigned';
       }
     },
@@ -355,6 +349,7 @@ const Vehicles = () => {
   };
 
   const handleEdit = (vehicle) => {
+    // We no longer need to fix the assigned_ts since backend doesn't overwrite it
     setItemToEdit(vehicle);
     editFormMethods.reset(vehicle);
     setShowEditPopup(true);
@@ -404,11 +399,23 @@ const Vehicles = () => {
   };
 
   // Filter vehicles based on search
-  const filteredVehicles = vehicles.filter(vehicle =>
-    Object.values(vehicle).some(value =>
-      String(value).toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  const filteredVehicles = vehicles.filter(vehicle => {
+    const searchLower = searchQuery.toLowerCase();
+    
+    // Check if any direct property of the vehicle matches
+    const directMatch = Object.values(vehicle).some(value =>
+      String(value).toLowerCase().includes(searchLower)
+    );
+    
+    // Also check if assigned_user fields match
+    const userMatch = vehicle.assigned_user && (
+      vehicle.assigned_user.first_name?.toLowerCase().includes(searchLower) ||
+      vehicle.assigned_user.last_name?.toLowerCase().includes(searchLower) ||
+      String(vehicle.assigned_user.id).includes(searchLower)
+    );
+    
+    return directMatch || userMatch;
+  });
 
   const handleDocumentUpload = async (event) => {
     const files = event.target.files;

@@ -3,32 +3,41 @@ const sequelize = require("../db");
 
 // Import models
 const UserType = require("./UserType");
+const Page = require("./Page");
 
 const PagePermission = sequelize.define(
   "PagePermission",
   {
-    page_name: {
-      type: DataTypes.STRING(50),
+    permission_id: {
+      type: DataTypes.INTEGER,
       primaryKey: true,
+      autoIncrement: true,
       allowNull: false
+    },
+    page_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'pages',
+        key: 'page_id'
+      }
     },
     type_id: {
       type: DataTypes.INTEGER,
-      primaryKey: true,
+      allowNull: true,
       references: {
         model: 'user_types',
         key: 'type_id'
       }
     },
-
     can_view: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
       defaultValue: 0
     },
     can_edit: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+      type: DataTypes.BOOLEAN, 
+      allowNull: true,
       defaultValue: 0
     }
   },
@@ -38,12 +47,11 @@ const PagePermission = sequelize.define(
     indexes: [
       {
         unique: true,
-        fields: ['page_name', 'type_id']
+        fields: ['page_id', 'type_id']
       }
     ]
   }
 );
-
 
 UserType.belongsToMany(
   sequelize.define(

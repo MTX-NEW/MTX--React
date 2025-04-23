@@ -4,11 +4,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSignature, faUser, faInfoCircle, faExclamationTriangle, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { useDriverPanel } from '@/hooks/useDriverPanel';
 import SignaturePad from '@/components/common/SignaturePad';
+import useAuth from '@/hooks/useAuth';
 
 const DriverSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
-  // Hardcoded user for temporary use
-  const currentUserId = 11;
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [currentDriver, setCurrentDriver] = useState(null);
 
   // Use the driver panel hook

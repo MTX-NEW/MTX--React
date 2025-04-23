@@ -42,8 +42,6 @@ const TripRequests = () => {
     setDateFilter,
     tripTypeFilter,
     setTripTypeFilter,
-    availableCities,
-    filteredTrips,
     clearFilters
   } = useTripFilters(trips);
 
@@ -65,7 +63,8 @@ const TripRequests = () => {
     queryFn: async () => {
       const response = await tripMemberApi.getAll();
       return response.data || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
   // Get programs for dropdown
@@ -74,7 +73,8 @@ const TripRequests = () => {
     queryFn: async () => {
       const response = await programApi.getAll();
       return response.data || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
   // Get companies for dropdown
@@ -83,13 +83,30 @@ const TripRequests = () => {
     queryFn: async () => {
       const response = await programApi.getCompanies();
       return response.data || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
-  // Fetch trips when component mounts
+  // Fetch trips when component mounts with default day filter (today)
   useEffect(() => {
-    fetchTrips();
+    const today = new Date().toISOString().split('T')[0];
+   // setDateFilter({ startDate: today, endDate: today });
+   // fetchTrips({ startDate: today, endDate: today });
   }, []);
+
+  // Fetch trips when filters change explicitly
+  useEffect(() => {
+    const filters = {};
+    
+    if (searchQuery) filters.search = searchQuery;
+    if (cityFilter) filters.city = cityFilter;
+    if (dateFilter.startDate) filters.startDate = dateFilter.startDate;
+    if (dateFilter.endDate) filters.endDate = dateFilter.endDate;
+    if (tripTypeFilter) filters.tripType = tripTypeFilter;
+    
+    // Send the query with whatever filters we have (or none)
+    fetchTrips(filters);
+  }, [searchQuery, cityFilter, dateFilter.startDate, dateFilter.endDate, tripTypeFilter]);
 
   // Fetch member locations when member selected
   const fetchMemberLocations = async (memberId) => {
@@ -188,7 +205,7 @@ const TripRequests = () => {
       
       // Refresh trips list
       console.log("Calling fetchTrips after submit");
-      fetchTrips();
+      fetchTrips(filters);
     } catch (error) {
       console.error(`Failed to ${showEditModal ? 'update' : 'create'} trip`, error);
     }
@@ -225,10 +242,17 @@ const TripRequests = () => {
     
     try {
       await createTrip(tripCopy);
-      fetchTrips();
+      fetchTrips(filters);
     } catch (error) {
       console.error("Failed to copy trip", error);
     }
+  };
+
+  // Custom handler for clearing filters
+  const handleClearFilters = () => {
+    clearFilters();
+    // Fetch all trips when filters are cleared
+    fetchTrips({});
   };
 
   return (
@@ -248,7 +272,7 @@ const TripRequests = () => {
         setDateFilter={setDateFilter}
         tripTypeFilter={tripTypeFilter}
         setTripTypeFilter={setTripTypeFilter}
-        clearFilters={clearFilters}
+        clearFilters={handleClearFilters}
       />
 
       {tripsError ? (
@@ -264,7 +288,7 @@ const TripRequests = () => {
           </div>
         ) : (
         <TripTable 
-          trips={filteredTrips}
+          trips={trips}
           onEdit={handleEditTrip}
           onDelete={deleteTrip}
           onView={handleViewTrip}
@@ -349,7 +373,7 @@ const TripRequests = () => {
               createTrip(processedData)
                 .then(() => {
                   setShowRecreateModal(false);
-                  fetchTrips();
+                  fetchTrips(filters);
                 })
                 .catch(error => {
                   console.error("Failed to recreate trip", error);

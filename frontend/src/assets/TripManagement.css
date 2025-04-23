@@ -43,26 +43,30 @@
   width: 60px;
 }
 
-.trip-management-table th:nth-child(2), /* Clinic */
-.trip-management-table th:nth-child(3), /* Client */
+
+.trip-management-table th:nth-child(3) 
+ {/* Client */
+  width: 95px;
+}
+
 .trip-management-table th:nth-child(10) { /* Driver */
-  width: 110px;
+  width: 90px;
 }
 
 .trip-management-table th:nth-child(4) { /* Phone */
-  width: 90px;
+  width: 86px;
 }
 
 .trip-management-table th:nth-child(5), /* Pickup Address */
 .trip-management-table th:nth-child(12) { /* Drop Address */
-  width: 150px;
+  width: 180px;
 }
 
 .trip-management-table th:nth-child(6), /* R/U */
 .trip-management-table th:nth-child(7), /* P/U */
 .trip-management-table th:nth-child(8), /* APPT */
 .trip-management-table th:nth-child(9) { /* D/O */
-  width: 60px;
+  width: 65px;
 }
 
 .trip-management-table th:nth-child(11) { /* Status */
@@ -682,4 +686,78 @@
     font-size: 0.875rem;
     padding: 0.375rem 0;
   }
-} 
+}
+
+/* Add styles for the clinic column */
+.clinic-cell {
+  width: 45px;
+  max-width: 45px;
+  text-align: center;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clinic-header {
+  width: 50px;
+  max-width: 50px;
+}
+
+/* Driver ID styles */
+.driver-id {
+  font-weight: 500;
+  background-color: rgba(59, 130, 246, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Tooltip styles */
+.driver-tooltip,
+.clinic-tooltip,
+.address-tooltip {
+  --rt-color-white: #fff !important;
+  --rt-color-dark: #333 !important;
+  --rt-opacity: 1 !important;
+  --rt-transition-show-delay: 0.15s !important;
+  --rt-transition-closing-delay: 0.15s !important;
+  background-color: var(--rt-color-white) !important;
+  color: var(--rt-color-dark) !important;
+  border: 1px solid #ddd !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+  max-width: 300px !important;
+  opacity: 1 !important;
+  z-index: 1000 !important;
+}
+
+/* Different transition for address tooltips */
+.address-tooltip {
+  --rt-transition-show-delay: 0.3s !important;
+}
+
+.driver-tooltip .driver-tooltip-content,
+.clinic-tooltip .clinic-tooltip-content,
+.address-tooltip .address-tooltip-content {
+  line-height: 1.4;
+  padding: 10px;
+  text-align: left;
+}
+
+.address-tooltip .address-tooltip-content {
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+/* Sortable Header Styles */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.sortable-header:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Table Cell Styling */ 

@@ -10,15 +10,18 @@ import {
   Paper, 
   Container,
   Grid,
-  CircularProgress
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import useAuth from '../../hooks/useAuth';
 import logo from '../../assets/logo.png';
 import './Login.css';
+import { isAuthenticated } from '@/utils/authUtils';
 
 // Validation schema for login form
 const loginSchema = yup.object().shape({
@@ -28,8 +31,16 @@ const loginSchema = yup.object().shape({
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState(null);
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
+  
+  // Redirect if user is already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated()) {
+      navigate('/');
+    }
+  }, [navigate]);
 
   // Form configuration using react-hook-form with yup validation
   const { register, handleSubmit, formState: { errors } } = useForm({
@@ -43,20 +54,13 @@ const Login = () => {
 
   // Handle form submission
   const onSubmit = async (data) => {
-    setIsLoading(true);
     try {
-      // Simulate API call with timeout
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Here you would typically make an API call to authenticate
-      console.log('Login data:', data);
-      
-      // For now, just navigate to home page as a placeholder
+      setLoginError(null);
+      await login(data.username, data.password);
       navigate('/');
     } catch (error) {
       console.error('Login error:', error);
-    } finally {
-      setIsLoading(false);
+      setLoginError(error.message);
     }
   };
 
@@ -146,6 +150,12 @@ const Login = () => {
               Welcome <span style={{ color: '#4caf50' }}>Back</span>
             </Typography>
           </Box>
+
+          {loginError && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {loginError}
+            </Alert>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <Box sx={{ mb: 3 }}>
@@ -238,9 +248,9 @@ const Login = () => {
               type="submit"
               fullWidth
               variant="contained"
-              disabled={isLoading}
+              disabled={loading}
               aria-label="Sign in to your account"
-              aria-busy={isLoading}
+              aria-busy={loading}
               sx={{
                 mt: 2,
                 mb: 3,
@@ -261,14 +271,15 @@ const Login = () => {
                 }
               }}
             >
-              {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign in'}
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign in'}
             </Button>
 
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="textSecondary">
                 No account?{' '}
                 <Link 
-                  href="#" 
+                  component={RouterLink}
+                  to="/register"
                   underline="none" 
                   sx={{ 
                     fontWeight: 600,

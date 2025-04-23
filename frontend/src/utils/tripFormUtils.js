@@ -1,3 +1,5 @@
+import { getCurrentUserId } from './authUtils';
+
 /**
  * Helper function to format time
  * @param {string} timeString - The time string in HH:MM format
@@ -37,7 +39,7 @@ export const processTripFormData = (data) => {
   // Create a copy to avoid mutating the original data
   const processedData = {
     ...data,
-    created_by: 9 // TEMP FIX: Replace with actual user ID in production (was 1)
+    created_by: getCurrentUserId() // Get current user ID from authentication
   };
   
   // Convert values
@@ -46,14 +48,24 @@ export const processTripFormData = (data) => {
   }
   
   // Convert trip_type from UI format to database format
-  if (processedData.is_one_way === true || processedData.is_one_way === "true") {
+  if (processedData.trip_type === 'one_way') {
+    processedData.trip_type = 'Standard';
+    processedData.is_one_way = true; // Keep for backward compatibility
+  } else if (processedData.trip_type === 'round_trip') {
+    processedData.trip_type = 'Round Trip';
+    processedData.is_one_way = false; // Keep for backward compatibility
+  } else if (processedData.trip_type === 'multiple') {
+    processedData.trip_type = 'Multi-stop';
+    processedData.is_one_way = 'multiple'; // Keep for backward compatibility
+  }
+  // For backward compatibility - process is_one_way if it exists but trip_type doesn't
+  else if (processedData.is_one_way === true || processedData.is_one_way === "true") {
     processedData.trip_type = 'Standard';
   } else if (processedData.is_one_way === false || processedData.is_one_way === "false") {
     processedData.trip_type = 'Round Trip';
   } else if (processedData.is_one_way === 'multiple') {
     processedData.trip_type = 'Multi-stop';
   }
-  delete processedData.is_one_way; // Remove the UI-specific field
   
   // Create special instructions object from checkbox arrays
   const special_instructions = {
@@ -138,11 +150,27 @@ export const prepareTripForEdit = (trip) => {
   
   // Set trip type state based on database trip_type
   if (tripToEdit.trip_type === 'one_way' || tripToEdit.trip_type === 'Standard') {
-    tripToEdit.is_one_way = true;
+    tripToEdit.trip_type = 'one_way';
+    tripToEdit.is_one_way = true; // Keep for backward compatibility
   } else if (tripToEdit.trip_type === 'round_trip' || tripToEdit.trip_type === 'Round Trip') {
-    tripToEdit.is_one_way = false;
+    tripToEdit.trip_type = 'round_trip';
+    tripToEdit.is_one_way = false; // Keep for backward compatibility
   } else if (tripToEdit.trip_type === 'multi-stop' || tripToEdit.trip_type === 'Multi-stop') {
-    tripToEdit.is_one_way = 'multiple';
+    tripToEdit.trip_type = 'multiple';
+    tripToEdit.is_one_way = 'multiple'; // Keep for backward compatibility
+  }
+  // Handle cases where we have is_one_way but no trip_type
+  else if (tripToEdit.is_one_way === true) {
+    tripToEdit.trip_type = 'one_way';
+  } else if (tripToEdit.is_one_way === false) {
+    tripToEdit.trip_type = 'round_trip';
+  } else if (tripToEdit.is_one_way === 'multiple') {
+    tripToEdit.trip_type = 'multiple';
+  }
+  // Default to one_way if no trip type info available
+  else {
+    tripToEdit.trip_type = 'one_way';
+    tripToEdit.is_one_way = true;
   }
   
   // Create client requirements array from special instructions boolean values
@@ -243,7 +271,7 @@ export const prepareTripForEdit = (trip) => {
     });
     
     // Handle round trip separately - extract return leg
-    if ((tripToEdit.trip_type === 'round_trip' || tripToEdit.trip_type === 'Round Trip') && sortedLegs.length > 1) {
+    if ((tripToEdit.trip_type === 'round_trip') && sortedLegs.length > 1) {
       const firstLeg = sortedLegs[0];
       const returnLeg = sortedLegs[1];
       

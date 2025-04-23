@@ -137,4 +137,61 @@ exports.getDrivers = async (req, res) => {
     console.error('Error fetching drivers:', error);
     res.status(500).json({ message: error.message });
   }
+};
+
+// Approve a pending user
+exports.approveUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findByPk(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    if (user.status !== 'Pending') {
+      return res.status(400).json({ message: "User is not in pending status" });
+    }
+    
+    // Update user with additional data and change status to Active
+    const updatedData = {
+      ...req.body,
+      status: 'Active'
+    };
+    
+    await user.update(updatedData);
+    
+    // Fetch the updated user with relationships
+    const approvedUser = await User.findByPk(userId, {
+      include: [
+        { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] }
+      ]
+    });
+    
+    res.json({
+      message: "User approved successfully",
+      user: approvedUser
+    });
+  } catch (error) {
+    console.error("Error approving user:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get pending users
+exports.getPendingUsers = async (req, res) => {
+  try {
+    const pendingUsers = await User.findAll({
+      where: { status: 'Pending' },
+      include: [
+        { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] }
+      ]
+    });
+    res.json(pendingUsers);
+  } catch (error) {
+    console.error("Error fetching pending users:", error);
+    res.status(500).json({ message: error.message });
+  }
 }; 

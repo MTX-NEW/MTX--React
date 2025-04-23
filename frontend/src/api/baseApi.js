@@ -2,6 +2,12 @@ import axios from 'axios';
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Set up axios interceptor to include auth token in requests
+const token = localStorage.getItem('token');
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+
 const createApiService = (endpoint) => {
   const API_URL = `${API_BASE_URL}/api/${endpoint}`;
 
@@ -22,6 +28,14 @@ const createApiService = (endpoint) => {
 };
 
 export const createApi = createApiService;
+
+// Auth API service
+export const authApi = {
+  login: (username, password) => 
+    axios.post(`${API_BASE_URL}/api/auth/login`, { username, password }),
+  getCurrentUser: () => 
+    axios.get(`${API_BASE_URL}/api/auth/me`)
+};
 
 export const userApi = createApiService('users');
 
@@ -125,19 +139,33 @@ export const pagePermissionsApi = createApiService('page-permissions');
 
 // Add custom methods to pagePermissionsApi
 Object.assign(pagePermissionsApi, {
-  getByPage: (pageName) => 
-    axios.get(`${API_BASE_URL}/api/page-permissions/by-page/${encodeURIComponent(pageName)}`),
-  updatePagePermissions: (pageName, permissions) => 
-    axios.post(`${API_BASE_URL}/api/page-permissions/by-page/${encodeURIComponent(pageName)}`, {
-      permissions: permissions.map(p => ({
-        type_id: p.type_id,
-        page_name: pageName,
-        can_view: p.can_view ? 1 : 0,
-        can_edit: p.can_edit ? 1 : 0
-      }))
-    }),
-  validatePermission: (pageName, typeId) => 
-    axios.get(`${API_BASE_URL}/api/page-permissions/validate/${encodeURIComponent(pageName)}/${typeId}`)
+  getAllPages: () => 
+    axios.get(`${API_BASE_URL}/api/page-permissions/pages`),
+  getAllPermissions: () =>
+    axios.get(`${API_BASE_URL}/api/page-permissions`),
+  syncPages: () =>
+    axios.post(`${API_BASE_URL}/api/page-permissions/sync-pages`),
+  getByPage: (pageId) => 
+    axios.get(`${API_BASE_URL}/api/page-permissions/by-page/${pageId}`),
+  updatePagePermissions: (pageId, permissions) => {
+    // Extract only the necessary fields for each permission to reduce payload size
+    const minimalPermissions = permissions.map(perm => ({
+      permission_id: perm.permission_id,
+      page_id: perm.page_id,
+      type_id: perm.type_id,
+      can_view: perm.can_view,
+      can_edit: perm.can_edit
+    }));
+    
+    // Use the page ID from the first permission if available, otherwise use the provided pageId
+    const actualPageId = (permissions[0] && permissions[0].page_id) || pageId;
+    
+    return axios.post(`${API_BASE_URL}/api/page-permissions/by-page/${actualPageId}`, {
+      permissions: minimalPermissions
+    });
+  },
+  validatePermission: (pageId, typeId) => 
+    axios.get(`${API_BASE_URL}/api/page-permissions/validate/${pageId}/${typeId}`)
 });
 
 export const documentsApi = {

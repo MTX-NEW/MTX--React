@@ -20,9 +20,10 @@ export const tripSchema = yup.object().shape({
   }),
   appt_time: yup.string().nullable(),
   pickup_time: yup.string().required('Pickup time is required'),
-  is_one_way: yup.boolean(),
-  return_pickup_time: yup.string().when('is_one_way', {
-    is: false,
+  trip_type: yup.string().required('Trip type is required'),
+  is_one_way: yup.mixed(),
+  return_pickup_time: yup.string().when('trip_type', {
+    is: 'round_trip',
     then: () => yup.string().required('Return pickup time is required for round trips'),
     otherwise: () => yup.string().nullable()
   }),

@@ -86,7 +86,7 @@ const StatusUpdateActions = ({
               key={nextStatus}
               variant={btnVariant}
               size={buttonSize}
-              className={`py-1 px-3 rounded-pill ${btnClass}`}
+              className={`py-1 px-3 ${btnClass}`}
               onClick={() => onStatusChange(nextStatus)}
               disabled={isLoading}
             >

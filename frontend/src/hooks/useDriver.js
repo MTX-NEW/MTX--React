@@ -11,9 +11,7 @@ export const useDriver = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching drivers from driverApi...');
       const response = await driverApi.getAll();
-      console.log('Drivers data received:', response.data);
       
       // Format driver data if needed
       const formattedDrivers = response.data.map(driver => ({
@@ -46,7 +44,6 @@ export const useDriver = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Assigning driver to leg:', legId, driverId);
       const response = await tripLegApi.assignDriver(legId, driverId);
       
       // Refresh drivers list after assignment

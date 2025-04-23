@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import DatePicker from '@/components/DatePicker';
 import dayjs from 'dayjs';
 import { Autocomplete, TextField } from '@mui/material';
@@ -16,68 +16,14 @@ const TripRequestFilters = ({
   // Filter handlers
   const handleCityFilterChange = (city) => {
     setCityFilter(city);
-    // Save to session storage
-    sessionStorage.setItem('requestCityFilter', city || '');
   };
 
   const handleDateFilterChange = (startDate, endDate = null) => {
-    const newDateFilter = { startDate, endDate };
-    setDateFilter(newDateFilter);
-    
-    // Save to session storage
-    sessionStorage.setItem('requestDateFilter', JSON.stringify(newDateFilter));
+    setDateFilter({ startDate, endDate });
   };
 
   const handleTripTypeFilterChange = (type) => {
     setTripTypeFilter(type);
-    // Save to session storage
-    sessionStorage.setItem('requestTripTypeFilter', type || '');
-  };
-
-  // Load saved filters from sessionStorage on component mount
-  useEffect(() => {
-    // Try to load saved filters from session storage
-    const savedDateFilter = sessionStorage.getItem('requestDateFilter');
-    const savedTripTypeFilter = sessionStorage.getItem('requestTripTypeFilter');
-    const savedCityFilter = sessionStorage.getItem('requestCityFilter');
-    
-    // Apply saved date filter or default to today
-    if (savedDateFilter) {
-      try {
-        const parsedDateFilter = JSON.parse(savedDateFilter);
-        setDateFilter(parsedDateFilter);
-      } catch (e) {
-        console.error('Error parsing saved date filter:', e);
-        // Set today as fallback if no date filter
-        if (!dateFilter.startDate) {
-          const today = dayjs().format('YYYY-MM-DD');
-          handleDateFilterChange(today);
-        }
-      }
-    } else if (!dateFilter.startDate) {
-      // No saved filter and no current date, set to today
-      const today = dayjs().format('YYYY-MM-DD');
-      handleDateFilterChange(today);
-    }
-    
-    // Apply saved trip type filter
-    if (savedTripTypeFilter) {
-      setTripTypeFilter(savedTripTypeFilter);
-    }
-    
-    // Apply saved city filter
-    if (savedCityFilter) {
-      setCityFilter(savedCityFilter);
-    }
-  }, []);
-
-  // Override the clear filters function to also clear session storage
-  const handleClearFilters = () => {
-    clearFilters();
-    // Clear session storage
-    sessionStorage.removeItem('requestDateFilter');
-    sessionStorage.removeItem('requestTripTypeFilter');
-    sessionStorage.removeItem('requestCityFilter');
   };
 
   return (
@@ -149,7 +95,7 @@ const TripRequestFilters = ({
           <div className="col-md-1 d-flex align-items-end">
             <button
               className="btn btn-outline-secondary w-100"
-              onClick={handleClearFilters}
+              onClick={clearFilters}
             >
               <i className="material-icons small me-1"></i>
               Clear

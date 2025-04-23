@@ -14,7 +14,7 @@ import {
 
 const DynamicTable = ({
   columns,
-  data,
+  data = [],
   onDelete,
   onEdit,
   customActions,
@@ -29,7 +29,7 @@ const DynamicTable = ({
   const [page, setPage] = React.useState(1);
   const rowsPerPage = 10; 
 
-  const paginatedData = data.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const paginatedData = Array.isArray(data) ? data.slice((page - 1) * rowsPerPage, page * rowsPerPage) : [];
 
   const handleDeleteClick = (item) => {
     setSelectedItem(item);
@@ -59,7 +59,7 @@ const DynamicTable = ({
                 Loading...
               </td>
             </tr>
-          ) : paginatedData.length === 0 ? (
+          ) : !Array.isArray(data) || paginatedData.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="text-center py-4">
                 No data available
@@ -99,7 +99,7 @@ const DynamicTable = ({
       {/*   */}
       <Box display="flex" justifyContent="center" mt={2}>
         <Pagination
-          count={Math.ceil(data.length / rowsPerPage)}
+          count={Math.ceil((Array.isArray(data) ? data.length : 0) / rowsPerPage)}
           page={page}
           onChange={(event, value) => setPage(value)}
           color="primary"

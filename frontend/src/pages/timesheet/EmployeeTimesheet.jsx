@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import useEmployeeTimesheet from '@/pages/timesheet/hooks/useEmployeeTimesheet';
+import useEmployeeTimesheet from '@/hooks/useEmployeeTimesheet';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 
 const EmployeeTimesheet = () => {
@@ -193,24 +193,18 @@ const EmployeeTimesheet = () => {
     return (
       <div className="row g-4">
         {filteredEmployees.map((employee) => (
-          <div key={employee.id} className="col-lg-4 col-md-6">
+          <div key={employee.id} className="col-xl-4 col-lg-4 col-md-6">
             <div 
-              className="card h-100 border-0 rounded-lg shadow-sm employee-card transition-all hover:shadow-md" 
+              className="card h-100 border-0 rounded-lg shadow-sm employee-card" 
               onClick={(e) => handleCardClick(employee.id, e)}
-              style={{ 
-                cursor: 'pointer',
-                transition: 'all 0.2s ease-in-out',
-                overflow: 'hidden' 
-              }}
             >
               {/* Card Status Header */}
               <div 
-                className={`card-status-header py-1 px-3 text-white d-flex justify-content-between align-items-center ${
+                className={`card-status-header py-2 px-3 text-white d-flex justify-content-between align-items-center ${
                   employee.status === 'clocked_in' ? 'bg-success' : 
                   employee.status === 'on_break' ? 'bg-warning' : 
                   employee.status === 'clocked_out' ? 'bg-secondary' : 'bg-light text-dark'
                 }`}
-                style={{ fontSize: '0.8rem' }}
               >
                 <span>
                   {employee.status === 'clocked_in' ? 'Clocked In' : 
@@ -237,7 +231,7 @@ const EmployeeTimesheet = () => {
                       }}
                     />
                   </div>
-                  <div className="d-flex flex-column justify-content-center">
+                  <div className="d-flex flex-column justify-content-center employee-details">
                     <h5 className="card-title fw-bold mb-1">
                       {employee.first_name} {employee.last_name}
                     </h5>
@@ -374,7 +368,7 @@ const EmployeeTimesheet = () => {
   };
 
   return (
-    <div className="container-fluid p-4">
+    <div className="container-fluid py-4 px-3 px-lg-4">
       <ToastContainer position="top-right" autoClose={3000} />
       
       {/* Confirmation Dialog */}
@@ -411,7 +405,7 @@ const EmployeeTimesheet = () => {
         </div>
       </div>
       
-      <div className="bg-white p-4 rounded shadow-sm">
+      <div className="bg-white p-3 p-lg-4 rounded shadow-sm">
         {renderEmployeeCards()}
       </div>
     </div>

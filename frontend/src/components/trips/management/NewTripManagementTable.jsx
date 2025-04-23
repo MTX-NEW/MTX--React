@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faEye, faUser, faArrowDown, faArrowUp, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faEye, faUser, faArrowDown, faArrowUp, faCheck, faSortDown, faSortUp, faSort } from '@fortawesome/free-solid-svg-icons';
+import { Tooltip } from 'react-tooltip';
 import RightSidebarPopup from '@/components/RightSidebarPopup';
 import TripStatusPopup from '../TripStatusPopup';
 import TripTimePopup from '../TripTimePopup';
@@ -10,6 +11,7 @@ import { useDriver } from '@/hooks/useDriver';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import '@/assets/TripManagement.css';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const NewTripManagementTable = ({ 
   trips, 
@@ -18,7 +20,8 @@ const NewTripManagementTable = ({
   isLoading,
   onUpdateStatus,
   onUpdateTime,
-  onAddLeg
+  onAddLeg,
+  driversData
 }) => {
   // State for managing the popups
   const [showStatusPopup, setShowStatusPopup] = useState(false);
@@ -29,14 +32,11 @@ const NewTripManagementTable = ({
   const [currentStatus, setCurrentStatus] = useState('');
   const [currentTime, setCurrentTime] = useState('');
   const [currentDriverId, setCurrentDriverId] = useState('');
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState([]);
 
   // Get driver functionality from hook
   const { assignDriverToLeg, loading: driverLoading, error: driverError } = useDriver();
-
-  // Add console log to debug the API data
-  useEffect(() => {
-    console.log('Trip data from API:', trips);
-  }, [trips]);
 
   // Log any driver errors
   useEffect(() => {
@@ -80,20 +80,30 @@ const NewTripManagementTable = ({
 
   const handleDriverSubmit = async (legId, driverId) => {
     try {
-     
-      // First assign the driver (the backend will automatically set status to "Assigned")
+      console.log(`Assigning driver ${driverId} to leg ${legId}`);
+      
+      // Call optimistic update through the parent component
+      // No need to try to get driver info here, TripManagement component will handle that
+      if (onUpdateStatus) {
+        onUpdateStatus(legId, { 
+          type: 'driver',
+          driverId: driverId
+        });
+      }
+      
+      // In parallel, make the actual API call
       await assignDriverToLeg(legId, driverId);
       
       // Show success message
       toast.success(`Driver ${driverId ? 'assigned' : 'removed'} successfully`);
-      
-      // Refresh the data using the parent's onUpdateStatus method
-      if (onUpdateStatus) {
-        onUpdateStatus(legId, 'refresh');
-      }
     } catch (error) {
       console.error('Error assigning driver:', error);
       toast.error('Failed to assign driver. Please try again.');
+      
+      // On error, refresh the data to recover
+      if (onUpdateStatus) {
+        onUpdateStatus(legId, 'refresh');
+      }
     } finally {
       setShowDriverPopup(false);
     }
@@ -191,11 +201,157 @@ const NewTripManagementTable = ({
     }
   };
 
+  // Helper to get program initials
+  const getProgramInitials = (programName) => {
+    if (!programName || programName === 'N/A') return 'N/A';
+    
+    return programName
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .join('');
+  };
+
+  // Sorting functions
+  const handleSort = (column) => {
+    // Check if the column is already in sort config
+    const existingIndex = sortConfig.findIndex(item => item.column === column);
+    let newSortConfig = [...sortConfig];
+
+    if (existingIndex !== -1) {
+      // If it's already the first one and not desc, toggle direction
+      if (existingIndex === 0) {
+        if (newSortConfig[0].direction === 'asc') {
+          newSortConfig[0].direction = 'desc';
+        } else {
+          // If already desc, remove it from sort
+          newSortConfig.splice(0, 1);
+        }
+      } else {
+        // If not the first one, move it to first position and set to asc
+        const item = newSortConfig.splice(existingIndex, 1)[0];
+        item.direction = 'asc';
+        newSortConfig.unshift(item);
+      }
+    } else {
+      // If not in config, add it as first with asc direction
+      newSortConfig.unshift({ column, direction: 'asc' });
+    }
+
+    // Only keep up to 3 sort columns
+    if (newSortConfig.length > 3) {
+      newSortConfig = newSortConfig.slice(0, 3);
+    }
+
+    setSortConfig(newSortConfig);
+  };
+
+  // Get sort direction for a column
+  const getSortDirection = (column) => {
+    const index = sortConfig.findIndex(item => item.column === column);
+    if (index === -1) return null;
+    return sortConfig[index].direction;
+  };
+
+  // Get sort indicator icon for a column
+  const getSortIcon = (column) => {
+    const direction = getSortDirection(column);
+    if (!direction) return <FontAwesomeIcon icon={faSort} className="ms-1 text-muted" />;
+    return direction === 'asc' 
+      ? <FontAwesomeIcon icon={faSortUp} className="ms-1" /> 
+      : <FontAwesomeIcon icon={faSortDown} className="ms-1" />;
+  };
+
+  // Sort trips and legs by the configuration
+  const getSortedTripsWithLegs = () => {
+    if (sortConfig.length === 0) return trips;
+
+    // Create a copy of trips to sort
+    let sortedTrips = [...trips];
+
+    // Map to store trip ID -> trip for easy lookup
+    const tripsMap = new Map();
+    sortedTrips.forEach(trip => tripsMap.set(trip.trip_id, trip));
+
+    // Flatten trips into legs with trip info
+    let legsWithTripInfo = [];
+    sortedTrips.forEach(trip => {
+      const legs = trip.legs || [];
+      legs.forEach(leg => {
+        legsWithTripInfo.push({
+          ...leg,
+          tripId: trip.trip_id,
+          programName: trip.TripMember?.Program?.program_name || 'N/A',
+          clientName: trip.TripMember ? `${trip.TripMember.first_name} ${trip.TripMember.last_name}` : 'N/A',
+          phoneNumber: trip.TripMember?.phone || leg.pickupLocation?.phone || 'N/A',
+        });
+      });
+    });
+
+    // Sort legs based on sortConfig
+    legsWithTripInfo.sort((a, b) => {
+      // Apply each sort config in order
+      for (const { column, direction } of sortConfig) {
+        let comparison = 0;
+        
+        switch (column) {
+          case 'tripId':
+            // Compare numeric trip IDs
+            comparison = a.tripId - b.tripId;
+            break;
+          case 'scheduledPickup':
+            // Compare pickup times as minutes
+            const aPickup = parseTimeAsMinutes(a.scheduled_pickup) || 0;
+            const bPickup = parseTimeAsMinutes(b.scheduled_pickup) || 0;
+            comparison = aPickup - bPickup;
+            break;
+          case 'scheduledDropoff':
+            // Compare dropoff times as minutes
+            const aDropoff = parseTimeAsMinutes(a.scheduled_dropoff) || 0;
+            const bDropoff = parseTimeAsMinutes(b.scheduled_dropoff) || 0;
+            comparison = aDropoff - bDropoff;
+            break;
+          default:
+            comparison = 0;
+        }
+        
+        // If this criteria yields a difference, return the result with direction applied
+        if (comparison !== 0) {
+          return direction === 'asc' ? comparison : -comparison;
+        }
+      }
+      
+      // If all criteria are equal, maintain original order by sequence
+      return a.sequence - b.sequence;
+    });
+
+    // Rebuild trips from sorted legs
+    const sortedTripsMap = new Map();
+    
+    legsWithTripInfo.forEach(leg => {
+      const tripId = leg.tripId;
+      
+      if (!sortedTripsMap.has(tripId)) {
+        // Create a new trip entry with the original trip data
+        sortedTripsMap.set(tripId, {
+          ...tripsMap.get(tripId),
+          legs: []
+        });
+      }
+      
+      // Add this leg to the trip's legs
+      sortedTripsMap.get(tripId).legs.push(leg);
+    });
+    
+    // Convert map back to array
+    return Array.from(sortedTripsMap.values());
+  };
+
   // Function to render the table rows
   const renderTableRows = () => {
     let rows = [];
+    const sortedTrips = getSortedTripsWithLegs();
     
-    trips.forEach((trip) => {
+    sortedTrips.forEach((trip) => {
       // If the trip has legs, show them
       const legs = trip.legs || [];
       
@@ -204,6 +360,7 @@ const NewTripManagementTable = ({
       
       // Get program name from TripMember.Program if available
       const programName = trip.TripMember?.Program?.program_name || 'N/A';
+      const programInitials = getProgramInitials(programName);
       
       // Get client name
       const clientName = trip.TripMember ? `${trip.TripMember.first_name} ${trip.TripMember.last_name}` : 'N/A';
@@ -232,10 +389,18 @@ const NewTripManagementTable = ({
               {isFirstLeg ? trip.trip_id : ''}
               <span className="leg-sequence">#{leg.sequence}</span>
             </td>
-            <td className={statusClass}>{programName}</td>
+            <td 
+              className={`clinic-cell ${statusClass}`} 
+              data-tooltip-id={`clinic-tooltip-${trip.trip_id}-${leg.leg_id}`}
+            >
+              {programInitials}
+            </td>
             <td className={statusClass}>{clientName}</td>
             <td className={statusClass}>{phoneNumber}</td>
-            <td className={statusClass}>
+            <td 
+              className={statusClass}
+              data-tooltip-id={`pickup-address-tooltip-${leg.leg_id}`}
+            >
               {leg.pickupLocation ? 
                 `${leg.pickupLocation.street_address}, ${leg.pickupLocation.city}, ${leg.pickupLocation.state} ${leg.pickupLocation.zip}` 
                 : 'N/A'
@@ -270,9 +435,13 @@ const NewTripManagementTable = ({
             <td 
               className={`driver-cell clickable ${statusClass}`} 
               onClick={() => handleDriverClick(leg)}
-              title="Click to assign driver"
+              data-tooltip-id={`driver-tooltip-${leg.leg_id}`}
             >
-              {leg.driver ? `${leg.driver.first_name} ${leg.driver.last_name}` : <FontAwesomeIcon icon={faUser} className="text-muted" />}
+              {leg.driver ? (
+                <span className="driver-id">#{leg.driver.id}</span>
+              ) : (
+                <FontAwesomeIcon icon={faUser} className="text-muted" />
+              )}
             </td>
             <td 
               className={`status-cell clickable ${statusClass}`} 
@@ -280,14 +449,16 @@ const NewTripManagementTable = ({
             >
               {leg.status || 'Scheduled'}
             </td>
-            <td className={statusClass}>
+            <td 
+              className={statusClass}
+              data-tooltip-id={`dropoff-address-tooltip-${leg.leg_id}`}
+            >
               {leg.dropoffLocation ? 
                 `${leg.dropoffLocation.street_address}, ${leg.dropoffLocation.city}, ${leg.dropoffLocation.state} ${leg.dropoffLocation.zip}${leg.dropoffLocation.phone ? ` • Ph: ${leg.dropoffLocation.phone}` : ''}` 
                 : 'N/A'
               }
             </td>
             <td className="action-cell">
-
               <Button 
                 variant="outline-primary"
                 size="sm"
@@ -342,16 +513,22 @@ const NewTripManagementTable = ({
         <Table hover responsive className="mb-0">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Clinic</th>
+              <th onClick={() => handleSort('tripId')} className="sortable-header">
+                # {getSortIcon('tripId')}
+              </th>
+              <th className="clinic-header">Clinic</th>
               <th>Client</th>
               <th>Phone</th>
               <th>Pickup Address</th>
-              <th>R/U</th>
+              <th onClick={() => handleSort('scheduledPickup')} className="sortable-header">
+                R/U {getSortIcon('scheduledPickup')}
+              </th>
               <th>P/U</th>
-              <th>APPT</th>
+              <th onClick={() => handleSort('scheduledDropoff')} className="sortable-header">
+                APPT {getSortIcon('scheduledDropoff')}
+              </th>
               <th>D/O</th>
-              <th>Driver</th>
+              <th>TS</th>
               <th>Status</th>
               <th>Drop Address</th>
               <th>Action</th>
@@ -416,6 +593,99 @@ const NewTripManagementTable = ({
             currentDriverId={currentDriverId}
           />
         </RightSidebarPopup>
+      )}
+
+      {/* Add tooltip components for each leg */}
+      {trips.flatMap(trip => 
+        (trip.legs || []).map(leg => (
+          leg.driver && 
+          <Tooltip 
+            key={`tooltip-component-${leg.leg_id}`}
+            id={`driver-tooltip-${leg.leg_id}`}
+            className="driver-tooltip"
+            place="top"
+          >
+            <div className="driver-tooltip-content">
+              <strong>{leg.driver.first_name} {leg.driver.last_name}</strong>
+              {leg.driver.phone && (
+                <>
+                  <br />
+                  <span>{leg.driver.phone}</span>
+                </>
+              )}
+            </div>
+          </Tooltip>
+        ))
+      )}
+
+      {/* Add tooltips for clinics */}
+      {trips.flatMap(trip => 
+        (trip.legs || []).map(leg => (
+          <Tooltip 
+            key={`clinic-tooltip-component-${trip.trip_id}-${leg.leg_id}`}
+            id={`clinic-tooltip-${trip.trip_id}-${leg.leg_id}`}
+            className="clinic-tooltip"
+            place="top"
+          >
+            <div className="clinic-tooltip-content">
+              <strong>Program:</strong> {trip.TripMember?.Program?.program_name || 'N/A'}
+            </div>
+          </Tooltip>
+        ))
+      )}
+
+      {/* Add tooltips for pickup addresses */}
+      {trips.flatMap(trip => 
+        (trip.legs || []).map(leg => 
+          leg.pickupLocation && (
+            <Tooltip 
+              key={`pickup-address-tooltip-component-${leg.leg_id}`}
+              id={`pickup-address-tooltip-${leg.leg_id}`}
+              className="address-tooltip"
+              place="top"
+              delayShow={400}
+            >
+              <div className="address-tooltip-content">
+                <strong>Pickup Address:</strong><br />
+                {leg.pickupLocation.street_address}<br />
+                {leg.pickupLocation.city}, {leg.pickupLocation.state} {leg.pickupLocation.zip}
+                {leg.pickupLocation.phone && (
+                  <>
+                    <br />
+                    <strong>Phone:</strong> {leg.pickupLocation.phone}
+                  </>
+                )}
+              </div>
+            </Tooltip>
+          )
+        )
+      )}
+
+      {/* Add tooltips for dropoff addresses */}
+      {trips.flatMap(trip => 
+        (trip.legs || []).map(leg => 
+          leg.dropoffLocation && (
+            <Tooltip 
+              key={`dropoff-address-tooltip-component-${leg.leg_id}`}
+              id={`dropoff-address-tooltip-${leg.leg_id}`}
+              className="address-tooltip"
+              place="top"
+              delayShow={300}
+            >
+              <div className="address-tooltip-content">
+                <strong>Dropoff Address:</strong><br />
+                {leg.dropoffLocation.street_address}<br />
+                {leg.dropoffLocation.city}, {leg.dropoffLocation.state} {leg.dropoffLocation.zip}
+                {leg.dropoffLocation.phone && (
+                  <>
+                    <br />
+                    <strong>Phone:</strong> {leg.dropoffLocation.phone}
+                  </>
+                )}
+              </div>
+            </Tooltip>
+          )
+        )
       )}
     </div>
   );

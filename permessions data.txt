@@ -1,0 +1,39 @@
+1. User Types (UserType.js)
+Purpose: Defines different types of users in the system.
+Fields:
+type_id: Unique identifier for each user type (auto-incremented).
+type_name: Name of the user type (must be unique).
+display_name: A user-friendly name for the user type.
+status: Indicates if the user type is active or inactive.
+2. User Groups (UserGroup.js)
+Purpose: Represents groups of users that can be assigned permissions collectively.
+Fields:
+group_id: Unique identifier for each user group (auto-incremented).
+full_name, common_name, short_name: Identifiers for the group.
+email, phone: Contact information for the group.
+parent_group_id: Allows for hierarchical grouping of user groups.
+auto_routing, send_pdf, status: Additional attributes for group behavior.
+created_at, updated_at: Timestamps for record management.
+3. Group Permissions (GroupPermission.js)
+Purpose: Establishes a many-to-many relationship between UserGroup and UserType, allowing specific user groups to be associated with user types.
+Fields:
+group_id: References the UserGroup.
+type_id: References the UserType.
+Associations:
+UserGroup can have many UserType through GroupPermission.
+UserType can belong to many UserGroup through GroupPermission.
+4. Page Permissions (PagePermission.js)
+Purpose: Manages permissions for specific pages based on user types.
+Fields:
+page_name: Unique identifier for the page.
+type_id: References the UserType.
+can_view, can_edit: Permissions indicating whether a user type can view or edit the page.
+Associations:
+UserType can have many Page through PagePermission.
+How It Works
+User Types and User Groups:
+User types define the roles (e.g., Admin, Editor, Viewer) that can be assigned to users. User groups are collections of users that can share permissions.
+A user can belong to a user group, and that group can be associated with one or more user types.
+Page Permissions:
+Page permissions are set based on user types. For each page, you can define whether a user type can view or edit that page.
+This means that if a user belongs to a user group that is linked to a user type with specific page permissions, they will inherit those permissions.

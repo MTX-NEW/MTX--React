@@ -8,6 +8,9 @@ const User = require('./User');
 const TripSpecialInstruction = require('./TripSpecialInstruction');
 const TimeSheet = require('./TimeSheetEntry');
 const TimeSheetBreak = require('./TimeSheetBreak');
+const Page = require('./Page');
+const PagePermission = require('./PagePermission');
+const UserType = require('./UserType');
 
 // Define associations
 // Program associations
@@ -48,6 +51,14 @@ User.hasMany(TimeSheet, { foreignKey: 'user_id' });
 // TimeSheet and TimeSheetBreak associations
 TimeSheet.hasMany(TimeSheetBreak, { foreignKey: 'timesheet_id', onDelete: 'CASCADE' });
 TimeSheetBreak.belongsTo(TimeSheet, { foreignKey: 'timesheet_id' });
+
+// Pages and PagePermissions associations
+Page.hasMany(PagePermission, { foreignKey: 'page_id' });
+PagePermission.belongsTo(Page, { foreignKey: 'page_id' });
+
+// UserType and PagePermissions associations
+UserType.hasMany(PagePermission, { foreignKey: 'type_id' });
+PagePermission.belongsTo(UserType, { foreignKey: 'type_id' });
 
 // Export for use in other files
 module.exports = {

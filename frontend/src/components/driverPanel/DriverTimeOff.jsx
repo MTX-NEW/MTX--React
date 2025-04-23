@@ -2,10 +2,11 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import TimeOffRequestForm from '@/components/timesheet/TimeOffRequestForm';
+import useAuth from '@/hooks/useAuth';
 
 const DriverTimeOff = () => {
-  // Hardcoded user ID for now
-  const currentUserId = 11;
+  const { user } = useAuth();
+  const currentUserId = user?.id;
 
   return (
     <div className="time-off-container pb-5">

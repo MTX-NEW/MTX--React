@@ -13,25 +13,32 @@ import {
   faUpload,
   faUserCircle,
   faExchangeAlt,
+  faUserAlt
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { routes } from "@/routesConfig";
-//import { useAuth } from "@/contexts/AuthContext";
+import useAuth from "@/hooks/useAuth";
+
+// Create an icon map
+const iconMap = {
+  faBus,
+  faClock,
+  faUsers,
+  faEnvelope,
+  faUserTie,
+  faFileAlt,
+  faClipboard, 
+  faCar,
+  faUpload,
+  faUserAlt
+};
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  //const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   
-  // Hardcoded user for temporary use
-  const currentUser = { 
-    id: 11,
-    first_name: 'Test',
-    last_name: 'Driver',
-    userType: { type_name: 'driver' }
-  };
-
   const handleNavigation = (path) => {
     navigate(path);
   };
@@ -41,8 +48,8 @@ const Sidebar = () => {
     if (location.pathname.startsWith('/driver-panel')) {
       navigate('/');
     } 
-    // If user is a driver, go to driver panel
-    else if (currentUser?.userType?.type_name === 'driver') {
+    // If user is authenticated, go to driver panel
+    else if (currentUser) {
       navigate('/driver-panel');
     }
   };
@@ -52,9 +59,8 @@ const Sidebar = () => {
     ? 'Switch to Main App' 
     : 'Switch to Driver Panel';
 
-  // Only show the switch button for drivers or when already in the driver panel
-  const showSwitchButton = location.pathname.startsWith('/driver-panel') || 
-    (currentUser?.userType?.type_name === 'driver');
+  // Show the switch button for all authenticated users
+  const showSwitchButton = location.pathname.startsWith('/driver-panel') || currentUser;
 
   return (
     <div className="sidebar">
@@ -72,7 +78,7 @@ const Sidebar = () => {
               onClick={() => handleNavigation(route.path)}
             >
               {route.icon && (
-                <FontAwesomeIcon icon={eval(route.icon)} className="icon" />
+                <FontAwesomeIcon icon={iconMap[route.icon]} className="icon" />
               )}
               {route.label}
             </li>
@@ -81,12 +87,26 @@ const Sidebar = () => {
       </nav>
       <div className="sidebar-footer">
         <div className="profile-section">
-          <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+          {currentUser && currentUser.profile_image ? (
+            <img 
+              src={currentUser.profile_image} 
+              alt="Profile" 
+              className="profile-icon" 
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                objectFit: 'cover'
+              }}
+            />
+          ) : (
+            <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+          )}
           {currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'Profile'}
         </div>
         {showSwitchButton && (
           <button className="switch-panel-btn" onClick={handleSwitchPanel}>
-            <FontAwesomeIcon icon={faExchangeAlt} className="mr-2" />
+     
             {switchButtonText}
           </button>
         )}

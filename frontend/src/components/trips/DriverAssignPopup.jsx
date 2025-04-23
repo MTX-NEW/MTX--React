@@ -20,7 +20,7 @@ const DriverAssignPopup = ({ onSubmit, onClose, legId, currentDriverId }) => {
     if (drivers && drivers.length > 0) {
       const options = drivers.map(driver => ({
         value: driver.id,
-        label: `${driver.first_name} ${driver.last_name}`
+        label: `${driver.first_name} ${driver.last_name} - #${driver.id}`
       }));
       
       // Add empty option for clearing assignment
