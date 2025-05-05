@@ -49,22 +49,22 @@ export const processTripFormData = (data) => {
   
   // Convert trip_type from UI format to database format
   if (processedData.trip_type === 'one_way') {
-    processedData.trip_type = 'Standard';
+    processedData.trip_type = 'one_way';
     processedData.is_one_way = true; // Keep for backward compatibility
   } else if (processedData.trip_type === 'round_trip') {
-    processedData.trip_type = 'Round Trip';
+    processedData.trip_type = 'round_trip';
     processedData.is_one_way = false; // Keep for backward compatibility
   } else if (processedData.trip_type === 'multiple') {
-    processedData.trip_type = 'Multi-stop';
-    processedData.is_one_way = 'multiple'; // Keep for backward compatibility
+    processedData.trip_type = 'multi_stop';
+    processedData.is_one_way = 'multi_stop'; // Keep for backward compatibility
   }
   // For backward compatibility - process is_one_way if it exists but trip_type doesn't
   else if (processedData.is_one_way === true || processedData.is_one_way === "true") {
-    processedData.trip_type = 'Standard';
+    processedData.trip_type = 'one_way';
   } else if (processedData.is_one_way === false || processedData.is_one_way === "false") {
-    processedData.trip_type = 'Round Trip';
-  } else if (processedData.is_one_way === 'multiple') {
-    processedData.trip_type = 'Multi-stop';
+    processedData.trip_type = 'round_trip';
+  } else if (processedData.is_one_way === 'multi_stop') {
+    processedData.trip_type = 'multi_stop';
   }
   
   // Create special instructions object from checkbox arrays
@@ -149,13 +149,13 @@ export const prepareTripForEdit = (trip) => {
   const tripToEdit = { ...trip };
   
   // Set trip type state based on database trip_type
-  if (tripToEdit.trip_type === 'one_way' || tripToEdit.trip_type === 'Standard') {
+  if (tripToEdit.trip_type === 'one_way' || tripToEdit.trip_type === 'one_way') {
     tripToEdit.trip_type = 'one_way';
     tripToEdit.is_one_way = true; // Keep for backward compatibility
-  } else if (tripToEdit.trip_type === 'round_trip' || tripToEdit.trip_type === 'Round Trip') {
+  } else if (tripToEdit.trip_type === 'round_trip' || tripToEdit.trip_type === 'round_trip') {
     tripToEdit.trip_type = 'round_trip';
     tripToEdit.is_one_way = false; // Keep for backward compatibility
-  } else if (tripToEdit.trip_type === 'multi-stop' || tripToEdit.trip_type === 'Multi-stop') {
+  } else if (tripToEdit.trip_type === 'multi_stop' || tripToEdit.trip_type === 'multi_stop') {
     tripToEdit.trip_type = 'multiple';
     tripToEdit.is_one_way = 'multiple'; // Keep for backward compatibility
   }
@@ -281,7 +281,7 @@ export const prepareTripForEdit = (trip) => {
       // Set visible legs to just the first leg
       tripToEdit.legs = [firstLeg];
     } else {
-      // For all other trip types (one_way, Standard, or multi-stop) - preserve the legs
+      // For all other trip types (one_way, one_way, or multi-stop) - preserve the legs
       tripToEdit.legs = sortedLegs;
     }
     

@@ -43,4 +43,62 @@ export const hasUserType = (typeName) => {
  */
 export const isAuthenticated = () => {
   return !!getCurrentUser() && !!localStorage.getItem('token');
-}; 
+};
+
+import { authApi } from '../api/baseApi';
+
+/**
+ * Refresh the access token using the refresh token cookie and update localStorage
+ * @returns {string|null} The new access token or null on failure
+ */
+/* 
+export const refreshToken = async () => {
+  try {
+    const response = await authApi.refreshToken();
+    const newToken = response.data.accessToken;
+    localStorage.setItem('token', newToken);
+    return newToken;
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return null;
+  }
+};
+*/
+
+/**
+ * Perform logout by clearing tokens and making server-side logout call
+ */
+export const logout = async () => {
+  try {
+    await authApi.logout();
+  } catch (error) {
+    console.error('Error during logout:', error);
+  }
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  window.location.href = '/login';
+};
+
+// authUtils.js - Pure utility functions only, no state or API calls
+export const getStoredToken = () => localStorage.getItem('token');
+export const getStoredUser = () => {
+  try {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    console.error('Error parsing stored user:', error);
+    return null;
+  }
+};
+
+export const storeAuthData = (user, token) => {
+  localStorage.setItem('user', JSON.stringify(user));
+  localStorage.setItem('token', token);
+};
+
+export const clearAuthData = () => {
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+};
+
+// No duplicated isAuthenticated checks 

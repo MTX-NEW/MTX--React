@@ -278,7 +278,8 @@ const getFullRouteConfig = () => {
       tabs: [
         { id: "trip-requests", name: "Trip Requests", path: "/trip-system/trip-requests" },
         { id: "trip-management", name: "Trip Management", path: "/trip-system/trip-management" },
-        { id: "members", name: "Members", path: "/trip-system/members" }
+        { id: "members", name: "Members", path: "/trip-system/members" },
+        { id: "locations", name: "Locations", path: "/trip-system/locations" }
       ]
     },
     timeSheet: { 
@@ -431,6 +432,72 @@ exports.syncPages = async (req, res) => {
   } catch (error) {
     await t.rollback();
     console.error("Error in syncPages:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get navigation routes/pages for a specific user type
+exports.getUserRoutes = async (req, res) => {
+  try {
+    const typeId = req.params.typeId;
+    
+    // If type is admin (typeId = 1), return all pages
+    if (typeId === '1') {
+      const allPages = await Page.findAll({
+        attributes: ['page_id', 'page_name', 'page_path', 'page_section'],
+        order: [['page_id', 'ASC']]
+      });
+      
+      // Group pages by section
+      const grouped = {};
+      allPages.forEach(page => {
+        const section = page.page_section;
+        if (!grouped[section]) grouped[section] = [];
+        grouped[section].push({
+          page_id: page.page_id,
+          page_name: page.page_name,
+          page_path: page.page_path,
+          can_edit: true,
+          can_view: true
+        });
+      });
+      
+      // Format result as array of { section, pages }
+      const result = Object.entries(grouped).map(([section, pages]) => ({ section, pages }));
+      return res.json(result);
+    }
+    
+    // For non-admin users, get only their permitted pages
+    const permissions = await PagePermission.findAll({
+      where: { type_id: typeId, can_view: true },
+      include: [
+        { model: Page, attributes: ['page_id', 'page_name', 'page_path', 'page_section'] }
+      ],
+      attributes: ['permission_id', 'page_id', 'type_id', 'can_view', 'can_edit'],
+      order: [[ Page, 'page_id', 'ASC' ]]
+    });
+
+    // Group pages by section
+    const grouped = {};
+    permissions.forEach(perm => {
+      const page = perm.Page;
+      if (!page) return;
+      const section = page.page_section;
+      if (!grouped[section]) grouped[section] = [];
+      grouped[section].push({
+        page_id: page.page_id,
+        page_name: page.page_name,
+        page_path: page.page_path,
+        can_edit: perm.can_edit,
+        can_view: perm.can_view
+      });
+    });
+
+    // Format result as array of { section, pages }
+    const result = Object.entries(grouped).map(([section, pages]) => ({ section, pages }));
+    res.json(result);
+  } catch (error) {
+    console.error('Error in getUserRoutes:', error);
     res.status(500).json({ message: error.message });
   }
 };

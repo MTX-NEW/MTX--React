@@ -3,10 +3,61 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { format } from 'date-fns';
 import FormComponent from '@/components/FormComponent';
 import dayjs from 'dayjs';
+import MemberAutocomplete from '@/components/common/MemberAutocomplete';
 
+// Presenter component - responsible for UI rendering
+const TripEditFormPresenter = ({
+  formMethods,
+  tripFields,
+  legFields,
+  handleSubmitForm,
+  handleCreateNewTrip,
+  isSubmitting,
+  editingLegOnly,
+  submitText,
+  showCreateNewButton
+}) => {
+  return (
+    <FormProvider {...formMethods}>
+      {editingLegOnly ? (
+        <div className="p-3">
+          <h5 className="mb-3">Leg Details</h5>
+          <FormComponent
+            fields={legFields}
+            onSubmit={handleSubmitForm}
+            submitText={submitText || "Save Changes"}
+            isSubmitting={isSubmitting}
+          />
+        </div>
+      ) : (
+        <>
+          <FormComponent
+            fields={tripFields}
+            onSubmit={handleSubmitForm}
+            submitText={submitText || "Update Trip"}
+            isSubmitting={isSubmitting}
+            additionalButtons={
+              showCreateNewButton ? [
+                {
+                  text: "Create New Trip",
+                  className: "btn btn-success",
+                  onClick: formMethods.handleSubmit(handleCreateNewTrip),
+                  disabled: isSubmitting
+                }
+              ] : []
+            }
+          />
+        </>
+      )}
+    </FormProvider>
+  );
+};
+
+// Container component - responsible for logic and state
 const TripEditForm = ({ 
   initialData, 
-  onSubmit, 
+  onSubmit,
+  onCreateNew,
   isSubmitting, 
   members = [],
   programs = [],
@@ -63,64 +114,112 @@ const TripEditForm = ({
   // Initialize from initial data if provided
   useEffect(() => {
     if (initialData) {
-      // Set trip type based on initialData
-      if (initialData.is_one_way === true) {
-        setTripType('one_way');
-        formMethods.setValue('trip_type', 'one_way');
-      } else if (initialData.is_one_way === false) {
-        setTripType('round_trip');
-        formMethods.setValue('trip_type', 'round_trip');
-      } else if (initialData.is_one_way === 'multiple') {
-        setTripType('multiple');
-        formMethods.setValue('trip_type', 'multiple');
-      } else if (initialData.trip_type) {
-        // If trip_type is directly provided in initialData
-        setTripType(initialData.trip_type);
-      }
-
-      // Set leg count
+      // Set trip type directly - no conversion needed with updated API
+      setTripType(initialData.trip_type);
+      formMethods.setValue('trip_type', initialData.trip_type);
+      
+      // Set leg count directly from legs array
       if (initialData.legs) {
         setLegCount(initialData.legs.length);
       }
 
-      // Find selected member
-      if (initialData.member_id) {
-        const member = members.find(m => m.member_id === initialData.member_id);
-        if (member) {
-          setSelectedMember(member);
-        }
+      // Use member data directly from the API response
+      if (initialData.TripMember) {
+        setSelectedMember(initialData.TripMember);
       }
-    }
-  }, [initialData, members, formMethods]);
-
-  // Watch for changes in member_id to update selected member
-  useEffect(() => {
-    if (selectedMemberId) {
-      const member = members.find(m => m.member_id == selectedMemberId);
-      setSelectedMember(member);
       
-      // Notify parent component to fetch locations for this member
-      onMemberSelect(selectedMemberId);
+      // Ensure dates are properly formatted for the form (YYYY-MM-DD)
+      if (initialData.start_date) {
+        formMethods.setValue('start_date', initialData.start_date);
+      }
       
-      // If member has a program, find the company for that program
-      if (member?.program_id && programs.length > 0) {
-        const memberProgram = programs.find(p => p.program_id === member.program_id);
-        if (memberProgram && memberProgram.company_id) {
-          formMethods.setValue('company_id', memberProgram.company_id);
+      if (initialData.end_date) {
+        formMethods.setValue('end_date', initialData.end_date);
+      }
+      
+      // Set up special instructions format for form
+      if (initialData.specialInstructions) {
+        setupSpecialInstructions(initialData.specialInstructions);
+      }
+      
+      // Format time fields in legs to HH:MM format
+      if (initialData.legs?.length > 0) {
+        const formattedLegs = initialData.legs.map(leg => ({
+          ...leg,
+          // Convert time strings from HH:MM:SS to HH:MM
+          scheduled_pickup: leg.scheduled_pickup ? leg.scheduled_pickup.slice(0, 5) : null,
+          scheduled_dropoff: leg.scheduled_dropoff ? leg.scheduled_dropoff.slice(0, 5) : null
+        }));
+        
+        // For round trips, extract return pickup time
+        if (initialData.trip_type === 'round_trip' && formattedLegs.length > 1) {
+          const returnLeg = formattedLegs.find(leg => leg.sequence === 2);
+          if (returnLeg?.scheduled_pickup) {
+            formMethods.setValue('return_pickup_time', returnLeg.scheduled_pickup);
+          }
         }
         
-        // Set program ID if member has one
-        if (member.program_id) {
-          formMethods.setValue('program_id', member.program_id);
+        formMethods.setValue('legs', formattedLegs);
+      }
+    }
+  }, [initialData, formMethods]);
+  
+ 
+  // Setup special instructions for the form
+  const setupSpecialInstructions = (specialInstructions) => {
+    // Set mobility type
+    formMethods.setValue('special_instructions.mobility_type', 
+      specialInstructions.mobility_type || 'Ambulatory');
+    
+    // Convert special instructions booleans to client requirements array
+    const clientRequirements = [];
+    const vehicleTypes = [];
+    
+    // Check each boolean field and add to client requirements if true
+    if (specialInstructions.rides_alone) clientRequirements.push({ value: 'rides_alone' });
+    if (specialInstructions.spanish_speaking) clientRequirements.push({ value: 'spanish_speaking' });
+    if (specialInstructions.males_only) clientRequirements.push({ value: 'males_only' });
+    if (specialInstructions.females_only) clientRequirements.push({ value: 'females_only' });
+    if (specialInstructions.special_assist) clientRequirements.push({ value: 'special_assist' });
+    if (specialInstructions.pickup_time_exact) clientRequirements.push({ value: 'pickup_time_exact' });
+    if (specialInstructions.stay_with_client) clientRequirements.push({ value: 'stay_with_client' });
+    if (specialInstructions.car_seat) clientRequirements.push({ value: 'car_seat' });
+    if (specialInstructions.extra_person) clientRequirements.push({ value: 'extra_person' });
+    if (specialInstructions.call_first) clientRequirements.push({ value: 'call_first' });
+    if (specialInstructions.knock) clientRequirements.push({ value: 'knock' });
+    
+    // Check vehicle type fields
+    if (specialInstructions.van) vehicleTypes.push({ value: 'van' });
+    if (specialInstructions.sedan) vehicleTypes.push({ value: 'sedan' });
+    
+    formMethods.setValue('client_requirements', clientRequirements);
+    formMethods.setValue('vehicle_type', vehicleTypes);
+  };
+
+  // Handle member selection
+  const handleMemberSelect = useCallback((memberId, memberData) => {
+    // Only update state if the member actually changed
+    if (memberId !== selectedMember?.member_id) {
+      setSelectedMember(memberData);
+      onMemberSelect(memberId);
+      
+      // If member has a program, set it directly
+      if (memberData?.program_id) {
+        formMethods.setValue('program_id', memberData.program_id);
+        
+        // If the member or program has company_id, use it
+        if (memberData.company_id) {
+          formMethods.setValue('company_id', memberData.company_id);
+        } 
+        else if (programs.length > 0) {
+          const program = programs.find(p => p.program_id === memberData.program_id);
+          if (program?.company_id) {
+            formMethods.setValue('company_id', program.company_id);
+          }
         }
       }
-    } else {
-      setSelectedMember(null);
     }
-  }, [selectedMemberId, members, programs]);
-
-  // NOTE: We remove the useEffect that automatically sets pickup and dropoff locations
-  // This is the key difference from TripForm - we don't auto-reset locations when editing
+  }, [selectedMember, onMemberSelect, programs, formMethods]);
 
   // Helper function to initialize trip legs - wrap in useCallback
   const initializeTripLegs = useCallback((count = 1) => {
@@ -183,7 +282,7 @@ const TripEditForm = ({
         setLegCount(1);
         initializeTripLegs(1);
         formMethods.setValue('return_pickup_time', null);
-      } else if (newTripType === 'multiple') {
+      } else if (newTripType === 'multi_stop') {
         const newCount = Math.max(2, currentLegs.length);
         setLegCount(newCount);
         initializeTripLegs(newCount);
@@ -205,7 +304,7 @@ const TripEditForm = ({
           formMethods.setValue('legs', [currentLegs[0]]);
           setLegCount(1);
         }
-      } else if (newTripType === 'multiple' && currentLegs.length < 2) {
+      } else if (newTripType === 'multi_stop' && currentLegs.length < 2) {
         // For multiple, ensure we have at least 2 legs
         initializeTripLegs(2);
         setLegCount(2);
@@ -250,11 +349,6 @@ const TripEditForm = ({
   }, [formMethods, setLegCount]);
 
   // Memoize options arrays separately to reduce computation in the main useMemo
-  const memberOptions = useMemo(() => members.map(member => ({
-    value: member.member_id,
-    label: `${member.first_name} ${member.last_name}`
-  })), [members]);
-  
   const programOptions = useMemo(() => programs?.map(program => ({
     value: program.program_id,
     label: program.program_name
@@ -265,20 +359,47 @@ const TripEditForm = ({
     label: company.company_name
   })) || [], [companies]);
 
-  // Now use the optimized useMemo with fewer dependencies
+  // Prepare location options only once
+  const locationOptions = useMemo(() => {
+    if (!memberLocations || memberLocations.length === 0) return [];
+    
+    return memberLocations.map(loc => ({
+      value: loc.location_id,
+      label: `${loc.street_address}, ${loc.city || ''}, ${loc.state || ''} ${loc.zip || ''}${loc.phone ? ` • Ph: ${loc.phone}` : ''}`
+    }));
+  }, [memberLocations]);
+
+  // Make the custom renderMemberField function not depend on state that changes frequently
+  const renderMemberField = useCallback(() => {
+    const defaultMemberValue = selectedMember || 
+      (initialData?.TripMember || null) ||
+      (initialData?.member_id ? { member_id: initialData.member_id } : null);
+      
+    return (
+      <div className="mb-2">
+        <MemberAutocomplete
+          name="member_id"
+          label="Member"
+          placeholder="Search member by name (min 2 letters)"
+          required={true}
+          onSelect={handleMemberSelect}
+          defaultValue={defaultMemberValue}
+        />
+      </div>
+    );
+  }, [handleMemberSelect, selectedMember, initialData?.TripMember, initialData?.member_id]);
+
+  // Simplify dependencies further
   const tripFields = useMemo(() => {
     const currentScheduleType = formMethods.watch('schedule_type');
     const currentTripType = formMethods.watch('trip_type');
     
     const fields = [
       {
-        name: 'member_id',
-        label: 'Member',
-        type: 'autocomplete',
-        options: memberOptions,
-        placeholder: 'Select Member',
-        required: true,
-        col: 12
+        type: 'custom',
+        name: 'member_field',
+        col: 12,
+        render: renderMemberField
       },
       {
         name: 'program_id',
@@ -317,7 +438,7 @@ const TripEditForm = ({
         options: [
           { value: 'one_way', label: 'One Way' },
           { value: 'round_trip', label: 'Round Trip' },
-          { value: 'multiple', label: 'Multiple Legs' }
+          { value: 'multi_stop', label: 'Multiple Legs' }
         ],
         required: true,
         col: 12,
@@ -374,10 +495,7 @@ const TripEditForm = ({
         name: 'legs[0].pickup_location',
         label: 'Pickup Location',
         type: 'autocomplete',
-        options: memberLocations.map(loc => ({
-          value: loc.location_id,
-          label: `${loc.street_address}, ${loc.city || ''}, ${loc.state || ''} ${loc.zip || ''}`
-        }), [memberLocations]),
+        options: locationOptions,
         required: true,
         col: 12,
         isLoading: isLoadingLocations
@@ -393,10 +511,7 @@ const TripEditForm = ({
         name: 'legs[0].dropoff_location',
         label: 'Dropoff Location',
         type: 'autocomplete',
-        options: memberLocations.map(loc => ({
-          value: loc.location_id,
-          label: `${loc.street_address}, ${loc.city || ''}, ${loc.state || ''} ${loc.zip || ''}`
-        }), [memberLocations]),
+        options: locationOptions,
         required: true,
         col: 12,
         isLoading: isLoadingLocations
@@ -430,7 +545,7 @@ const TripEditForm = ({
     }
     
     // Only show additional legs for multiple trip type
-    if (currentTripType === 'multiple' && legCount > 1) {
+    if (currentTripType === 'multi_stop' && legCount > 1) {
       // Add fields for additional legs (leg 2 and beyond)
       for (let i = 1; i < legCount; i++) {
         fields.push(
@@ -456,10 +571,7 @@ const TripEditForm = ({
             name: `legs[${i}].pickup_location`,
             label: 'Pickup Location',
             type: 'autocomplete',
-            options: memberLocations.map(loc => ({
-              value: loc.location_id,
-              label: `${loc.street_address}, ${loc.city}, ${loc.state} ${loc.zip}${loc.phone ? ` • Ph: ${loc.phone}` : ''}`
-            }), [memberLocations]),
+            options: locationOptions,
             required: true,
             col: 12,
             isLoading: isLoadingLocations
@@ -475,10 +587,7 @@ const TripEditForm = ({
             name: `legs[${i}].dropoff_location`,
             label: 'Dropoff Location',
             type: 'autocomplete',
-            options: memberLocations.map(loc => ({
-              value: loc.location_id,
-              label: `${loc.street_address}, ${loc.city}, ${loc.state} ${loc.zip}${loc.phone ? ` • Ph: ${loc.phone}` : ''}`
-            }), [memberLocations]),
+            options: locationOptions,
             required: true,
             col: 12,
             isLoading: isLoadingLocations
@@ -566,145 +675,22 @@ const TripEditForm = ({
     
     return fields;
   }, [
-    formMethods, 
-    memberOptions, 
+    formMethods.watch('schedule_type'),
+    formMethods.watch('trip_type'),
     programOptions, 
     companyOptions, 
-    memberLocations,
+    locationOptions,
     legCount,
     tripType, 
     addLeg, 
     removeLeg,
-    formMethods.watch('schedule_type'),
-    formMethods.watch('trip_type'),
-    isLoadingLocations
+    isLoadingLocations,
+    renderMemberField
   ]);
 
-  // Handle form submission
-  const handleSubmitForm = (data) => {
-    // Process the form data
-    const processedData = { ...data };
-    
-    // Map trip_type to is_one_way for backend compatibility
-    if (data.trip_type === 'one_way') {
-      processedData.is_one_way = true;
-    } else if (data.trip_type === 'round_trip') {
-      processedData.is_one_way = false;
-    } else if (data.trip_type === 'multiple') {
-      processedData.is_one_way = 'multiple';
-    }
-    
-    // If we're editing a leg only, just return the relevant leg data
-    if (editingLegOnly) {
-      // Extract just the fields relevant to a leg
-      const legData = {
-        driver_id: data.driver_id,
-        status: data.status,
-        pickup_location: data.pickup_location,
-        dropoff_location: data.dropoff_location,
-        scheduled_pickup: data.scheduled_pickup,
-        scheduled_dropoff: data.scheduled_dropoff,
-        actual_pickup: data.actual_pickup,
-        actual_dropoff: data.actual_dropoff,
-        leg_distance: data.leg_distance,
-        notes: data.notes
-      };
-      
-      // Pass only the leg data to the parent component
-      onSubmit(legData);
-      return;
-    }
-
-    // For trip editing, continue with normal processing
-    
-    // Process legs
-    if (processedData.legs) {
-      processedData.legs = processedData.legs.map(leg => ({
-        ...leg,
-        scheduled_pickup: leg.scheduled_pickup ? formatTimeForDB(leg.scheduled_pickup) : null,
-        scheduled_dropoff: leg.scheduled_dropoff ? formatTimeForDB(leg.scheduled_dropoff) : null
-      }));
-    }
-    
-    // Process return pickup time if this is a round trip
-    if (tripType === 'round_trip' && processedData.return_pickup_time) {
-      // Get the first leg information
-      const firstLeg = processedData.legs[0];
-      
-      // Only create a return leg if we have valid pickup and dropoff locations
-      if (firstLeg && firstLeg.pickup_location && firstLeg.dropoff_location) {
-        // Create a second leg for the return trip
-        const returnLeg = {
-          sequence: 2,
-          status: 'Scheduled',
-          pickup_location: firstLeg.dropoff_location, // Swap pickup and dropoff
-          dropoff_location: firstLeg.pickup_location,
-          scheduled_pickup: formatTimeForDB(processedData.return_pickup_time),
-          scheduled_dropoff: null,
-          leg_distance: firstLeg.leg_distance,
-          is_return: true
-        };
-        
-        // Verify that we have valid location IDs before adding the leg
-        if (returnLeg.pickup_location && returnLeg.dropoff_location) {
-          processedData.legs.push(returnLeg);
-        } else {
-          console.error('Cannot create return leg: Invalid location data', {
-            pickup: returnLeg.pickup_location,
-            dropoff: returnLeg.dropoff_location
-          });
-        }
-      } else {
-        console.error('Cannot create return leg: Missing leg data or locations', {
-          firstLeg
-        });
-      }
-    }
-    
-    // Process special instructions
-    if (processedData.client_requirements) {
-      const requirementMap = {};
-      processedData.client_requirements.forEach(req => {
-        requirementMap[req.value] = true;
-      });
-      
-      processedData.special_instructions = {
-        ...processedData.special_instructions,
-        ...requirementMap
-      };
-      
-      delete processedData.client_requirements;
-    }
-    
-    // Process vehicle type
-    if (processedData.vehicle_type) {
-      const vehicleMap = {};
-      processedData.vehicle_type.forEach(type => {
-        vehicleMap[type.value] = true;
-      });
-      
-      processedData.special_instructions = {
-        ...processedData.special_instructions,
-        ...vehicleMap
-      };
-      
-      delete processedData.vehicle_type;
-    }
-    
-    // Pass the data to the parent component
-    onSubmit(processedData);
-  };
-  
-  // Define helper function for time formatting
-  const formatTimeForDB = (timeString) => {
-    if (!timeString) return null;
-    return timeString.includes(':') ? timeString : `${timeString}:00`;
-  };
-
-  // Leg-specific form (when editing just a leg)
-  if (editingLegOnly) {
-    // Create a fields array for the leg edit form
-    const legFields = [
+  // Leg-specific form fields for when editing just a leg
+  const legFields = useMemo(() => {
+    return [
       {
         name: 'status',
         label: 'Status',
@@ -728,10 +714,7 @@ const TripEditForm = ({
         name: 'pickup_location',
         label: 'Pickup Location',
         type: 'select',
-        options: memberLocations.map(loc => ({
-          value: loc.location_id,
-          label: `${loc.street_address}, ${loc.city}, ${loc.state} ${loc.zip}${loc.phone ? ` • Ph: ${loc.phone}` : ''}`
-        })),
+        options: locationOptions,
         isLoading: isLoadingLocations,
         required: true
       },
@@ -750,10 +733,7 @@ const TripEditForm = ({
         name: 'dropoff_location',
         label: 'Dropoff Location',
         type: 'select',
-        options: memberLocations.map(loc => ({
-          value: loc.location_id,
-          label: `${loc.street_address}, ${loc.city}, ${loc.state} ${loc.zip}${loc.phone ? ` • Ph: ${loc.phone}` : ''}`
-        })),
+        options: locationOptions,
         isLoading: isLoadingLocations,
         required: true
       },
@@ -781,32 +761,77 @@ const TripEditForm = ({
         rows: 3
       }
     ];
+  }, [locationOptions, isLoadingLocations]);
 
-    return (
-      <FormProvider {...formMethods}>
-        <div className="p-3">
-          <h5 className="mb-3">Leg Details</h5>
-          <FormComponent
-            fields={legFields}
-            onSubmit={handleSubmitForm}
-            submitText="Save Changes"
-            isSubmitting={isSubmitting}
-          />
-        </div>
-      </FormProvider>
-    );
-  }
+  // Handle form submission
+  const handleSubmitForm = (data) => {
+    // If editing just a leg, only include leg fields
+    if (editingLegOnly) {
+      // Extract just the fields relevant to a leg
+      const legData = {
+        driver_id: data.driver_id,
+        status: data.status,
+        pickup_location: data.pickup_location,
+        dropoff_location: data.dropoff_location,
+        scheduled_pickup: data.scheduled_pickup,
+        scheduled_dropoff: data.scheduled_dropoff,
+        actual_pickup: data.actual_pickup,
+        actual_dropoff: data.actual_dropoff,
+        leg_distance: data.leg_distance,
+        notes: data.notes
+      };
+      
+      // Pass only the leg data to the parent component
+      onSubmit(legData);
+      return;
+    }
+    
+    // For full trip editing, pass the data directly to the parent component
+    onSubmit(data);
+  };
 
-  // Full trip form (original form)
+  // Handle creating a new trip from current data
+  const handleCreateNewTrip = (data) => {
+    if (onCreateNew) {
+      onCreateNew(data);
+    } else {
+      // If no specific handler is provided, use a default approach
+      const newTripData = { ...data };
+      
+      // Remove any trip_id to ensure it creates a new trip
+      if (newTripData.trip_id) delete newTripData.trip_id;
+      
+      // Remove other fields that should be new
+      if (newTripData.legs) {
+        newTripData.legs = newTripData.legs.map(leg => ({
+          ...leg,
+          leg_id: undefined,
+          status: 'Scheduled',
+          actual_pickup: null,
+          actual_dropoff: null
+        }));
+      }
+      
+      onSubmit(newTripData);
+    }
+  };
+
+  // Show create new button only when editing a full trip (not just a leg)
+  // and when there's initial data with a trip_id
+  const showCreateNewButton = !editingLegOnly && initialData?.trip_id;
+
   return (
-    <FormProvider {...formMethods}>
-      <FormComponent
-        fields={tripFields}
-        onSubmit={handleSubmitForm}
-        submitText="Update Trip"
-        isSubmitting={isSubmitting}
-      />
-    </FormProvider>
+    <TripEditFormPresenter
+      formMethods={formMethods}
+      tripFields={tripFields}
+      legFields={legFields}
+      handleSubmitForm={handleSubmitForm}
+      handleCreateNewTrip={handleCreateNewTrip}
+      isSubmitting={isSubmitting}
+      editingLegOnly={editingLegOnly}
+      submitText={editingLegOnly ? "Save Changes" : "Update Trip"}
+      showCreateNewButton={showCreateNewButton}
+    />
   );
 };
 

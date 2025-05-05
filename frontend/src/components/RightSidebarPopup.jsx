@@ -1,7 +1,7 @@
 import React from "react";
 import "@/assets/RightSidebarPopup.css";
 
-const RightSidebarPopup = ({ show, title, children, onClose }) => {
+const RightSidebarPopup = ({ show, title, children, onClose, width, isWide }) => {
   if (!show) return null;
 
   const handleClose = () => {
@@ -14,6 +14,12 @@ const RightSidebarPopup = ({ show, title, children, onClose }) => {
     }
   };
 
+  // Generate style object if width is provided
+  const popupStyle = width ? { width } : {};
+  
+  // Generate CSS class, conditionally adding 'wide' if isWide is true
+  const popupClassName = `right-sidebar-popup show${isWide ? ' wide' : ''}`;
+
   return (
     <>
       {/* Overlay */}
@@ -23,7 +29,8 @@ const RightSidebarPopup = ({ show, title, children, onClose }) => {
       ></div>
       {/* Sidebar Popup */}
       <div 
-        className="right-sidebar-popup show"
+        className={popupClassName}
+        style={popupStyle}
         aria-modal="true"
         role="dialog"
       >

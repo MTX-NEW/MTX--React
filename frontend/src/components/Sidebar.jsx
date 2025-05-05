@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, memo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBus,
@@ -17,8 +17,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { routes } from "@/routesConfig";
 import useAuth from "@/hooks/useAuth";
+import useUserRoutes  from "@/hooks/useUserRoutes";
 
 // Create an icon map
 const iconMap = {
@@ -37,7 +37,12 @@ const iconMap = {
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, logout } = useAuth();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const { filteredRoutes, loading } = useUserRoutes();
+
+  const handleProfileClick = () => setShowProfileMenu(prev => !prev);
   
   const handleNavigation = (path) => {
     navigate(path);
@@ -69,7 +74,9 @@ const Sidebar = () => {
       </div>
       <nav className="nav">
         <ul>
-          {Object.values(routes).map((route) => (
+          {loading ? (
+            <li className="nav-item">Loading...</li>
+          ) : filteredRoutes.map((route) => (
             <li
               key={route.path}
               className={`nav-item ${
@@ -86,7 +93,7 @@ const Sidebar = () => {
         </ul>
       </nav>
       <div className="sidebar-footer">
-        <div className="profile-section">
+        <div className="profile-section" onClick={handleProfileClick}>
           {currentUser && currentUser.profile_image ? (
             <img 
               src={currentUser.profile_image} 
@@ -111,8 +118,17 @@ const Sidebar = () => {
           </button>
         )}
       </div>
+      {showProfileMenu && currentUser && (
+        <div className="profile-popup">
+          <div className="profile-details">
+            <p>{currentUser.first_name} {currentUser.last_name}</p>
+            <p>{currentUser.email}</p>
+          </div>
+          <button className="logout-btn" onClick={logout}>Logout</button>
+        </div>
+      )}
     </div>
   );
 };
 
-export default Sidebar;
+export default memo(Sidebar);

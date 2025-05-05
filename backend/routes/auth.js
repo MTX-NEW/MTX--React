@@ -12,4 +12,10 @@ router.post("/login", authController.login);
 // Get current user (protected route)
 router.get("/me", authMiddleware, authController.getCurrentUser);
 
+// Refresh access token using refresh token cookie
+router.post("/refresh-token", authController.refreshToken);
+
+// Logout and clear refresh token cookie
+router.post("/logout", authController.logout);
+
 module.exports = router; 

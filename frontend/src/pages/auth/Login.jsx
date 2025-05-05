@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   TextField, 
@@ -20,8 +20,7 @@ import * as yup from 'yup';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import logo from '../../assets/logo.png';
-import './Login.css';
-import { isAuthenticated } from '@/utils/authUtils';
+//import './Login.css';
 
 // Validation schema for login form
 const loginSchema = yup.object().shape({
@@ -32,15 +31,15 @@ const loginSchema = yup.object().shape({
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState(null);
-  const { login, loading } = useAuth();
+  const { login, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
-  // Redirect if user is already authenticated
-  React.useEffect(() => {
-    if (isAuthenticated()) {
+  // Only redirect if authenticated and not loading
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
       navigate('/');
     }
-  }, [navigate]);
+  }, [navigate, loading, isAuthenticated]);
 
   // Form configuration using react-hook-form with yup validation
   const { register, handleSubmit, formState: { errors } } = useForm({
@@ -57,10 +56,9 @@ const Login = () => {
     try {
       setLoginError(null);
       await login(data.username, data.password);
-      navigate('/');
+      // No need to navigate here as the useEffect will handle it
     } catch (error) {
-      console.error('Login error:', error);
-      setLoginError(error.message);
+      setLoginError(error.message || 'Login failed');
     }
   };
 
@@ -250,7 +248,6 @@ const Login = () => {
               variant="contained"
               disabled={loading}
               aria-label="Sign in to your account"
-              aria-busy={loading}
               sx={{
                 mt: 2,
                 mb: 3,
@@ -271,7 +268,7 @@ const Login = () => {
                 }
               }}
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign in'}
+              Sign in
             </Button>
 
             <Box sx={{ textAlign: 'center' }}>

@@ -2,9 +2,11 @@ const TripLeg = require("../models/TripLeg");
 const Trip = require("../models/Trip");
 const TripLocation = require("../models/TripLocation");
 const User = require("../models/User");
-const { ValidationError } = require("sequelize");
+const TimeOffRequest = require("../models/TimeOffRequest");
+const { ValidationError, Op } = require("sequelize");
 const { calculateDistance, formatAddress } = require("../utils/googleMapsService");
 const { formatTimeForDB } = require("../utils/timeUtils");
+const sequelize = require("../db");
 
 // Get all trip legs
 exports.getAllLegs = async (req, res) => {
@@ -241,8 +243,32 @@ exports.updateLeg = async (req, res) => {
     // Extract data from request
     const legData = req.body;
     
-    // Auto set status to "Assigned" when a driver is assigned
+    // Check if driver is being assigned or changed
     if (legData.driver_id && (!tripLeg.driver_id || legData.driver_id !== tripLeg.driver_id)) {
+      // Get the trip to find the trip date
+      const trip = await Trip.findByPk(tripLeg.trip_id);
+      
+      if (trip) {
+        const tripDate = new Date(trip.start_date);
+        
+        // Check if driver has approved time off on this date
+        const timeOffRequests = await TimeOffRequest.findOne({
+          where: {
+            user_id: legData.driver_id,
+            status: 'approved',
+            start_date: { [Op.lte]: tripDate },
+            end_date: { [Op.gte]: tripDate }
+          }
+        });
+        
+        if (timeOffRequests) {
+          return res.status(400).json({ 
+            message: "Cannot assign driver. Driver has approved time off during this trip date." 
+          });
+        }
+      }
+      
+      // Auto set status to "Assigned" when a driver is assigned
       legData.status = "Assigned";
     }
     

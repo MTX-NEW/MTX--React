@@ -30,8 +30,10 @@ const MaintenanceSchedule = lazy(() => import("@/pages/vehicles/MaintenanceSched
 
 // Lazy load trip system pages
 const TripRequests = lazy(() => import("@/pages/tripsystem/TripRequests"));
+const TripRequestsV2 = lazy(() => import("@/pages/tripsystem/v2/TripRequests"));
 const TripManagement = lazy(() => import("@/pages/tripsystem/TripManagement"));
 const Members = lazy(() => import("@/pages/tripsystem/Members"));
+const Locations = lazy(() => import("@/pages/tripsystem/Locations"));
 
 // Lazy load timesheet pages
 const EmployeeTimesheet = lazy(() => import("@/pages/timesheet/EmployeeTimesheet"));
@@ -67,8 +69,10 @@ const Router = () => {
           <Route path="/trip-system" element={<TripSystemLayout />}>
             <Route index element={<Navigate to="trip-requests" replace />} />
             <Route path="trip-requests" element={<TripRequests />} />
+            <Route path="trip-requests-v2" element={<TripRequestsV2 />} />
             <Route path="trip-management" element={<TripManagement />} />
             <Route path="members" element={<Members />} />
+            <Route path="locations" element={<Locations />} />
           </Route>
           
           {/* Time Sheet Routes */}

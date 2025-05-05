@@ -1,6 +1,7 @@
 const TripLocation = require("../models/TripLocation");
 const { ValidationError } = require("sequelize");
 const { geocodeAddress, formatAddress } = require("../utils/googleMapsService");
+const { Op } = require("sequelize");
 
 // Get all trip locations
 exports.getAllLocations = async (req, res) => {
@@ -108,6 +109,30 @@ exports.deleteLocation = async (req, res) => {
     await location.destroy();
     res.json({ message: "Location deleted successfully" });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Search locations by query
+exports.searchLocations = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query || query.length < 2) {
+      return res.json([]);
+    }
+
+    const locations = await TripLocation.findAll({
+      where: {
+        [Op.or]: [
+          { street_address: { [Op.like]: `%${query}%` } },
+        ]
+      },
+      limit: 10
+    });
+
+    res.json(locations);
+  } catch (error) {
+    console.error("Error searching locations:", error);
     res.status(500).json({ message: error.message });
   }
 }; 

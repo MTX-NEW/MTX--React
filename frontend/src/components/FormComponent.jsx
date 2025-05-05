@@ -1,5 +1,5 @@
 import React from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, Controller } from "react-hook-form";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -13,12 +13,13 @@ import FormGroup from '@mui/material/FormGroup';
 
 import dayjs from "dayjs";
 
-const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting = false }) => {
+const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting = false, additionalButtons = [] }) => {
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    control,
     trigger,
     formState: { errors },
   } = useFormContext();
@@ -91,21 +92,29 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
                 </div>
               );
             case "select":
-              const selectRegisterOptions = field.validateOnChange 
-                ? { ...register(field.name), onChange: (e) => handleOnChange(e, field.name) } 
-                : register(field.name);
-              
               return (
                 <div className="mb-2" key={index}>
                   <label>{field.label}</label>
-                  <select {...selectRegisterOptions} className="form-control mt-2">
-                    <option value="">Select</option>
-                    {field.options.map((option, optIndex) => (
-                      <option key={optIndex} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Controller
+                    name={field.name}
+                    control={control}
+                    defaultValue={value || ''}
+                    render={({ field: { onChange, value, ref } }) => (
+                      <select
+                        onChange={onChange}
+                        value={value || ''}
+                        ref={ref}
+                        className="form-control mt-2"
+                      >
+                        <option value="">Select</option>
+                        {field.options.map((option, optIndex) => (
+                          <option key={optIndex} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
                   {errors[field.name] && (
                     <span className="form-warning">
                       {errors[field.name].message}
@@ -433,8 +442,23 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
                             helperText={errors[field.name]?.message || ''}
                             fullWidth
                             size="small"
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {field.isLoading ? (
+                                    <div className="spinner-border spinner-border-sm text-primary" role="status">
+                                      <span className="visually-hidden">Loading...</span>
+                                    </div>
+                                  ) : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              ),
+                            }}
                           />
                         )}
+                        filterOptions={(x) => x} // Disable client-side filtering as we're doing server-side search
+                        noOptionsText={field.noResultsText || "No options"}
                         {...(field.autocompleteProps || {})}
                       />
                     </div>
@@ -511,9 +535,27 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
               return null;
           }
         })}
-        <button type="submit" className="save-user-btn mt-3" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : submitText}
-        </button>
+        <div className="d-flex justify-content-between mt-3">
+          <button type="submit" className="save-user-btn" disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : submitText}
+          </button>
+          
+          {additionalButtons.length > 0 && (
+            <div className="additional-buttons">
+              {additionalButtons.map((button, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className={button.className || "btn btn-secondary ms-2"}
+                  onClick={button.onClick}
+                  disabled={button.disabled}
+                >
+                  {button.text}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </form>
     </LocalizationProvider>
   );

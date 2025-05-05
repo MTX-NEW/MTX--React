@@ -21,7 +21,8 @@ export const useDriver = () => {
         email: driver.email,
         phone: driver.phone,
         status: driver.status,
-        user_type: driver.UserType
+        user_type: driver.UserType,
+        name: `${driver.first_name} ${driver.last_name}`
       }));
       
       setDrivers(formattedDrivers || []);
@@ -51,11 +52,12 @@ export const useDriver = () => {
       
       return response.data;
     } catch (err) {
-      console.error('Error assigning driver:', err);
-      const errorMsg = 'Failed to assign driver. Please try again.';
+      // Extract backend error message or use fallback
+      const backendMessage = err.response?.data?.message;
+      const errorMsg = backendMessage || 'Failed to assign driver. Please try again.';
       setError(errorMsg);
-      toast.error(errorMsg);
-      throw err;
+      // Propagate the error message to the caller
+      throw new Error(errorMsg);
     } finally {
       setLoading(false);
     }

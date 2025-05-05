@@ -245,27 +245,73 @@ exports.getMemberLocations = async (req, res) => {
       });
     }
     
-    // Get all locations (as a simpler approach)
-    const allLocations = await TripLocation.findAll();
-    
-    // Add additional locations that aren't already included
-    allLocations.forEach(location => {
-      // Check if this location is already included as a default location
-      const isAlreadyIncluded = memberLocations.some(
-        loc => loc.location_id === location.location_id
-      );
-      
-      if (!isAlreadyIncluded) {
+    // Fetch all locations used in this member's past trip legs instead of random picks
+    const legRecords = await TripLeg.findAll({
+      include: [
+        { model: Trip, where: { member_id: memberId }, attributes: [] }
+      ],
+      attributes: ['pickup_location', 'dropoff_location'],
+      raw: true
+    });
+
+    // Collect unique location IDs (excluding defaults already added)
+    const usedLocationIds = new Set();
+    legRecords.forEach(({ pickup_location, dropoff_location }) => {
+      if (pickup_location) usedLocationIds.add(pickup_location);
+      if (dropoff_location) usedLocationIds.add(dropoff_location);
+    });
+    // Remove the default pickup/dropoff IDs so we don't duplicate them
+    memberLocations.forEach(loc => usedLocationIds.delete(loc.location_id));
+
+    if (usedLocationIds.size > 0) {
+      const usedLocations = await TripLocation.findAll({
+        where: { location_id: Array.from(usedLocationIds) }
+      });
+      usedLocations.forEach(loc => {
         memberLocations.push({
-          ...location.get({ plain: true }),
+          ...loc.get({ plain: true }),
           location_type: 'other'
         });
-      }
-    });
+      });
+    }
     
     res.json(memberLocations);
   } catch (error) {
     console.error("Error fetching member locations:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Search members by name
+exports.searchMembers = async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.length < 2) {
+      return res.status(400).json({ message: "Search query must be at least 2 characters" });
+    }
+    
+    // Use Sequelize's Op operators for case-insensitive search
+    const { Op } = require("sequelize");
+    
+    // Search by first or last name
+    const members = await TripMember.findAll({
+      where: {
+        [Op.or]: [
+          { first_name: { [Op.like]: `%${query}%` } },
+          { last_name: { [Op.like]: `%${query}%` } }
+        ]
+      },
+      attributes: [
+        'member_id', 'first_name', 'last_name', 'program_id', 
+        'phone', 'gender'
+      ],
+      limit: 8 // Limit to 5 results
+    });
+    
+    res.json(members);
+  } catch (error) {
+    console.error("Error searching members:", error);
     res.status(500).json({ message: error.message });
   }
 }; 

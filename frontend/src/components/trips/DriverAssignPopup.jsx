@@ -14,6 +14,11 @@ const DriverAssignPopup = ({ onSubmit, onClose, legId, currentDriverId }) => {
     }
   });
 
+  // Reset form field when currentDriverId changes so the select reflects the current driver
+  useEffect(() => {
+    methods.reset({ driver_id: currentDriverId || '' });
+  }, [currentDriverId]);
+
   // Convert drivers to options format when drivers data changes
   useEffect(() => {
     console.log('Converting drivers to options:', drivers);

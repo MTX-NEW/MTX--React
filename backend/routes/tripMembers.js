@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const tripMemberController = require("../controllers/tripMemberController");
 
+// Search trip members by name
+router.get("/search", tripMemberController.searchMembers);
+
 // Get all trip members
 router.get("/", tripMemberController.getAllMembers);
 

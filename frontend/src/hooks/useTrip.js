@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { tripApi } from '../api/baseApi';
 import { toast } from 'react-toastify';
+import useAuth from './useAuth';
 
 export const useTrip = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [trips, setTrips] = useState([]);
+  const { user } = useAuth();
 
   // Fetch all trips
   const fetchTrips = async (filters = {}) => {
@@ -14,6 +16,7 @@ export const useTrip = () => {
     try {
       // Pass filters to the API to implement backend filtering
       const response = await tripApi.getAll(filters);
+      console.log('tripApi.getAll Response:', response);
       
       // Update trips state with data from API
       setTrips(response.data || []);
@@ -34,6 +37,7 @@ export const useTrip = () => {
     setError(null);
     try {
       const response = await tripApi.getOne(tripId);
+      console.log('tripApi.getOne Response:', response);
       return response.data;
     } catch (err) {
       console.error('Error fetching trip:', err);
@@ -50,7 +54,13 @@ export const useTrip = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tripApi.create(tripData);
+      // Add the current user ID to the trip data
+      const dataWithUser = {
+        ...tripData,
+        created_by: user?.id
+      };
+      
+      const response = await tripApi.create(dataWithUser);
       
       // Update local state
       setTrips(prevTrips => [...prevTrips, response.data]);

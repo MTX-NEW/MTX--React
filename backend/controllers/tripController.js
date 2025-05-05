@@ -402,7 +402,7 @@ async function createLegsForTrip(tripId, validLegs, tripType, returnPickupTime) 
   
   // For round trips, ensure we only have one leg (we'll create the return leg automatically)
   let legsToCreate = validLegs;
-  if (tripType === 'Round Trip' && validLegs.length > 1) {
+  if (tripType === 'round_trip' && validLegs.length > 1) {
     legsToCreate = [validLegs[0]]; // Only use the first leg for round trips
   }
   
@@ -466,7 +466,7 @@ async function createLegsForTrip(tripId, validLegs, tripType, returnPickupTime) 
   }
   
   // If this is a round trip, create the return leg
-  if (tripType === 'Round Trip' && createdLegs.length > 0) {
+  if (tripType === 'round_trip' && createdLegs.length > 0) {
     const firstLeg = createdLegs[0];
     
     // Only create return leg if we have both pickup and dropoff locations
@@ -586,7 +586,7 @@ exports.updateTrip = async (req, res) => {
       
       // For round trips, ensure we only have one leg (we'll create the return leg automatically)
       let legsToProcess = validLegs;
-      if (tripData.trip_type === 'Round Trip' && validLegs.length > 1) {
+      if (tripData.trip_type === 'round_trip' && validLegs.length > 1) {
         // For round trips, keep only non-return legs or just the first leg
         const nonReturnLegs = validLegs.filter(leg => !leg.is_return);
         legsToProcess = nonReturnLegs.length > 0 ? [nonReturnLegs[0]] : [validLegs[0]];
@@ -652,7 +652,7 @@ exports.updateTrip = async (req, res) => {
       }
       
       // If this is a round trip, create the return leg
-      if (tripData.trip_type === 'Round Trip' && createdLegs.length > 0) {
+      if (tripData.trip_type === 'round_trip' && createdLegs.length > 0) {
         const firstLeg = createdLegs[0];
         
         // Only create return leg if we have both pickup and dropoff locations

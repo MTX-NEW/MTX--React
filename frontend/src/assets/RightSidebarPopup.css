@@ -12,6 +12,12 @@
     z-index: 1000;
     opacity: 1;
     pointer-events: all;
+    transition: width 0.3s ease;
+}
+
+/* For wide forms */
+.right-sidebar-popup.wide {
+    width: 700px;
 }
 
 .popup-header {
@@ -115,4 +121,161 @@
     color: #2D3648;
     padding: 8px;
     border-radius: 4px;
+    display: flex;
+}
+
+/* Two-column checkbox grid */
+.checkbox-grid.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -5px;
+    margin-left: -5px;
+}
+
+.checkbox-grid .checkbox-item {
+    padding: 5px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .right-sidebar-popup {
+        width: 90vw;
+    }
+    
+    .right-sidebar-popup.wide {
+        width: 95vw;
+    }
+    
+    .checkbox-grid .checkbox-item {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+/* Add styles for compact checkboxes in Special Instructions */
+.compact-checkboxes {
+    margin-top: 5px;
+}
+
+.compact-checkboxes .checkbox-label {
+    white-space: nowrap;
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.compact-checkboxes .row {
+    margin-left: -8px;
+    margin-right: -8px;
+}
+
+.compact-checkboxes .col-md-3 {
+    padding: 0 8px;
+}
+
+/* Style checkboxes to be more compact */
+input[type="checkbox"] {
+    margin-right: 2px;
+}
+
+/* Special Instructions styling */
+.section-heading {
+    font-weight: 600;
+    font-size: 18px;
+    color: #2d3f50;
+    margin-bottom: 10px;
+}
+
+.special-instructions-container {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+}
+
+.mobility-section {
+    background-color: #e3edf7;
+    border-bottom: 1px solid #d6e4f0;
+}
+
+.vehicle-section {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.requirements-section {
+    background-color: #f8f9fa;
+    padding-bottom: 10px;
+}
+
+.radio-option {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    white-space: nowrap;
+    margin-bottom: 6px;
+}
+
+/* Compact layout for checkboxes */
+.compact-checkboxes .row,
+.requirements-section .row {
+    margin-left: -6px;
+    margin-right: -6px;
+}
+
+.compact-checkboxes .col-md-3,
+.requirements-section .col-md-3 {
+    padding: 0 6px;
+}
+
+/* Style checkboxes to be more compact */
+input[type="checkbox"] {
+    margin-right: 2px;
+}
+
+/* More compact radio background */
+.radio-background {
+    background-color: #DBE9F5;
+    color: #2D3648;
+    padding: 8px;
+    border-radius: 4px;
+    display: flex;
+}
+
+/* Member details styling */
+.member-details-container {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+}
+
+.detail-item {
+    display: flex;
+    margin-bottom: 6px;
+}
+
+.detail-label {
+    color: #6c757d;
+    font-size: 13px;
+    font-weight: 500;
+    width: 90px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    color: #2d3f50;
+    font-size: 14px;
+    font-weight: 500;
 }

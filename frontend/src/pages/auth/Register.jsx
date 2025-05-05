@@ -8,13 +8,13 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useAuth from '../../hooks/useAuth';
 import logo from '../../assets/logo.png';
-import './Login.css';
+//import './Login.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faCheck, faTimes, faInfoCircle, faUser, faEnvelope, faLock, faPhone, faImage } from '@fortawesome/free-solid-svg-icons';
 import { isAuthenticated } from '@/utils/authUtils';
 
 // Import or create a custom CSS file for Register
-import './Register.css';
+//import './Register.css';
 
 // Validation schema for register form
 const registerSchema = yup.object().shape({

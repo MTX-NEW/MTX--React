@@ -58,6 +58,7 @@ const DriverPanelLayout = () => {
   const drawerItems = [
     { text: 'My Trips', icon: <DirectionsCarIcon />, path: '/driver-panel/trips' },
     { text: 'Time Off Requests', icon: <FontAwesomeIcon icon={faCalendarAlt} />, path: '/driver-panel/time-off' },
+    { text: 'Settings', icon: <FontAwesomeIcon icon={faCog} />, path: '/driver-panel/settings' },
   ];
 
   const isActive = (path) => {

@@ -38,13 +38,6 @@ const NewTripManagementTable = ({
   // Get driver functionality from hook
   const { assignDriverToLeg, loading: driverLoading, error: driverError } = useDriver();
 
-  // Log any driver errors
-  useEffect(() => {
-    if (driverError) {
-      console.error('Driver service error:', driverError);
-    }
-  }, [driverError]);
-
   const handleStatusClick = (leg, status) => {
     setSelectedLeg(leg);
     setCurrentStatus(status);
@@ -80,27 +73,22 @@ const NewTripManagementTable = ({
 
   const handleDriverSubmit = async (legId, driverId) => {
     try {
-      console.log(`Assigning driver ${driverId} to leg ${legId}`);
-      
-      // Call optimistic update through the parent component
-      // No need to try to get driver info here, TripManagement component will handle that
+      // Optimistic update via parent
       if (onUpdateStatus) {
-        onUpdateStatus(legId, { 
-          type: 'driver',
-          driverId: driverId
-        });
+        onUpdateStatus(legId, { type: 'driver', driverId });
       }
-      
-      // In parallel, make the actual API call
+
+      // Perform the API call
       await assignDriverToLeg(legId, driverId);
-      
-      // Show success message
+
+      // Success feedback
       toast.success(`Driver ${driverId ? 'assigned' : 'removed'} successfully`);
     } catch (error) {
-      console.error('Error assigning driver:', error);
-      toast.error('Failed to assign driver. Please try again.');
-      
-      // On error, refresh the data to recover
+      // Log and show only the error message
+      console.error('Error assigning driver:', error.message);
+      toast.error(error.message);
+
+      // On error, refresh the data
       if (onUpdateStatus) {
         onUpdateStatus(legId, 'refresh');
       }

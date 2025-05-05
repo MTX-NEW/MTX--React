@@ -20,9 +20,9 @@ const Trip = sequelize.define(
       },
     },
     trip_type: {
-      type: DataTypes.ENUM('Standard', 'Round Trip', 'Multi-stop'),
+      type: DataTypes.ENUM('one_way', 'round_trip', 'multi_stop'),
       allowNull: false,
-      defaultValue: 'Standard',
+      defaultValue: 'one_way',
     },
     created_by: {
       type: DataTypes.INTEGER,

@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// Always send cookies (e.g., refresh token cookie) with requests
+axios.defaults.withCredentials = true;
+
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Set up axios interceptor to include auth token in requests
@@ -34,7 +37,13 @@ export const authApi = {
   login: (username, password) => 
     axios.post(`${API_BASE_URL}/api/auth/login`, { username, password }),
   getCurrentUser: () => 
-    axios.get(`${API_BASE_URL}/api/auth/me`)
+    axios.get(`${API_BASE_URL}/api/auth/me`),
+  // Refresh the access token using the refresh token cookie
+  refreshToken: () =>
+    axios.post(`${API_BASE_URL}/api/auth/refresh-token`),
+  // Logout and clear refresh token cookie
+  logout: () =>
+    axios.post(`${API_BASE_URL}/api/auth/logout`),
 };
 
 export const userApi = createApiService('users');
@@ -79,9 +88,23 @@ export const tripMemberApi = {
   // Add custom method for member locations
   getMemberLocations: (memberId) => 
     axios.get(`${API_BASE_URL}/api/trip-members/${memberId}/locations`),
+  // Add method to search members by name
+  searchMembers: (query) => {
+    if (!query || query.length < 2) return Promise.resolve({ data: [] });
+    return axios.get(`${API_BASE_URL}/api/trip-members/search?query=${encodeURIComponent(query)}`);
+  },
+  // Add method to get member by ID with full details
+  getMemberById: (memberId) => 
+    axios.get(`${API_BASE_URL}/api/trip-members/${memberId}`)
 };
 
-export const tripLocationApi = createApiService('trip-locations');
+export const tripLocationApi = {
+  ...createApiService('trip-locations'),
+  searchLocations: (query) => {
+    if (!query || query.length < 2) return Promise.resolve({ data: [] });
+    return axios.get(`${API_BASE_URL}/api/trip-locations/search?query=${encodeURIComponent(query)}`);
+  }
+};
 
 // Driver Panel API services
 export const driverPanelApi = {
@@ -165,7 +188,9 @@ Object.assign(pagePermissionsApi, {
     });
   },
   validatePermission: (pageId, typeId) => 
-    axios.get(`${API_BASE_URL}/api/page-permissions/validate/${pageId}/${typeId}`)
+    axios.get(`${API_BASE_URL}/api/page-permissions/validate/${pageId}/${typeId}`),
+  getUserRoutes: (typeId) => 
+    axios.get(`${API_BASE_URL}/api/page-permissions/user-routes/${typeId}`)
 });
 
 export const documentsApi = {

@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const tripLocationController = require("../controllers/tripLocationController");
 
+// Search locations
+router.get("/search", tripLocationController.searchLocations);
+
 // Get all trip locations
 router.get("/", tripLocationController.getAllLocations);
 

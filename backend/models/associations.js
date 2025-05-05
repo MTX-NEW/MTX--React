@@ -11,6 +11,7 @@ const TimeSheetBreak = require('./TimeSheetBreak');
 const Page = require('./Page');
 const PagePermission = require('./PagePermission');
 const UserType = require('./UserType');
+const MemberLocation = require('./MemberLocation');
 
 // Define associations
 // Program associations
@@ -20,6 +21,26 @@ TripMember.belongsTo(Program, { foreignKey: 'program_id' });
 // Trip member default locations - renamed aliases to avoid conflicts
 TripMember.belongsTo(TripLocation, { foreignKey: 'pickup_location', as: 'memberPickupLocation' });
 TripMember.belongsTo(TripLocation, { foreignKey: 'dropoff_location', as: 'memberDropoffLocation' });
+
+// Member multiple locations (many-to-many)
+TripMember.belongsToMany(TripLocation, { 
+  through: MemberLocation,
+  foreignKey: 'member_id',
+  otherKey: 'location_id',
+  as: 'locations'
+});
+TripLocation.belongsToMany(TripMember, { 
+  through: MemberLocation,
+  foreignKey: 'location_id',
+  otherKey: 'member_id',
+  as: 'members'
+});
+
+// Direct access to the join table
+TripMember.hasMany(MemberLocation, { foreignKey: 'member_id' });
+MemberLocation.belongsTo(TripMember, { foreignKey: 'member_id' });
+TripLocation.hasMany(MemberLocation, { foreignKey: 'location_id' });
+MemberLocation.belongsTo(TripLocation, { foreignKey: 'location_id' });
 
 // Trip associations
 Trip.belongsTo(TripMember, { foreignKey: 'member_id' });

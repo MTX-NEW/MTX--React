@@ -29,7 +29,15 @@ export const useTripLeg = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tripLegApi.create(legData);
+      // Remove any fields the backend will handle (e.g., primary key, timestamps, metrics)
+      const payload = { ...legData };
+      delete payload.leg_id;
+      delete payload.created_at;
+      delete payload.updated_at;
+      delete payload.pickup_odometer;
+      delete payload.dropoff_odometer;
+      delete payload.leg_distance;
+      const response = await tripLegApi.create(payload);
       
       // Update local state if needed
       setTripLegs(prevLegs => [...prevLegs, response.data]);

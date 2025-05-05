@@ -1,19 +1,603 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { format } from 'date-fns';
-import FormComponent from '@/components/FormComponent';
 import dayjs from 'dayjs';
+import MemberAutocomplete from '@/components/common/MemberAutocomplete';
+import LocationAutocomplete from '@/components/common/LocationAutocomplete';
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import { TimeClock } from "@mui/x-date-pickers/TimeClock";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormGroup from '@mui/material/FormGroup';
 
+// Presenter component - responsible for rendering UI
+const TripFormPresenter = ({ 
+  formMethods,
+  handleSubmitForm,
+  handleCreateNewTrip,
+  isSubmitting,
+  submitText = "Create Trip",
+  legCount,
+  programs,
+  companies,
+  addLeg,
+  removeLeg,
+  renderMemberField,
+  renderLocationField,
+  selectedMember,
+  tripType,
+  initialData,
+  isEditMode
+}) => {
+  const { register, control, formState: { errors }, watch, setValue, trigger } = formMethods;
+  const currentScheduleType = watch('schedule_type');
+  
+  // Determine if we should show member details section
+  const showMemberDetails = selectedMember || initialData?.TripMember;
+  const memberData = selectedMember || initialData?.TripMember;
+  
+  return (
+    <FormProvider {...formMethods}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <form onSubmit={formMethods.handleSubmit(handleSubmitForm)}>
+          {/* Member Field */}
+          <div className="row">
+            <div className="col-12 mb-2">
+              {renderMemberField()}
+            </div>
+          </div>
+          
+          {/* Member Details Section */}
+          {showMemberDetails && (
+            <div className="row mb-3">
+              <div className="col-12">
+                <div className="member-details-container p-3 bg-light rounded small">
+                  <div className="row mb-2">
+                    <div className="col-md-6">
+                      <span className="fw-semibold">Program:</span> {memberData?.Program?.program_name || 
+                       (memberData?.program_id ? `Program ID: ${memberData.program_id}` : "N/A")}
+                    </div>
+                    <div className="col-md-6">
+                      <span className="fw-semibold">AHCCCS ID:</span> {memberData?.ahcccs_id || "N/A"}
+                    </div>
+                  </div>
+                  <div className="row mb-2">
+                    <div className="col-md-6">
+                      <span className="fw-semibold">Birth Date:</span> {memberData?.birth_date 
+                        ? new Date(memberData.birth_date).toLocaleDateString() 
+                        : "N/A"}
+                    </div>
+                    <div className="col-md-6">
+                      <span className="fw-semibold">Phone:</span> {memberData?.phone || "N/A"}
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div className="col-md-6">
+                      <span className="fw-semibold">Gender:</span> {memberData?.gender || "N/A"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Schedule Type & Trip Type */}
+          <div className="row">
+            <div className="col-md-6 mb-2">
+              <label>Schedule Type <span className="text-danger">*</span></label>
+              <div className="radio-background">
+                {[
+                  { value: 'Immediate', label: 'Immediate' },
+                  { value: 'Once', label: 'Once' },
+                  { value: 'Blanket', label: 'Blanket' }
+                ].map((option, index) => (
+                  <label key={index} className="me-3">
+                    <input
+                      type="radio"
+                      {...register('schedule_type')}
+                      value={option.value}
+                      className="me-2"
+                      onChange={(e) => {
+                        setValue('schedule_type', e.target.value);
+                        trigger('schedule_type');
+                      }}
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+              {errors.schedule_type && <span className="form-warning">{errors.schedule_type.message}</span>}
+            </div>
+            
+            <div className="col-md-6 mb-2">
+              <label>Trip Type <span className="text-danger">*</span></label>
+              <div className="radio-background">
+                {[
+                  { value: 'one_way', label: 'OW' },
+                  { value: 'round_trip', label: 'RT' },
+                  { value: 'multi_stop', label: 'Multiple Legs' }
+                ].map((option, index) => (
+                  <label key={index} className="me-3">
+                    <input
+                      type="radio"
+                      {...register('trip_type')}
+                      value={option.value}
+                      className="me-2"
+                      onChange={(e) => {
+                        setValue('trip_type', e.target.value);
+                        trigger('trip_type');
+                      }}
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+              {errors.trip_type && <span className="form-warning">{errors.trip_type.message}</span>}
+            </div>
+          </div>
+          
+          {/* Date Fields */}
+          <div className="row">
+            <div className={currentScheduleType === 'Blanket' ? 'col-md-6 mb-2' : 'col-md-6 mb-2'}>
+              <label>{currentScheduleType === 'Blanket' ? 'Start Date' : 'Date'} <span className="text-danger">*</span></label>
+              <div>
+                <Controller
+                  name="start_date"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      value={field.value ? dayjs(field.value) : null}
+                      onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : null)}
+                      slotProps={{
+                        textField: {
+                          className: "form-control mt-2",
+                          variant: "outlined",
+                          error: !!errors.start_date,
+                          helperText: errors.start_date?.message
+                        }
+                      }}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+            
+            {currentScheduleType === 'Blanket' ? (
+              <div className="col-md-6 mb-2">
+                <label>End Date <span className="text-danger">*</span></label>
+                <div>
+                  <Controller
+                    name="end_date"
+                    control={control}
+                    render={({ field }) => (
+                      <DatePicker
+                        value={field.value ? dayjs(field.value) : null}
+                        onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : null)}
+                        slotProps={{
+                          textField: {
+                            className: "form-control mt-2",
+                            variant: "outlined",
+                            error: !!errors.end_date,
+                            helperText: errors.end_date?.message
+                          }
+                        }}
+                      />
+                    )}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+          
+          {/* Days of Week for Blanket Schedule */}
+          {currentScheduleType === 'Blanket' && (
+            <div className="row">
+              <div className="col-12 mb-2">
+                <label>Days of Week <span className="text-danger">*</span></label>
+                <div className="multiselect-container">
+                  <FormGroup row>
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                      <FormControlLabel
+                        key={day}
+                        className="col-md-3"
+                        control={
+                          <Controller
+                            name="schedule_days"
+                            control={control}
+                            defaultValue={[]}
+                            render={({ field }) => {
+                              const { onChange, value = [] } = field;
+                              const isChecked = Array.isArray(value) && value.includes(day);
+                              
+                              return (
+                                <Checkbox
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    const newValue = [...(value || [])];
+                                    if (e.target.checked) {
+                                      newValue.push(day);
+                                    } else {
+                                      const index = newValue.indexOf(day);
+                                      if (index > -1) {
+                                        newValue.splice(index, 1);
+                                      }
+                                    }
+                                    onChange(newValue);
+                                  }}
+                                />
+                              );
+                            }}
+                          />
+                        }
+                        label={day}
+                      />
+                    ))}
+                  </FormGroup>
+                </div>
+                {errors.schedule_days && <span className="form-warning">{errors.schedule_days.message}</span>}
+              </div>
+            </div>
+          )}
+          
+          {/* Trip Details */}
+       
+          
+          {/* First Leg */}
+          <div className="row">
+            <div className="col-md-6 mb-2">
+              {renderLocationField(0, 'pickup')}
+            </div>
+            
+            <div className="col-md-6 mb-2">
+              {renderLocationField(0, 'dropoff')}
+            </div>
+          </div>
+          
+          <div className="row">
+            <div className="col-md-6 mb-2">
+              <label>Pickup Time <span className="text-danger">*</span></label>
+              <div>
+                <Controller
+                  name="legs[0].scheduled_pickup"
+                  control={control}
+                  render={({ field }) => (
+                    <TimePicker
+                      value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
+                      onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
+                      viewRenderers={{
+                        hours: props => <TimeClock {...props} />,
+                        minutes: props => <TimeClock {...props} />
+                      }}
+                      ampm={true}
+                      openTo="hours"
+                      views={['hours', 'minutes']}
+                      slotProps={{
+                        textField: {
+                          className: "form-control mt-2",
+                          variant: "outlined",
+                          placeholder: "",
+                          error: !!errors.legs?.[0]?.scheduled_pickup,
+                          helperText: errors.legs?.[0]?.scheduled_pickup?.message
+                        }
+                      }}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+            
+            <div className="col-md-6 mb-2">
+              <label>Dropoff Time (Optional)</label>
+              <div>
+                <Controller
+                  name="legs[0].scheduled_dropoff"
+                  control={control}
+                  render={({ field }) => (
+                    <TimePicker
+                      value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
+                      onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
+                      viewRenderers={{
+                        hours: props => <TimeClock {...props} />,
+                        minutes: props => <TimeClock {...props} />
+                      }}
+                      ampm={true}
+                      openTo="hours"
+                      views={['hours', 'minutes']}
+                      slotProps={{
+                        textField: {
+                          className: "form-control mt-2",
+                          variant: "outlined",
+                          placeholder: ""
+                        }
+                      }}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Return Trip */}
+          {tripType === 'round_trip' && (
+            <div className="row">
+              <div className="col-12 mb-2">
+                <h5>Return Trip</h5>
+              </div>
+              <div className="col-md-6 mb-2">
+                <label>Return Pickup Time (Optional)</label>
+                <div>
+                  <Controller
+                    name="return_pickup_time"
+                    control={control}
+                    render={({ field }) => (
+                      <TimePicker
+                        value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
+                        onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
+                        viewRenderers={{
+                          hours: props => <TimeClock {...props} />,
+                          minutes: props => <TimeClock {...props} />
+                        }}
+                        ampm={true}
+                        openTo="hours"
+                        views={['hours', 'minutes']}
+                        slotProps={{
+                          textField: {
+                            className: "form-control mt-2",
+                            variant: "outlined",
+                            placeholder: ""
+                          }
+                        }}
+                      />
+                    )}
+                  />
+                </div>
+                <small className="form-text text-muted">Time when return trip starts (from dropoff back to pickup location)</small>
+              </div>
+            </div>
+          )}
+          
+          {/* Additional Legs for Multiple Trip Type */}
+          {tripType === 'multi_stop' && legCount > 1 && (
+            <>
+              {Array.from({ length: legCount - 1 }).map((_, i) => {
+                const legIndex = i + 1;
+                return (
+                  <div key={`leg-${legIndex}`} className="row mb-4 border-top pt-3">
+                    <div className="col-12 d-flex justify-content-between align-items-center">
+                      <h5>Leg {legIndex + 1}</h5>
+                      <button 
+                        type="button" 
+                        className="btn btn-sm btn-danger mt-2"
+                        onClick={() => removeLeg(legIndex)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    
+                    <div className="col-md-6 mb-2">
+                      {renderLocationField(legIndex, 'pickup')}
+                    </div>
+                    
+                    <div className="col-md-6 mb-2">
+                      {renderLocationField(legIndex, 'dropoff')}
+                    </div>
+                    
+                    <div className="col-md-6 mb-2">
+                      <label>Pickup Time <span className="text-danger">*</span></label>
+                      <div>
+                        <Controller
+                          name={`legs[${legIndex}].scheduled_pickup`}
+                          control={control}
+                          render={({ field }) => (
+                            <TimePicker
+                              value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
+                              onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
+                              viewRenderers={{
+                                hours: props => <TimeClock {...props} />,
+                                minutes: props => <TimeClock {...props} />
+                              }}
+                              ampm={true}
+                              openTo="hours"
+                              views={['hours', 'minutes']}
+                              slotProps={{
+                                textField: {
+                                  className: "form-control mt-2",
+                                  variant: "outlined",
+                                  placeholder: "",
+                                  error: !!errors.legs?.[legIndex]?.scheduled_pickup,
+                                  helperText: errors.legs?.[legIndex]?.scheduled_pickup?.message
+                                }
+                              }}
+                            />
+                          )}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="col-md-6 mb-2">
+                      <label>Dropoff Time (Optional)</label>
+                      <div>
+                        <Controller
+                          name={`legs[${legIndex}].scheduled_dropoff`}
+                          control={control}
+                          render={({ field }) => (
+                            <TimePicker
+                              value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
+                              onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
+                              viewRenderers={{
+                                hours: props => <TimeClock {...props} />,
+                                minutes: props => <TimeClock {...props} />
+                              }}
+                              ampm={true}
+                              openTo="hours"
+                              views={['hours', 'minutes']}
+                              slotProps={{
+                                textField: {
+                                  className: "form-control mt-2",
+                                  variant: "outlined",
+                                  placeholder: ""
+                                }
+                              }}
+                            />
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              <div className="row">
+                <div className="col-12">
+                  <button 
+                    type="button" 
+                    className="btn btn-primary mb-3"
+                    onClick={addLeg}
+                  >
+                    Add Another Leg
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+          
+          {/* Special Instructions */}
+          <div className="row">
+            <div className="col-12 mb-1">
+              <h4 className="section-heading">Special Instructions</h4>
+            </div>
+          </div>
+          
+          <div className="row mb-3">
+            <div className="col-12">
+              <div className="special-instructions-container">
+                {/* Mobility Type */}
+                <div className="mobility-section px-3 py-2">
+                  {[
+                    { value: 'Ambulatory', label: 'Ambulatory' },
+                    { value: 'Wheelchair', label: 'Wheelchair' }
+                  ].map((option, index) => (
+                    <label key={index} className="radio-option me-4">
+                      <input
+                        type="radio"
+                        {...register('mobility_type')}
+                        value={option.value}
+                        className="me-2"
+                        onChange={(e) => {
+                          setValue('mobility_type', e.target.value);
+                        }}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
 
+                {/* Vehicle Type */}
+                <div className="vehicle-section px-3 pt-2">
+                  {[
+                    { value: 'van', label: 'Van' },
+                    { value: 'sedan', label: 'Sedan' }
+                  ].map((option) => (
+                    <div key={option.value} className="me-4 d-inline-block">
+                      <label className="checkbox-label">
+                        <Controller
+                          name={option.value}
+                          control={control}
+                          defaultValue={false}
+                          render={({ field }) => (
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                            />
+                          )}
+                        />
+                        <span className="ms-2">{option.label}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Client Requirements */}
+                <div className="requirements-section px-3 pt-3">
+                  <div className="row g-2">
+                    {[
+                      { value: 'rides_alone', label: 'Rides Alone' },
+                      { value: 'spanish_speaking', label: 'Spanish Speaking' },
+                      { value: 'males_only', label: 'Males Only' },
+                      { value: 'females_only', label: 'Females Only' },
+                      { value: 'special_assist', label: 'Special Assistance' },
+                      { value: 'pickup_time_exact', label: 'Exact Pickup Time' },
+                      { value: 'stay_with_client', label: 'Stay With Client' },
+                      { value: 'car_seat', label: 'Car Seat' },
+                      { value: 'extra_person', label: 'Extra Person' },
+                      { value: 'call_first', label: 'Call First' },
+                      { value: 'knock', label: 'Knock' }
+                    ].map((option) => (
+                      <div key={option.value} className="col-md-3 col-sm-6">
+                        <label className="checkbox-label">
+                          <Controller
+                            name={option.value}
+                            control={control}
+                            defaultValue={false}
+                            render={({ field }) => (
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                              />
+                            )}
+                          />
+                          <span className="ms-2">{option.label}</span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Submit Buttons */}
+          <div className="row mt-3">
+            <div className="col-12 d-flex justify-content-between">
+              <button type="submit" className="save-user-btn" disabled={isSubmitting}>
+                {isSubmitting ? "Submitting..." : submitText}
+              </button>
+              
+              {isEditMode && (
+                <button 
+                  type="button" 
+                  className="btn btn-success" 
+                  disabled={isSubmitting}
+                  onClick={formMethods.handleSubmit(handleCreateNewTrip)}
+                >
+                  {isSubmitting ? "Submitting..." : "Create New Trip"}
+                </button>
+              )}
+            </div>
+          </div>
+        </form>
+      </LocalizationProvider>
+    </FormProvider>
+  );
+};
+
+// Container component - responsible for logic and state
 const TripForm = ({ 
   initialData, 
-  onSubmit, 
+  onSubmit,
+  onCreateNew,
   isSubmitting, 
   members = [],
   programs = [],
   memberLocations = [],
   isLoadingLocations = false,
-  onMemberSelect = () => {}
+  onMemberSelect = () => {},
+  companies = []
 }) => {
   // Initialize form state
   const [tripType, setTripType] = useState('one_way');
@@ -41,17 +625,21 @@ const TripForm = ({
         leg_distance: null,
         is_return: false
       }],
-      special_instructions: {
-        mobility_type: 'Ambulatory'
-      },
-      client_requirements: [
-        { value: 'call_first' },
-        { value: 'knock' }
-      ],
-      vehicle_type: [
-        { value: 'van' },
-        { value: 'sedan' }
-      ]
+      // Set defaults for special instructions directly
+      mobility_type: 'Ambulatory',
+      rides_alone: false,
+      spanish_speaking: false,
+      males_only: false,
+      females_only: false,
+      special_assist: false,
+      pickup_time_exact: false,
+      stay_with_client: false,
+      car_seat: false,
+      extra_person: false,
+      call_first: true,
+      knock: true,
+      van: true,
+      sedan: true
     }
   });
 
@@ -61,109 +649,97 @@ const TripForm = ({
 
   // Initialize from initial data if provided
   useEffect(() => {
+    console.log('initialData', initialData);
     if (initialData) {
-      // Set trip type based on initialData
-      if (initialData.is_one_way === true) {
-        setTripType('one_way');
-        formMethods.setValue('trip_type', 'one_way');
-      } else if (initialData.is_one_way === false) {
-        setTripType('round_trip');
-        formMethods.setValue('trip_type', 'round_trip');
-      } else if (initialData.is_one_way === 'multiple') {
-        setTripType('multiple');
-        formMethods.setValue('trip_type', 'multiple');
-      } else if (initialData.trip_type) {
-        // If trip_type is directly provided in initialData
-        setTripType(initialData.trip_type);
-      }
-
-      // Set leg count
+      // Set trip type directly - no conversion needed with updated API
+      console.log('initialData.trip_type', initialData.trip_type);
+      setTripType(initialData.trip_type);
+      formMethods.setValue('trip_type', initialData.trip_type);
+      
+      // Set leg count directly from legs array
       if (initialData.legs) {
         setLegCount(initialData.legs.length);
       }
 
-      // Find selected member
-      if (initialData.member_id) {
-        const member = members.find(m => m.member_id === initialData.member_id);
-        if (member) {
-          setSelectedMember(member);
+      // Use member data directly from the API response
+      if (initialData.TripMember) {
+        setSelectedMember(initialData.TripMember);
+      }
+      
+      // Ensure dates are properly formatted for the form (YYYY-MM-DD)
+      if (initialData.start_date) {
+        formMethods.setValue('start_date', initialData.start_date);
+      }
+      
+      if (initialData.end_date) {
+        formMethods.setValue('end_date', initialData.end_date);
+      }
+      
+      // Set special instructions directly from the API response
+      if (initialData.specialInstructions) {
+        // Set all the special instruction fields directly
+        formMethods.setValue('mobility_type', initialData.specialInstructions.mobility_type || 'Ambulatory');
+        formMethods.setValue('rides_alone', initialData.specialInstructions.rides_alone || false);
+        formMethods.setValue('spanish_speaking', initialData.specialInstructions.spanish_speaking || false);
+        formMethods.setValue('males_only', initialData.specialInstructions.males_only || false);
+        formMethods.setValue('females_only', initialData.specialInstructions.females_only || false);
+        formMethods.setValue('special_assist', initialData.specialInstructions.special_assist || false);
+        formMethods.setValue('pickup_time_exact', initialData.specialInstructions.pickup_time_exact || false);
+        formMethods.setValue('stay_with_client', initialData.specialInstructions.stay_with_client || false);
+        formMethods.setValue('car_seat', initialData.specialInstructions.car_seat || false);
+        formMethods.setValue('extra_person', initialData.specialInstructions.extra_person || false);
+        formMethods.setValue('call_first', initialData.specialInstructions.call_first || false);
+        formMethods.setValue('knock', initialData.specialInstructions.knock || false);
+        formMethods.setValue('van', initialData.specialInstructions.van || false);
+        formMethods.setValue('sedan', initialData.specialInstructions.sedan || false);
+      }
+      
+      // Format time fields in legs to HH:MM format
+      if (initialData.legs?.length > 0) {
+        const formattedLegs = initialData.legs.map(leg => ({
+          ...leg,
+          // Convert time strings from HH:MM:SS to HH:MM
+          scheduled_pickup: leg.scheduled_pickup ? leg.scheduled_pickup.slice(0, 5) : null,
+          scheduled_dropoff: leg.scheduled_dropoff ? leg.scheduled_dropoff.slice(0, 5) : null
+        }));
+        
+        // For round trips, extract return pickup time
+        if (initialData.trip_type === 'round_trip' && formattedLegs.length > 1) {
+          const returnLeg = formattedLegs.find(leg => leg.sequence === 2);
+          if (returnLeg?.scheduled_pickup) {
+            formMethods.setValue('return_pickup_time', returnLeg.scheduled_pickup);
+          }
         }
+        
+        formMethods.setValue('legs', formattedLegs);
       }
     }
-  }, [initialData, members, formMethods]);
-
-
+  }, [initialData, formMethods]);
   
-
-  // Watch for changes in member_id to update selected member
-  useEffect(() => {
-    if (selectedMemberId) {
-      const member = members.find(m => m.member_id == selectedMemberId);
-      setSelectedMember(member);
-      
-      // Notify parent component to fetch locations for this member
-      onMemberSelect(selectedMemberId);
-      
-      // If member has a program, find the company for that program
-      if (member?.program_id && programs.length > 0) {
-        const memberProgram = programs.find(p => p.program_id === member.program_id);
-        if (memberProgram && memberProgram.company_id) {
-          formMethods.setValue('company_id', memberProgram.company_id);
-        }
-        
-        // Set program ID if member has one
-        if (member.program_id) {
-          formMethods.setValue('program_id', member.program_id);
-        }
-      }
-    } else {
-      setSelectedMember(null);
+  // Handle member selection
+  const handleMemberSelect = useCallback((memberId, memberData) => {
+    console.log("Member selected in form:", memberData);
+    
+    // Clear previous member locations
+    if (selectedMember?.member_id !== memberId) {
+      formMethods.setValue('legs[0].pickup_location', '');
+      formMethods.setValue('legs[0].dropoff_location', '');
     }
-  }, [selectedMemberId, members, programs]);
-
-  // Update form with member locations when they change
-  useEffect(() => {
-    // Only update locations if we have valid memberLocations data
-    if (memberLocations.length > 0 && selectedMemberId) {
-      // Find the default pickup and dropoff locations
-      const pickupLocation = memberLocations.find(loc => loc.location_type === 'pickup');
-      const dropoffLocation = memberLocations.find(loc => loc.location_type === 'dropoff');
-      
-      if (pickupLocation || dropoffLocation) {
-        // Get current legs
-        const legs = formMethods.getValues('legs') || [];
-        
-        if (legs.length > 0) {
-          // Create a copy to modify
-          const updatedLegs = [...legs];
-          
-          if (pickupLocation) {
-            updatedLegs[0] = {
-              ...updatedLegs[0],
-              pickup_location: pickupLocation.location_id
-            };
-            
-            // Set pickup_location individually
-            formMethods.setValue('legs[0].pickup_location', pickupLocation.location_id);
-          }
-          
-          if (dropoffLocation) {
-            updatedLegs[0] = {
-              ...updatedLegs[0],
-              dropoff_location: dropoffLocation.location_id
-            };
-            
-            // Set dropoff_location individually
-            formMethods.setValue('legs[0].dropoff_location', dropoffLocation.location_id);
-          }
-          
-          // Update the form with modified legs
-          formMethods.setValue('legs', updatedLegs);
-        }
-      }
+    
+    // Set the new selected member
+    setSelectedMember(memberData);
+    
+    // Notify parent component to fetch locations for this member
+    if (onMemberSelect && memberId) {
+      onMemberSelect(memberId, memberData);
     }
-  }, [
-  memberLocations, selectedMemberId]);
+    
+    // Set program_id from the complete member data
+    if (memberData?.program_id) {
+      formMethods.setValue('program_id', memberData.program_id);
+
+    }
+  }, [formMethods, onMemberSelect, programs, selectedMember]);
 
   // Helper function to initialize trip legs - wrap in useCallback
   const initializeTripLegs = useCallback((count = 1) => {
@@ -194,6 +770,45 @@ const TripForm = ({
       formMethods.setValue(`legs[${index}].is_return`, leg.is_return);
     });
   }, [formMethods]);
+
+  // Initialize default locations for the first leg if member locations change
+  useEffect(() => {
+    // Only run if we have valid memberLocations data and a selected member
+    if (memberLocations.length > 0 && selectedMemberId) {
+      console.log('Processing member locations for default address setup:', memberLocations);
+      
+      // Find default pickup and dropoff locations
+      const pickupLocation = memberLocations.find(loc => loc.location_type === 'pickup');
+      const dropoffLocation = memberLocations.find(loc => loc.location_type === 'dropoff');
+      
+      // Get current legs
+      const currentLegs = formMethods.getValues('legs') || [];
+      
+      // Only update if we have the first leg and it doesn't already have locations set
+      if (currentLegs.length > 0) {
+        // Create a copy to modify
+        const updatedLegs = [...currentLegs];
+        
+        // Update pickup location if available and not already set
+        if (pickupLocation && !formMethods.getValues('legs[0].pickup_location')) {
+          updatedLegs[0] = {
+            ...updatedLegs[0],
+            pickup_location: pickupLocation.location_id
+          };
+          formMethods.setValue('legs[0].pickup_location', pickupLocation.location_id);
+        }
+        
+        // Update dropoff location if available and not already set
+        if (dropoffLocation && !formMethods.getValues('legs[0].dropoff_location')) {
+          updatedLegs[0] = {
+            ...updatedLegs[0],
+            dropoff_location: dropoffLocation.location_id
+          };
+          formMethods.setValue('legs[0].dropoff_location', dropoffLocation.location_id);
+        }
+      }
+    }
+  }, [selectedMemberId, memberLocations, formMethods]);
 
   // Handle trip type changes
   useEffect(() => {
@@ -240,7 +855,7 @@ const TripForm = ({
       
       // Set return_pickup_time field
       formMethods.setValue('return_pickup_time', null);
-    } else if (newTripType === 'multiple') {
+    } else if (newTripType === 'multi_stop') {
       // Multiple legs starts with at least 2 legs
       const currentLegs = formMethods.getValues('legs') || [];
       const newCount = Math.max(currentLegs.length, 2);
@@ -315,356 +930,89 @@ const TripForm = ({
     setLegCount(newLegs.length);
   }, [formMethods, setLegCount]);
 
-  // Memoize options arrays separately to reduce computation in the main useMemo
-  const memberOptions = useMemo(() => members.map(member => ({
-    value: member.member_id,
-    label: `${member.first_name} ${member.last_name}`
-  })), [members]);
-  
-  const locationOptions = useMemo(() => memberLocations.map(loc => ({
-    value: loc.location_id,
-    label: loc.street_address 
-      ? `${loc.street_address}, ${loc.city || ''}, ${loc.state || ''} ${loc.zip || ''}`
-      : `Location #${loc.location_id}`
-  })), [memberLocations]);
-  
-  const programOptions = useMemo(() => programs?.map(program => ({
-    value: program.program_id,
-    label: program.program_name
-  })) || [], [programs]);
-  
-
-
-  // Now use the optimized useMemo with fewer dependencies
-  const tripFields = useMemo(() => {
-    const currentScheduleType = formMethods.watch('schedule_type');
-    const currentTripType = formMethods.watch('trip_type');
-   // console.log(currentTripType);
+  // Custom member field for the form
+  const renderMemberField = useCallback(() => {
+    // If editing a trip, use the member from initialData or selectedMember
+    const memberValue = selectedMember || 
+      (initialData?.member_id ? { 
+        member_id: initialData.member_id,
+        first_name: initialData?.TripMember?.first_name,
+        last_name: initialData?.TripMember?.last_name
+      } : null);
     
-    const fields = [
-      {
-        name: 'member_id',
-        label: 'Member',
-        type: 'autocomplete',
-        options: memberOptions,
-        placeholder: 'Select Member',
-        required: true,
-        col: 12
-      },
-      {
-        name: 'program_id',
-        label: 'Program',
-        type: 'autocomplete',
-        options: programOptions,
-        placeholder: 'Select Program',
-        required: false,
-        col: 6
-      },
-      {
-        name: 'company_id',
-        label: 'Company',
-        type: 'autocomplete',
-        options: programOptions,
-        placeholder: 'Select Company',
-        required: false,
-        col: 6
-      },
-      {
-        name: 'schedule_type',
-        label: 'Schedule Type',
-        type: 'radio',
-        options: [
-          { value: 'Immediate', label: 'Immediate' },
-          { value: 'Once', label: 'Once' },
-          { value: 'Blanket', label: 'Blanket' }
-        ],
-        required: true,
-        col: 12
-      },
-      {
-        name: 'trip_type',
-        label: 'Trip Type',
-        type: 'radio',
-        options: [
-          { value: 'one_way', label: 'One Way' },
-          { value: 'round_trip', label: 'Round Trip' },
-          { value: 'multiple', label: 'Multiple Legs' }
-        ],
-        required: true,
-        col: 12,
-        defaultValue: 'one_way'
-      },
-      {
-        name: 'start_date',
-        label: currentScheduleType === 'Blanket' ? 'Start Date' : 'Date',
-        type: 'date',
-        required: true,
-        col: currentScheduleType === 'Blanket' ? 6 : 12
-      }
-    ];
-    
-    // If schedule type is 'Blanket', add end date and days of week
-    if (currentScheduleType === 'Blanket') {
-      fields.push(
-        {
-          name: 'end_date',
-          label: 'End Date',
-          type: 'date',
-          required: true,
-          col: 6
-        },
-        {
-          name: 'schedule_days',
-          label: 'Days of Week',
-          type: 'multiselect',
-          options: [
-            { value: 'Monday', label: 'Monday' },
-            { value: 'Tuesday', label: 'Tuesday' },
-            { value: 'Wednesday', label: 'Wednesday' },
-            { value: 'Thursday', label: 'Thursday' },
-            { value: 'Friday', label: 'Friday' },
-            { value: 'Saturday', label: 'Saturday' },
-            { value: 'Sunday', label: 'Sunday' }
-          ],
-          required: true,
-          col: 12
-        }
-      );
-    }
-    
-    // Add trip details section
-    fields.push({
-      heading: 'Trip Details',
-      type: 'heading',
-      col: 12
-    });
-    
-    // For all trip types, we show the first leg's pickup and dropoff
-    fields.push(
-      {
-        name: 'legs[0].pickup_location',
-        label: 'Pickup Location',
-        type: 'autocomplete',
-        options: locationOptions,
-        required: true,
-        col: 12,
-        isLoading: isLoadingLocations
-      },
-      {
-        name: 'legs[0].scheduled_pickup',
-        label: 'Pickup Time',
-        type: 'time',
-        required: true,
-        col: 6
-      },
-      {
-        name: 'legs[0].dropoff_location',
-        label: 'Dropoff Location',
-        type: 'autocomplete',
-        options: locationOptions,
-        required: true,
-        col: 12,
-        isLoading: isLoadingLocations
-      },
-      {
-        name: 'legs[0].scheduled_dropoff',
-        label: 'Dropoff Time (Optional)',
-        type: 'time',
-        required: false,
-        col: 6
-      }
+    return (
+        <MemberAutocomplete
+          name="member_id"
+          label="Member"
+          placeholder="Search member by name (min 2 letters)"
+          required={true}
+          onSelect={handleMemberSelect}
+        defaultValue={memberValue}
+        key={memberValue?.member_id || 'member-select'} // Force re-render on member change
+        />
     );
+  }, [handleMemberSelect, selectedMember, initialData]);
+
+  // Custom location field for the form
+  const renderLocationField = useCallback((legIndex, locationType) => {
+    const fieldName = `legs[${legIndex}].${locationType}_location`;
+    const label = locationType === 'pickup' ? 'Pickup Location' : 'Dropoff Location';
     
-    // For round trip, add return pickup time
-    if (currentTripType === 'round_trip') {
-      fields.push(
-        {
-          heading: 'Return Trip',
-          type: 'subheading',
-          col: 12
-        },
-        {
-          name: 'return_pickup_time',
-          label: 'Return Pickup Time (Optional)',
-          type: 'time',
-          required: false,
-          helperText: 'Time when return trip starts (from dropoff back to pickup location)',
-          col: 6
-        }
-      );
-    }
-    
-    // Only show additional legs for multiple trip type
-    if (currentTripType === 'multiple' && legCount > 1) {
-      // Add fields for additional legs (leg 2 and beyond)
-      for (let i = 1; i < legCount; i++) {
-        fields.push(
-          {
-            heading: `Leg ${i + 1}`,
-            type: 'subheading',
-            col: 10
-          },
-          {
-            type: 'custom',
-            col: 2,
-            render: () => (
-              <button 
-                type="button" 
-                className="btn btn-sm btn-danger mt-2"
-                onClick={() => removeLeg(i)}
-              >
-                Remove
-              </button>
-            )
-          },
-          {
-            name: `legs[${i}].pickup_location`,
-            label: 'Pickup Location',
-            type: 'autocomplete',
-            options: locationOptions,
-            required: true,
-            col: 12,
-            isLoading: isLoadingLocations
-          },
-          {
-            name: `legs[${i}].scheduled_pickup`,
-            label: 'Pickup Time',
-            type: 'time',
-            required: true,
-            col: 6
-          },
-          {
-            name: `legs[${i}].dropoff_location`,
-            label: 'Dropoff Location',
-            type: 'autocomplete',
-            options: locationOptions,
-            required: true,
-            col: 12,
-            isLoading: isLoadingLocations
-          },
-          {
-            name: `legs[${i}].scheduled_dropoff`,
-            label: 'Dropoff Time (Optional)',
-            type: 'time',
-            required: false,
-            col: 6
+    return (
+        <LocationAutocomplete
+          name={fieldName}
+          label={label}
+          locations={memberLocations}
+          required={true}
+          isLoading={isLoadingLocations}
+          defaultValue={
+            formMethods.getValues(fieldName) || 
+            (initialData?.legs?.[legIndex]?.[`${locationType}_location`] || '')
           }
-        );
-      }
-      
-      // Add button to add more legs
-      fields.push({
-        type: 'custom',
-        col: 12,
-        render: () => (
-          <button 
-            type="button" 
-            className="btn btn-primary mb-3"
-            onClick={addLeg}
-          >
-            Add Another Leg
-          </button>
-        )
-      });
-    }
-    
-    // Add special instructions section
-    fields.push(
-      {
-        heading: 'Special Instructions',
-        type: 'heading',
-        col: 12
-      },
-      {
-        name: 'special_instructions.mobility_type',
-        label: 'Mobility Type',
-        type: 'radio',
-        options: [
-          { value: 'Ambulatory', label: 'Ambulatory' },
-          { value: 'Wheelchair', label: 'Wheelchair' }
-        ],
-        defaultValue: 'Ambulatory',
-        col: 12
-      },
-      // Client requirements - using array-checkboxes
-      {
-        name: 'client_requirements',
-        label: 'Client Requirements',
-        type: 'array-checkboxes',
-        options: [
-          { value: 'rides_alone', label: 'Rides Alone' },
-          { value: 'spanish_speaking', label: 'Spanish Speaking' },
-          { value: 'males_only', label: 'Males Only' },
-          { value: 'females_only', label: 'Females Only' },
-          { value: 'special_assist', label: 'Special Assistance' },
-          { value: 'pickup_time_exact', label: 'Exact Pickup Time' },
-          { value: 'stay_with_client', label: 'Stay With Client' },
-          { value: 'car_seat', label: 'Car Seat' },
-          { value: 'extra_person', label: 'Extra Person' },
-          { value: 'call_first', label: 'Call First' },
-          { value: 'knock', label: 'Knock' }
-        ],
-        valueField: 'value',
-        defaultItemValues: {},
-        col: 12
-      },
-      // Vehicle type - using array-checkboxes
-      {
-        name: 'vehicle_type',
-        label: 'Vehicle Type',
-        type: 'array-checkboxes',
-        options: [
-          { value: 'van', label: 'Van' },
-          { value: 'sedan', label: 'Sedan' }
-        ],
-        valueField: 'value',
-        defaultItemValues: {},
-        col: 12
-      }
+        />
     );
-    
-    return fields;
-  }, [
-    formMethods, 
-    memberOptions, 
-    programOptions, 
-    legCount,
-    tripType, 
-    addLeg, 
-    removeLeg,
-    formMethods.watch('schedule_type'),
-    formMethods.watch('trip_type'),
-    locationOptions,
-    memberLocations,
-    isLoadingLocations
-  ]);
+  }, [memberLocations, isLoadingLocations, formMethods, initialData]);
 
   const handleSubmitForm = (data) => {
-    // Convert trip_type to is_one_way for backend compatibility
-    const submissionData = { ...data };
-    
-    // Map trip_type to is_one_way for backend compatibility
-    if (data.trip_type === 'one_way') {
-      submissionData.is_one_way = true;
-    } else if (data.trip_type === 'round_trip') {
-      submissionData.is_one_way = false;
-    } else if (data.trip_type === 'multiple') {
-      submissionData.is_one_way = 'multiple';
+    onSubmit(data);
+  };
+  
+  const handleCreateNewTrip = (data) => {
+    // Always create a new trip, regardless of whether we're editing
+    if (onCreateNew) {
+      onCreateNew(data);
+    } else {
+      // Fall back to regular submit if onCreateNew is not provided
+      const newTripData = { ...data };
+      // Remove any trip_id to ensure it creates a new trip
+      if (newTripData.trip_id) delete newTripData.trip_id;
+      onSubmit(newTripData);
     }
-    
-    onSubmit(submissionData);
   };
 
+  // Determine submit text based on context
+  const submitText = initialData?.trip_id ? "Update Trip" : "Create Trip";
+  const isEditMode = !!initialData?.trip_id;
+
   return (
-    <FormProvider {...formMethods}>
-      <FormComponent
-        fields={tripFields}
-        onSubmit={handleSubmitForm}
-        submitText="Create Trip"
-        isSubmitting={isSubmitting}
-      />
-      
-    </FormProvider>
+    <TripFormPresenter
+      formMethods={formMethods}
+      handleSubmitForm={handleSubmitForm}
+      handleCreateNewTrip={handleCreateNewTrip}
+      isSubmitting={isSubmitting}
+      submitText={submitText}
+      tripType={tripType}
+      legCount={legCount}
+      programs={programs}
+      companies={companies}
+      addLeg={addLeg}
+      removeLeg={removeLeg}
+      renderMemberField={renderMemberField}
+      renderLocationField={renderLocationField}
+      selectedMember={selectedMember}
+      initialData={initialData}
+      isEditMode={isEditMode}
+    />
   );
 };
 

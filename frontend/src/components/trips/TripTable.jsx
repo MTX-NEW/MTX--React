@@ -32,10 +32,12 @@ const TripTable = ({
       accessor: 'trip_type',
       cell: (value) => {
         switch (value) {
-          case 'Round Trip':
+          case 'round_trip':
             return 'Round Trip';
           case 'one_way':
             return 'One Way';
+          case 'multi_stop':
+            return 'Multi-stop';
           default:
             return value || 'N/A';
         }

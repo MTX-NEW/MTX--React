@@ -1,72 +1,78 @@
-import { useState, useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
+import useUserRoutes from "@/hooks/useUserRoutes";
 import Header from "@/components/Header";
 
 const TimeSheetLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState("");
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+  const { filteredRoutes, loading } = useUserRoutes();
 
-  // Define tabs and their corresponding routes
-  const tabs = [
-    { name: "Employee time sheet", path: "/time-sheet/employee" },
-    { name: "Employee History", path: "/time-sheet/employee-history", hidden: true }, // New tab, hidden by default
-    { name: "Time Off Requests", path: "/time-sheet/time-off-request" },
-    { name: "Manage Time Off", path: "/time-sheet/manage-time-off" },
-    { name: "Payroll", path: "/time-sheet/payroll" },
-  ];
+  // Find timeSheet section in filteredRoutes
+  const timeSheetSection = filteredRoutes.find(route => route.id === 'time-sheet');
+  const tabs = timeSheetSection?.tabs || [];
 
-  // Check if we're on the employee history path
+  // --- Determine active tab directly from location --- 
+  let currentActiveTab = "";
+  const pathParts = location.pathname.split('/');
+  const employeeIdForHistory = pathParts[2] === 'employee' && pathParts[4] === 'history' && pathParts[3] ? pathParts[3] : null;
+
+  if (employeeIdForHistory) {
+    currentActiveTab = "Employee History"; // Special case for history
+  } else {
+    // Find matching tab based on starting path, fallback to first tab
+    currentActiveTab = tabs.find((tab) => !tab.hidden && location.pathname.startsWith(tab.path))?.name || tabs[0]?.name;
+  }
+  // --- End derive active tab --- 
+
+  // Simplified useEffect - Handle redirects
   useEffect(() => {
-    const pathParts = location.pathname.split('/');
+    // Don't redirect if still loading
+    if (loading || tabs.length === 0) return;
 
-    // Handle employee history specifically
-    if (pathParts[2] === 'employee' && pathParts[4] === 'history' && pathParts[3]) {
-      // Extract employee ID
-      const employeeId = pathParts[3];
-      setSelectedEmployeeId(employeeId);
-      setActiveTab("Employee History");
-      // Make sure to not redirect away
-      return;
+    // Check if the current path (ignoring history detail) matches any visible tab start
+    const baseCheckPath = location.pathname;
+    const pathMatchesVisibleTab = tabs.some(tab => 
+        !tab.hidden && baseCheckPath.startsWith(tab.path)
+    );
+
+    // Redirect to the first non-hidden tab if the current path doesn't belong to any visible tab section
+    if (!employeeIdForHistory && !pathMatchesVisibleTab && location.pathname.startsWith('/time-sheet')) {
+      const firstVisibleTab = tabs.find(tab => !tab.hidden);
+      if (firstVisibleTab) {
+        navigate(firstVisibleTab.path, { replace: true });
+      }
     }
+  }, [location.pathname, navigate, tabs, employeeIdForHistory, loading]);
 
-    // Regular tab handling
-    const currentTab = tabs.find((tab) => location.pathname === tab.path);
-
-    if (currentTab) {
-      setActiveTab(currentTab.name);
-    } else if (location.pathname.startsWith('/time-sheet/employee/')) {
-      // We're on a employee sub-route, keep employee tab active
-      setActiveTab(tabs[0].name);
-    } else {
-      // Redirect to the first tab if no match
-      setActiveTab(tabs[0].name);
-      navigate(tabs[0].path, { replace: true });
-    }
-  }, [location.pathname, navigate]);
-
-  // Handle tab switching
-  const handleTabChange = (tabName) => {
-    if (tabName === "Employee History" && selectedEmployeeId) {
-      // Navigate to employee history with the selected ID
-      navigate(`/time-sheet/employee/${selectedEmployeeId}/history`);
-      return;
-    }
-
+  // Handle tab switching - wrapped in useCallback
+  const handleTabChange = useCallback((tabName) => {
     const selectedTab = tabs.find((tab) => tab.name === tabName);
     if (selectedTab) {
-      // Only navigate if it's not the history tab or if we have an employee selected
-      navigate(selectedTab.path);
+      if (selectedTab.name === "Employee History") {
+        // Attempt to get employeeId from the current path if switching TO history
+        // This logic might need refinement based on where the user can be when clicking the history tab
+        const currentPathParts = location.pathname.split('/');
+        const currentEmployeeId = currentPathParts[3]; 
+        if (currentEmployeeId && location.pathname.includes('/employee/') && !location.pathname.includes('/history')) {
+           navigate(`/time-sheet/employee/${currentEmployeeId}/history`);
+        } else {
+          // Cannot navigate to history without an employee context, maybe default to employee list?
+          const employeeListTab = tabs.find(t => t.name === "Employee Timesheet");
+          if (employeeListTab) navigate(employeeListTab.path);
+        }
+      } else {
+        navigate(selectedTab.path);
+      }
     }
-  };
+    // Dependencies: navigate, tabs, location (because it reads location.pathname)
+  }, [navigate, tabs, location]);
 
-  // Filter out hidden tabs
+  // Filter out hidden tabs dynamically based on derived active tab
   const visibleTabs = tabs.filter(tab => {
-    // Show the history tab only when it's active
     if (tab.name === "Employee History") {
-      return activeTab === "Employee History";
+      return currentActiveTab === "Employee History"; // Show only when active
     }
     return !tab.hidden;
   });
@@ -75,12 +81,16 @@ const TimeSheetLayout = () => {
     <div className="d-flex min-vh-100">
       <Sidebar />
       <div className="flex-grow-1 d-flex flex-column">
-        <Header
-          tabs={visibleTabs.map((tab) => tab.name)}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          className="sticky-top bg-white"
-        />
+        {loading ? (
+          <div className="p-3">Loading...</div>
+        ) : (
+          <Header
+            tabs={visibleTabs.map((tab) => tab.name)}
+            activeTab={currentActiveTab} // Pass derived active tab
+            onTabChange={handleTabChange} // Pass stable function reference
+            className="sticky-top bg-white"
+          />
+        )}
         <div className="timesheet-container flex-grow-1 overflow-auto" style={{
           height: 'calc(100vh - 89px)' // Adjust to match header height
         }}>

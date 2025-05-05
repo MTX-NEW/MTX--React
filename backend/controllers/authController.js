@@ -90,17 +90,24 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        id: user.id,
-        username: user.username,
-        user_type: user.user_type,
-        user_group: user.user_group
-      },
+    // Generate Access Token (short-lived) and Refresh Token (long-lived)
+    const accessToken = jwt.sign(
+      { id: user.id, username: user.username, user_type: user.user_type, user_group: user.user_group },
       process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "24h" }
+      { expiresIn: process.env.JWT_ACCESS_EXPIRY || "7d" }
     );
+    const refreshToken = jwt.sign(
+      { id: user.id, username: user.username, user_type: user.user_type, user_group: user.user_group },
+      process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key",
+      { expiresIn: process.env.JWT_REFRESH_EXPIRY || "14d" }
+    );
+    // Set httpOnly cookie for refresh token
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
 
     // Return user info without sensitive data
     const userWithoutPassword = {
@@ -120,7 +127,7 @@ exports.login = async (req, res) => {
     res.json({
       message: "Login successful",
       user: userWithoutPassword,
-      token
+      token: accessToken
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -151,4 +158,47 @@ exports.getCurrentUser = async (req, res) => {
     console.error("Error fetching current user:", error);
     res.status(500).json({ message: "An error occurred while fetching user data" });
   }
+};
+
+// Refresh access token
+exports.refreshToken = (req, res) => {
+  try {
+    const { refreshToken } = req.cookies;
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token missing." });
+    }
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key");
+    // Generate new tokens
+    const accessToken = jwt.sign(
+      { id: decoded.id, username: decoded.username, user_type: decoded.user_type, user_group: decoded.user_group },
+      process.env.JWT_SECRET || "your-secret-key",
+      { expiresIn: process.env.JWT_ACCESS_EXPIRY || "15m" }
+    );
+    const newRefreshToken = jwt.sign(
+      { id: decoded.id, username: decoded.username, user_type: decoded.user_type, user_group: decoded.user_group },
+      process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key",
+      { expiresIn: process.env.JWT_REFRESH_EXPIRY || "7d" }
+    );
+    // Set rotated cookie
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+    return res.json({ accessToken });
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return res.status(401).json({ message: "Invalid or expired refresh token." });
+  }
+};
+
+// Logout and clear refresh token cookie
+exports.logout = (req, res) => {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  return res.json({ message: "Logged out successfully." });
 }; 

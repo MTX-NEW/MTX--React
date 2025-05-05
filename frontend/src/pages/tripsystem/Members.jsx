@@ -1,6 +1,6 @@
 import React from 'react';
 import { FormProvider } from 'react-hook-form';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import DynamicTable, { DefaultTableActions } from '@/components/DynamicTable';
 import RightSidebarPopup from '@/components/RightSidebarPopup';
 import FormComponent from '@/components/FormComponent';
@@ -290,7 +290,7 @@ const Members = () => {
                 <div className="detail-item">
                   <span className="detail-label">Birth Date:</span>
                   <span className="detail-value">
-                    {selectedMember.birth_date 
+                    {selectedMember.birth_date && isValid(new Date(selectedMember.birth_date))
                       ? format(new Date(selectedMember.birth_date), 'MM/dd/yyyy') 
                       : 'N/A'}
                   </span>
@@ -298,8 +298,8 @@ const Members = () => {
                 <div className="detail-item">
                   <span className="detail-label">Insurance Expiry:</span>
                   <span className="detail-value">
-                    {selectedMember.insurance_expiry 
-                      ? format(new Date(selectedMember.insurance_expiry), 'MM/dd/yyyy') 
+                    {selectedMember.insurance_expiry && isValid(new Date(selectedMember.insurance_expiry))
+                      ? format(new Date(selectedMember.insurance_expiry), 'MM/dd/yyyy')
                       : 'N/A'}
                   </span>
                 </div>
