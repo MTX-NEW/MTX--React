@@ -16,9 +16,12 @@ const LocationAutocomplete = ({
   isLoading = false,
   onChange
 }) => {
-  const { control, getValues } = useFormContext();
+  const { control, getValues, watch } = useFormContext();
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [formattedSearchResults, setFormattedSearchResults] = useState([]);
+  
+  // Watch for value changes to update the selectedLocation when field is updated programmatically
+  const currentValue = watch(name);
   
   // Use useAsyncAutocomplete to fetch locations dynamically as the user types
   const {
@@ -50,15 +53,35 @@ const LocationAutocomplete = ({
  
 
   // Convert member-specific locations to options format (only once)
-  const memberLocationOptions = locations.map(loc => ({
+  const memberLocationOptions = React.useMemo(() => locations.map(loc => ({
     value: loc.location_id,
     label: loc.street_address 
       ? `${loc.street_address}, ${loc.city || ''}, ${loc.state || ''} ${loc.zip || ''}`
       : `Location #${loc.location_id}`,
     data: loc,
     isMemberLocation: true
-  }));
+  })), [locations]);
+  
   console.log("Member location options:", memberLocationOptions);
+  
+  // Update the selected location when the location list changes or default value changes
+  useEffect(() => {
+    if (locations.length > 0) {
+      // Check if we have a current value to find in the new locations
+      const valueToFind = currentValue || defaultValue;
+      
+      if (valueToFind) {
+        const locId = typeof valueToFind === 'object' ? valueToFind.location_id : valueToFind;
+        const foundLocation = locations.find(loc => loc.location_id == locId);
+        
+        if (foundLocation && (!selectedLocation || selectedLocation.location_id != locId)) {
+          console.log("Setting selected location from updated locations:", foundLocation);
+          setSelectedLocation(foundLocation);
+        }
+      }
+    }
+  }, [locations, defaultValue, currentValue, selectedLocation]);
+  
   // Find the default option if provided
   let defaultOption = null;
   if (defaultValue && locations.length > 0) {
@@ -67,6 +90,7 @@ const LocationAutocomplete = ({
     console.log("Default option:", defaultOption);
     // Set initial selected location if we have a default value and no selected location yet
     if (defaultOption && !selectedLocation) {
+      console.log("Setting selected location from default option:", defaultOption.data);
       setSelectedLocation(defaultOption.data);
     }
   }
@@ -102,6 +126,21 @@ const LocationAutocomplete = ({
               ? field.value 
               : displayOptions.find(opt => !opt.isHeader && opt.value == field.value) || null)
           : defaultOption;
+          
+        // Make sure selectedLocation is kept in sync with the field value
+        React.useEffect(() => {
+          if (value && typeof value !== 'object') {
+            // If value is just an ID, try to find the location data
+            const locationData = locations.find(loc => loc.location_id == value);
+            if (locationData && (!selectedLocation || selectedLocation.location_id != value)) {
+              console.log("Setting selected location from value change:", locationData);
+              setSelectedLocation(locationData);
+            }
+          } else if (value && value.data && (!selectedLocation || selectedLocation.location_id != value.value)) {
+            console.log("Setting selected location from option data:", value.data);
+            setSelectedLocation(value.data);
+          }
+        }, [value, locations]);
         
         return (
           <div className="mb-2">
@@ -121,6 +160,7 @@ const LocationAutocomplete = ({
                 
                 // Update selected location for details display
                 if (newValue) {
+                  console.log("Setting selected location from selection:", newValue.data);
                   setSelectedLocation(newValue.data);
                 } else {
                   setSelectedLocation(null);

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { TimeSheet, User, TimeSheetBreak } = require('../models');
 const { Op } = require('sequelize');
+const timeSheetController = require('../controllers/timeSheetController');
 
 // Get all timesheets with optional filtering
 router.get('/', async (req, res) => {
@@ -265,91 +266,8 @@ router.post('/clock-in', async (req, res) => {
   }
 });
 
-// Clock out route
-router.post('/clock-out', async (req, res) => {
-  try {
-    const { user_id } = req.body;
-    
-    // Validate required fields
-    if (!user_id) {
-      return res.status(400).json({ message: 'User ID is required' });
-    }
-    
-    // Get user's active timesheet
-    const today = new Date().toISOString().split('T')[0];
-    const timesheet = await TimeSheet.findOne({
-      where: {
-        user_id,
-        date: today,
-        clock_out: null
-      }
-    });
-    
-    if (!timesheet) {
-      return res.status(404).json({ message: 'No active timesheet found' });
-    }
-    
-    // Set clock out time
-    const clockOutTime = new Date();
-    await timesheet.update({ 
-      clock_out: clockOutTime,
-      status: 'clocked_out'  // Add status update
-    });
-    
-    // Calculate total hours
-    const clockInTime = new Date(timesheet.clock_in);
-    const diffHours = (clockOutTime - clockInTime) / (1000 * 60 * 60);
-    
-    // Get breaks for this timesheet
-    const breaks = await TimeSheetBreak.findAll({
-      where: { timesheet_id: timesheet.timesheet_id }
-    });
-    
-    // Calculate total break time
-    let breakHours = 0;
-    for (const breakEntry of breaks) {
-      if (breakEntry.end_time) {
-        const breakStartTime = new Date(breakEntry.start_time);
-        const breakEndTime = new Date(breakEntry.end_time);
-        breakHours += (breakEndTime - breakStartTime) / (1000 * 60 * 60);
-      }
-    }
-    
-    // Subtract break time from total time
-    const netHours = diffHours - breakHours;
-    
-    // Default overtime threshold (8 hours)
-    const overtimeThreshold = 8;
-    
-    // Calculate regular and overtime hours
-    const regularHours = Math.min(netHours, overtimeThreshold);
-    const overtimeHours = Math.max(0, netHours - overtimeThreshold);
-    
-    // Update the hours
-    await timesheet.update({
-      total_regular_hours: regularHours.toFixed(2),
-      total_overtime_hours: overtimeHours.toFixed(2)
-    });
-    
-    // Get the updated timesheet with associations
-    const updatedTimesheet = await TimeSheet.findByPk(timesheet.timesheet_id, {
-      include: [
-        {
-          model: User,
-          attributes: ['id', 'first_name', 'last_name', 'email']
-        },
-        {
-          model: TimeSheetBreak
-        }
-      ]
-    });
-    
-    res.json(updatedTimesheet);
-  } catch (error) {
-    console.error('Error clocking out:', error);
-    res.status(500).json({ message: 'Failed to clock out', error: error.message });
-  }
-});
+// Clock out route - use the controller implementation
+router.post('/clock-out', timeSheetController.clockOut);
 
 // Get current timesheet status for user
 router.get('/status/:userId', async (req, res) => {

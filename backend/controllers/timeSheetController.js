@@ -316,7 +316,23 @@ exports.clockOut = async (req, res) => {
     // Calculate hours
     const clockInTime = new Date(activeTimesheet.clock_in);
     const clockOutTime = now;
-    const diffHours = (clockOutTime - clockInTime) / (1000 * 60 * 60);
+    
+    // Calculate the time difference correctly
+    // If the clock-out is on the same date, calculate actual hours
+    // Otherwise, limit to a standard workday (e.g., 8 hours)
+    let diffHours;
+    
+    const clockInDate = clockInTime.toISOString().split('T')[0];
+    const clockOutDate = clockOutTime.toISOString().split('T')[0];
+    
+    if (clockInDate === clockOutDate) {
+      // Same day - calculate actual hours worked
+      diffHours = (clockOutTime - clockInTime) / (1000 * 60 * 60);
+    } else {
+      // Different days - assume a standard workday of 8 hours
+      diffHours = 8;
+      console.log(`Clock out on different day than clock in. Limiting to ${diffHours} hours.`);
+    }
     
     // Calculate total break time
     let breakHours = 0;
@@ -338,12 +354,17 @@ exports.clockOut = async (req, res) => {
     const regularHours = Math.min(netHours, overtimeThreshold);
     const overtimeHours = Math.max(0, netHours - overtimeThreshold);
     
+    // Output for debugging
+    console.log(`Clock in: ${clockInTime}, Clock out: ${clockOutTime}`);
+    console.log(`Diff hours: ${diffHours}, Break hours: ${breakHours}, Net hours: ${netHours}`);
+    console.log(`Regular hours: ${regularHours}, Overtime hours: ${overtimeHours}`);
+    
     // Update the timesheet
     await activeTimesheet.update({
       clock_out: now,
       total_regular_hours: regularHours.toFixed(2),
       total_overtime_hours: overtimeHours.toFixed(2),
-      status: 'completed',
+      status: 'submitted',
       notes: notes ? (activeTimesheet.notes + '\n' + notes) : activeTimesheet.notes
     });
     

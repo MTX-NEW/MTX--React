@@ -5,7 +5,7 @@ const path = require('path');
 const envContent = `# Database Configuration
 MYSQL_HOST=localhost
 MYSQL_USER=root
-MYSQL_PASSWORD=
+MYSQL_PASSWORD=password123
 MYSQL_DB=mtx
 
 # Server Configuration
@@ -14,7 +14,7 @@ NODE_ENV=development
 
 # JWT Authentication
 JWT_SECRET=your_jwt_secret_key_change_this
-JWT_EXPIRES_IN=1d
+JWT_EXPIRES_IN=7d
 REFRESH_TOKEN_SECRET=your_refresh_token_secret_change_this
 REFRESH_TOKEN_EXPIRES_IN=7d
 
