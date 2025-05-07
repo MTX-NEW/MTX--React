@@ -3,7 +3,8 @@ import axios from 'axios';
 // Always send cookies (e.g., refresh token cookie) with requests
 axios.defaults.withCredentials = true;
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Using relative URL prevents mixed content issues when site is served over HTTPS
+export const API_BASE_URL = '';
 
 // Set up axios interceptor to include auth token in requests
 const token = localStorage.getItem('token');

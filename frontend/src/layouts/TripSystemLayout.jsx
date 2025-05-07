@@ -28,6 +28,7 @@ const TripSystemLayout = () => {
          navigate(tabs[0].path, { replace: true });
        }
     }
+    console.log("TripSystemLayout rendering, activeTab inside useEffect:", currentActiveTab);
     // Add other side effects here if needed, but keep minimal
   }, [location.pathname, navigate, tabs, loading]); // Added loading to dependencies
 

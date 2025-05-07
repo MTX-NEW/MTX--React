@@ -292,24 +292,96 @@ exports.searchMembers = async (req, res) => {
     }
     
     // Use Sequelize's Op operators for case-insensitive search
-    const { Op } = require("sequelize");
+    const { Op, literal, fn, col } = require("sequelize");
     
-    // Search by first or last name
-    const members = await TripMember.findAll({
-      where: {
+    // The original query for comparison and ordering
+    const originalQuery = query.trim().toLowerCase();
+    
+    // Split query into parts to handle full name search
+    const queryParts = originalQuery.split(/\s+/);
+    
+    // Build where conditions
+    let whereConditions;
+    
+    if (queryParts.length === 1) {
+      // Search by first or last name if only one word is provided
+      whereConditions = {
         [Op.or]: [
-          { first_name: { [Op.like]: `%${query}%` } },
-          { last_name: { [Op.like]: `%${query}%` } }
+          { first_name: { [Op.like]: `%${queryParts[0]}%` } },
+          { last_name: { [Op.like]: `%${queryParts[0]}%` } }
         ]
-      },
+      };
+    } else {
+      // Search by first and last name if multiple words are provided
+      whereConditions = {
+        [Op.or]: [
+          // First part matches first_name, second part matches last_name (exact order)
+          {
+            [Op.and]: [
+              { first_name: { [Op.like]: `%${queryParts[0]}%` } },
+              { last_name: { [Op.like]: `%${queryParts[1]}%` } }
+            ]
+          },
+          // First part matches last_name, second part matches first_name (reverse order)
+          {
+            [Op.and]: [
+              { last_name: { [Op.like]: `%${queryParts[0]}%` } },
+              { first_name: { [Op.like]: `%${queryParts[1]}%` } }
+            ]
+          },
+          // Either part matches either name field (fallback search)
+          {
+            [Op.or]: queryParts.flatMap(part => [
+              { first_name: { [Op.like]: `%${part}%` } },
+              { last_name: { [Op.like]: `%${part}%` } }
+            ])
+          }
+        ]
+      };
+    }
+    
+    // Calculate the full name for sorting
+    const fullNameExpr = fn('CONCAT', col('first_name'), ' ', col('last_name'));
+    
+    // Get members, adding a priority field for ordering the results
+    const members = await TripMember.findAll({
+      where: whereConditions,
       attributes: [
         'member_id', 'first_name', 'last_name', 'program_id', 
-        'phone', 'gender'
+        'phone', 'gender',
+        // Add virtual columns for sorting
+        [
+          literal(`
+            CASE 
+              WHEN LOWER(first_name) = '${originalQuery}' THEN 10
+              WHEN LOWER(last_name) = '${originalQuery}' THEN 9
+              WHEN LOWER(first_name) LIKE '${originalQuery}%' THEN 8
+              WHEN LOWER(last_name) LIKE '${originalQuery}%' THEN 7
+              WHEN LOWER(CONCAT(first_name, ' ', last_name)) LIKE '${originalQuery}%' THEN 6
+              WHEN LOWER(CONCAT(last_name, ' ', first_name)) LIKE '${originalQuery}%' THEN 5
+              WHEN LOWER(first_name) LIKE '%${originalQuery}%' THEN 4
+              WHEN LOWER(last_name) LIKE '%${originalQuery}%' THEN 3
+              WHEN LOWER(CONCAT(first_name, ' ', last_name)) LIKE '%${originalQuery}%' THEN 2
+              ELSE 1
+            END
+          `),
+          'priority'
+        ]
       ],
-      limit: 8 // Limit to 5 results
+      order: [
+        ['priority', 'DESC'],
+        ['first_name', 'ASC'],
+        ['last_name', 'ASC']
+      ],
+      limit: 8
     });
     
-    res.json(members);
+    // Return members without the priority field
+    res.json(members.map(member => {
+      const plainMember = member.get({ plain: true });
+      delete plainMember.priority;
+      return plainMember;
+    }));
   } catch (error) {
     console.error("Error searching members:", error);
     res.status(500).json({ message: error.message });

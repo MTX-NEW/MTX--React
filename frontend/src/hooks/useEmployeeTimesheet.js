@@ -140,8 +140,11 @@ const useEmployeeTimesheet = () => {
 
   const handleClockOut = async (employeeId) => {
     try {
+      console.log("handleClockOut", employeeId);
       // Call API to clock out the employee
       const response = await timeSheetApi.clockOut(employeeId);
+      // log employeeId
+      console.log("employeeId", employeeId);
       
       const updatedTimesheet = response.data;
       

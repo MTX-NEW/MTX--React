@@ -74,7 +74,7 @@ const TripFormPresenter = ({
                       <span className="fw-semibold">Phone:</span> {memberData?.phone || "N/A"}
                     </div>
                   </div>
-                  <div className="row">
+                  <div className="row justify-content-start">
                     <div className="col-md-6">
                       <span className="fw-semibold">Gender:</span> {memberData?.gender || "N/A"}
                     </div>
@@ -140,7 +140,7 @@ const TripFormPresenter = ({
           </div>
           
           {/* Date Fields */}
-          <div className="row">
+          <div className="row justify-content-start ">
             <div className={currentScheduleType === 'Blanket' ? 'col-md-6 mb-2' : 'col-md-6 mb-2'}>
               <label>{currentScheduleType === 'Blanket' ? 'Start Date' : 'Date'} <span className="text-danger">*</span></label>
               <div>
@@ -322,7 +322,7 @@ const TripFormPresenter = ({
           
           {/* Return Trip */}
           {tripType === 'round_trip' && (
-            <div className="row">
+            <div className="row justify-content-start">
               <div className="col-12 mb-2">
                 <h5>Return Trip</h5>
               </div>
@@ -354,7 +354,7 @@ const TripFormPresenter = ({
                     )}
                   />
                 </div>
-                <small className="form-text text-muted">Time when return trip starts (from dropoff back to pickup location)</small>
+              {/*   <small className="form-text text-muted">Time when return trip starts (from dropoff back to pickup location)</small>*/}
               </div>
             </div>
           )}
@@ -587,8 +587,8 @@ const TripFormPresenter = ({
 };
 
 // Container component - responsible for logic and state
-const TripForm = ({ 
-  initialData, 
+const TripForm = ({
+  initialData,
   onSubmit,
   onCreateNew,
   isSubmitting, 

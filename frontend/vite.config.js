@@ -19,11 +19,16 @@ export default defineConfig(({ mode }) => {
       force: true // Force dependencies to be re-optimized on startup
     },
     server: {
+      host: true,
       port: 3000,
       // Expose variables in frontend using VITE_ prefix
       define: {
         'process.env.VITE_API_URL': JSON.stringify(rootEnv.VITE_API_URL),
-      }
+      },
+      allowedHosts: [
+        'react.medtransexpress.com',
+        'www.react.medtransexpress.com'
+      ],
     },
     build: {
       outDir: 'dist',
