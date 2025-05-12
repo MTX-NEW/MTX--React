@@ -12,11 +12,18 @@ const Page = require('./Page');
 const PagePermission = require('./PagePermission');
 const UserType = require('./UserType');
 const MemberLocation = require('./MemberLocation');
-
+const ProgramPlan = require('./ProgramPlan');
 // Define associations
+
 // Program associations
 Program.hasMany(TripMember, { foreignKey: 'program_id' });
+Program.hasMany(ProgramPlan, { foreignKey: 'program_id', as: 'ProgramPlans' });
+ProgramPlan.belongsTo(Program, { foreignKey: 'program_id' });
 TripMember.belongsTo(Program, { foreignKey: 'program_id' });
+
+// Program Plan associations
+ProgramPlan.hasMany(TripMember, { foreignKey: 'program_plan_id' });
+TripMember.belongsTo(ProgramPlan, { foreignKey: 'program_plan_id', as: 'ProgramPlan' });
 
 // Trip member default locations - renamed aliases to avoid conflicts
 TripMember.belongsTo(TripLocation, { foreignKey: 'pickup_location', as: 'memberPickupLocation' });

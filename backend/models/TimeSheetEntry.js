@@ -33,18 +33,25 @@ const TimeSheet = sequelize.define('TimeSheet', {
     allowNull: true,
     field: 'clock_out'
   },
-  total_regular_hours: {
+  total_hours: {
     type: DataTypes.DECIMAL(5, 2),
     defaultValue: 0,
-    field: 'total_regular_hours'
+    field: 'total_hours'
   },
-  total_overtime_hours: {
-    type: DataTypes.DECIMAL(5, 2),
+  hour_type: {
+    type: DataTypes.ENUM('regular', 'driving', 'over_time', 'administrative', 'incentive'),
+    allowNull: false,
+    field: 'hour_type',
+    defaultValue: 'regular'
+  },
+  rate: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
     defaultValue: 0,
-    field: 'total_overtime_hours'
+    field: 'rate'
   },
   status: {
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM('draft', 'submitted', 'approved', 'rejected'),
     defaultValue: 'draft',
     field: 'status'
   },
@@ -57,7 +64,23 @@ const TimeSheet = sequelize.define('TimeSheet', {
   tableName: 'timesheets',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  hooks: {
+    beforeCreate: async (timeSheet) => {
+      if (!timeSheet.hour_type) {
+        timeSheet.hour_type = 'regular';
+      }
+      
+      // Set rate from user if available
+      if (timeSheet.user_id && timeSheet.rate === 0) {
+        const User = require('./User');
+        const user = await User.findByPk(timeSheet.user_id);
+        if (user) {
+          timeSheet.rate = user.hourly_rate || 0;
+        }
+      }
+    }
+  }
 });
 
 // Define association with User - REMOVED and moved to associations.js

@@ -9,6 +9,7 @@ import {
   faCalendarAlt
 } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
+import { formatTimeForDisplay } from '@/utils/timeUtils';
 
 const TripManagementDetails = ({ trip }) => {
   if (!trip) return null;
@@ -106,11 +107,11 @@ const TripManagementDetails = ({ trip }) => {
                       <td>
                         <div>
                           <FontAwesomeIcon icon={faClock} className="me-1" />
-                          {dayjs(leg.scheduled_pickup).format('h:mm A')}
+                          {formatTimeForDisplay(leg.scheduled_pickup) || 'N/A'}
                         </div>
                         <div className="text-muted">
                           <FontAwesomeIcon icon={faClock} className="me-1" />
-                          {dayjs(leg.scheduled_dropoff).format('h:mm A')}
+                          {formatTimeForDisplay(leg.scheduled_dropoff) || 'N/A'}
                         </div>
                       </td>
                       <td>

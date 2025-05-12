@@ -28,7 +28,6 @@ const TripSystemLayout = () => {
          navigate(tabs[0].path, { replace: true });
        }
     }
-    console.log("TripSystemLayout rendering, activeTab inside useEffect:", currentActiveTab);
     // Add other side effects here if needed, but keep minimal
   }, [location.pathname, navigate, tabs, loading]); // Added loading to dependencies
 
@@ -39,9 +38,6 @@ const TripSystemLayout = () => {
       navigate(selectedTab.path);
     }
   }, [navigate, tabs]); // Add navigate and tabs as dependencies
-
-  // Log added for debugging layout renders
-  console.log("TripSystemLayout rendering, activeTab:", currentActiveTab);
 
   return (
     <div className="d-flex min-vh-100">

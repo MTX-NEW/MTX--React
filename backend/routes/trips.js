@@ -5,6 +5,9 @@ const tripController = require("../controllers/tripController");
 // Get all trips with related data
 router.get("/", tripController.getAllTrips);
 
+// Get trip summaries for table display
+router.get("/summary", tripController.getTripSummaries);
+
 // Get a specific trip by ID
 router.get("/:id", tripController.getTripById);
 

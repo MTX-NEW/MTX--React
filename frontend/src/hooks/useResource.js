@@ -5,9 +5,12 @@ import { handleApiError } from '@/utils/errorHandler';
 export const useResource = (apiService, options = {}) => {
   const [data, setData] = useState([]);
   const [error, setError] = useState(null);
-  const { idField = 'id' } = options;
+  const [loading, setLoading] = useState(false);
+  const { idField = 'id', skip = false } = options;
 
   const fetchData = async () => {
+    if (skip) return;
+    setLoading(true);
     try {
       const response = await apiService.getAll();
       setData(response.data || []);
@@ -17,12 +20,16 @@ export const useResource = (apiService, options = {}) => {
       setError(err);
       setData([]);
       handleApiError(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!skip) {
+      fetchData();
+    }
+  }, [skip]);
 
   const create = async (itemData) => {
     try {

@@ -1,5 +1,6 @@
 const { TimeSheet, User, TimeSheetBreak } = require('../models');
 const { Op } = require('sequelize');
+const sequelize = require('../db');
 
 // Get all timesheets with optional filtering
 exports.getAllTimeSheets = async (req, res) => {
@@ -82,8 +83,9 @@ exports.createTimeSheet = async (req, res) => {
       date, 
       clock_in, 
       clock_out, 
-      total_regular_hours, 
-      total_overtime_hours, 
+      total_hours, 
+      hour_type,
+      rate,
       status, 
       notes 
     } = req.body;
@@ -105,8 +107,9 @@ exports.createTimeSheet = async (req, res) => {
       date,
       clock_in,
       clock_out,
-      total_regular_hours: total_regular_hours || 0,
-      total_overtime_hours: total_overtime_hours || 0,
+      total_hours: total_hours || 0,
+      hour_type: hour_type || 'regular',
+      rate: rate || user.hourly_rate || 0,
       status: status || 'draft',
       notes
     });
@@ -126,8 +129,9 @@ exports.updateTimeSheet = async (req, res) => {
       date, 
       clock_in, 
       clock_out, 
-      total_regular_hours, 
-      total_overtime_hours, 
+      total_hours, 
+      hour_type,
+      rate,
       status, 
       notes 
     } = req.body;
@@ -144,14 +148,15 @@ exports.updateTimeSheet = async (req, res) => {
       date: date || timesheet.date,
       clock_in: clock_in || timesheet.clock_in,
       clock_out,
-      total_regular_hours: total_regular_hours !== undefined ? total_regular_hours : timesheet.total_regular_hours,
-      total_overtime_hours: total_overtime_hours !== undefined ? total_overtime_hours : timesheet.total_overtime_hours,
+      total_hours: total_hours !== undefined ? total_hours : timesheet.total_hours,
+      hour_type: hour_type || timesheet.hour_type,
+      rate: rate !== undefined ? rate : timesheet.rate,
       status: status || timesheet.status,
       notes: notes !== undefined ? notes : timesheet.notes
     });
     
     // Calculate total hours if clock_out is set
-    if (clock_out && !total_regular_hours) {
+    if (clock_out && !total_hours) {
       const clockInTime = new Date(timesheet.clock_in);
       const clockOutTime = new Date(clock_out);
       const diffHours = (clockOutTime - clockInTime) / (1000 * 60 * 60);
@@ -174,17 +179,9 @@ exports.updateTimeSheet = async (req, res) => {
       // Subtract break time from total time
       const netHours = diffHours - breakHours;
       
-      // Default overtime threshold (8 hours)
-      const overtimeThreshold = 8;
-      
-      // Calculate regular and overtime hours
-      const regularHours = Math.min(netHours, overtimeThreshold);
-      const overtimeHours = Math.max(0, netHours - overtimeThreshold);
-      
       // Update the hours
       await timesheet.update({
-        total_regular_hours: regularHours.toFixed(2),
-        total_overtime_hours: overtimeHours.toFixed(2)
+        total_hours: netHours.toFixed(2)
       });
     }
     
@@ -228,7 +225,7 @@ exports.deleteTimeSheet = async (req, res) => {
 // Clock in
 exports.clockIn = async (req, res) => {
   try {
-    const { user_id, notes } = req.body;
+    const { user_id, notes, hour_type } = req.body;
     
     // Validate required fields
     if (!user_id) {
@@ -242,12 +239,10 @@ exports.clockIn = async (req, res) => {
     }
     
     // Check if user already has an active timesheet
+    // Only check for timesheets that have no clock_out time
     const activeTimesheet = await TimeSheet.findOne({
       where: {
         user_id,
-        status: {
-          [Op.in]: ['active', 'draft']
-        },
         clock_out: null
       }
     });
@@ -267,10 +262,11 @@ exports.clockIn = async (req, res) => {
       user_id,
       date: now.toISOString().split('T')[0], // YYYY-MM-DD
       clock_in: now,
+      hour_type: hour_type || 'regular',
+      rate: user.hourly_rate || 0,
       status: 'active',
-      notes: notes || 'Clock in via API',
-      total_regular_hours: 0,
-      total_overtime_hours: 0
+      notes: notes || 'Manually clocked in',
+      total_hours: 0
     });
     
     res.status(201).json(timesheet);
@@ -290,13 +286,10 @@ exports.clockOut = async (req, res) => {
       return res.status(400).json({ message: 'User ID is required' });
     }
     
-    // Find active timesheet for this user
+    // Find active timesheet for this user (without clock_out time)
     const activeTimesheet = await TimeSheet.findOne({
       where: {
         user_id,
-        status: {
-          [Op.in]: ['active', 'draft']
-        },
         clock_out: null
       },
       include: [
@@ -307,7 +300,7 @@ exports.clockOut = async (req, res) => {
     });
     
     if (!activeTimesheet) {
-      return res.status(404).json({ message: 'No active timesheet found for this user' });
+      return res.status(404).json({ message: 'No active timesheet found for this user. Employee must clock in first.' });
     }
     
     // Current time
@@ -321,6 +314,7 @@ exports.clockOut = async (req, res) => {
     // If the clock-out is on the same date, calculate actual hours
     // Otherwise, limit to a standard workday (e.g., 8 hours)
     let diffHours;
+    let overnightNote = '';
     
     const clockInDate = clockInTime.toISOString().split('T')[0];
     const clockOutDate = clockOutTime.toISOString().split('T')[0];
@@ -331,6 +325,7 @@ exports.clockOut = async (req, res) => {
     } else {
       // Different days - assume a standard workday of 8 hours
       diffHours = 8;
+      overnightNote = `System automatically limited hours to ${diffHours} for overnight shift from ${clockInDate} to ${clockOutDate}.`;
       console.log(`Clock out on different day than clock in. Limiting to ${diffHours} hours.`);
     }
     
@@ -347,26 +342,27 @@ exports.clockOut = async (req, res) => {
     // Subtract break time from total time
     const netHours = diffHours - breakHours;
     
-    // Default overtime threshold (8 hours)
-    const overtimeThreshold = 8;
-    
-    // Calculate regular and overtime hours
-    const regularHours = Math.min(netHours, overtimeThreshold);
-    const overtimeHours = Math.max(0, netHours - overtimeThreshold);
-    
     // Output for debugging
     console.log(`Clock in: ${clockInTime}, Clock out: ${clockOutTime}`);
     console.log(`Diff hours: ${diffHours}, Break hours: ${breakHours}, Net hours: ${netHours}`);
-    console.log(`Regular hours: ${regularHours}, Overtime hours: ${overtimeHours}`);
+    
+    // Combine notes
+    const updatedNotes = [
+      activeTimesheet.notes || '',
+      notes || '',
+      overnightNote
+    ].filter(Boolean).join('\n').trim();
     
     // Update the timesheet
     await activeTimesheet.update({
       clock_out: now,
-      total_regular_hours: regularHours.toFixed(2),
-      total_overtime_hours: overtimeHours.toFixed(2),
+      total_hours: netHours.toFixed(2),
       status: 'submitted',
-      notes: notes ? (activeTimesheet.notes + '\n' + notes) : activeTimesheet.notes
+      notes: updatedNotes
     });
+    
+    // Calculate weekly overtime
+    await calculateWeeklyOvertime(user_id, activeTimesheet.date);
     
     // Get the updated timesheet with associations
     const updatedTimesheet = await TimeSheet.findByPk(activeTimesheet.timesheet_id, {
@@ -397,9 +393,6 @@ exports.getActiveTimesheet = async (req, res) => {
     const activeTimesheet = await TimeSheet.findOne({
       where: {
         user_id: userId,
-        status: {
-          [Op.in]: ['active', 'draft']
-        },
         clock_out: null
       },
       include: [
@@ -428,8 +421,46 @@ exports.getTimesheetStatus = async (req, res) => {
     // Get today's date
     const today = new Date().toISOString().split('T')[0];
     
-    // Find today's timesheet for the user
-    const timesheet = await TimeSheet.findOne({
+    // First check for any active timesheet (clock_out is null) regardless of date
+    const activeTimesheet = await TimeSheet.findOne({
+      where: {
+        user_id: userId,
+        clock_out: null
+      },
+      include: [{
+        model: TimeSheetBreak,
+        order: [['start_time', 'DESC']]
+      }],
+      order: [
+        ['created_at', 'DESC'],
+        [TimeSheetBreak, 'start_time', 'DESC']
+      ]
+    });
+    
+    // If there's an active timesheet, return it even if it's from a previous day
+    if (activeTimesheet) {
+      // Check if user is on break
+      const latestBreak = activeTimesheet.TimeSheetBreaks && activeTimesheet.TimeSheetBreaks.length > 0
+        ? activeTimesheet.TimeSheetBreaks[0]
+        : null;
+        
+      if (latestBreak && !latestBreak.end_time) {
+        return res.json({
+          status: 'on_break',
+          message: 'User is currently on break',
+          timesheet: activeTimesheet
+        });
+      } else {
+        return res.json({
+          status: 'clocked_in',
+          message: 'User is currently clocked in',
+          timesheet: activeTimesheet
+        });
+      }
+    }
+    
+    // If no active timesheet found, look for today's most recent timesheet
+    const todayTimesheet = await TimeSheet.findOne({
       where: {
         user_id: userId,
         date: today
@@ -438,45 +469,237 @@ exports.getTimesheetStatus = async (req, res) => {
         model: TimeSheetBreak,
         order: [['start_time', 'DESC']]
       }],
-      order: [[TimeSheetBreak, 'start_time', 'DESC']]
+      order: [
+        ['created_at', 'DESC'],
+        [TimeSheetBreak, 'start_time', 'DESC']
+      ]
     });
     
-    if (!timesheet) {
+    if (!todayTimesheet) {
       return res.json({
         status: 'not_started',
         message: 'No timesheet found for today'
       });
     }
     
-    // Determine current status
-    let status;
-    let statusMessage;
-    
-    if (!timesheet.clock_out) {
-      // Check if user is on break
-      const latestBreak = timesheet.TimeSheetBreaks && timesheet.TimeSheetBreaks.length > 0
-        ? timesheet.TimeSheetBreaks[0]
-        : null;
-        
-      if (latestBreak && !latestBreak.end_time) {
-        status = 'on_break';
-        statusMessage = 'User is currently on break';
-      } else {
-        status = 'clocked_in';
-        statusMessage = 'User is currently clocked in';
-      }
-    } else {
-      status = 'clocked_out';
-      statusMessage = 'User has clocked out for the day';
-    }
-    
-    res.json({
-      status,
-      message: statusMessage,
-      timesheet
+    // Since we already checked for active timesheets, this must be a completed timesheet
+    return res.json({
+      status: 'clocked_out',
+      message: 'User has clocked out for the day',
+      timesheet: todayTimesheet
     });
   } catch (error) {
     console.error('Error getting timesheet status:', error);
     res.status(500).json({ message: 'Failed to get timesheet status', error: error.message });
   }
-}; 
+};
+
+// Manually recalculate overtime for user in a date range
+exports.recalculateOvertime = async (req, res) => {
+  try {
+    const { userId, startDate, endDate } = req.body;
+    
+    if (!userId || !startDate) {
+      return res.status(400).json({ message: 'User ID and start date are required' });
+    }
+    
+    // Check if user exists
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Convert dates
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : new Date();
+    
+    // Validate dates
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+    
+    // Recalculate overtime for each week in the date range
+    const currentDate = new Date(start);
+    const results = [];
+    
+    while (currentDate <= end) {
+      try {
+        await calculateWeeklyOvertime(userId, currentDate);
+        
+        // Get start and end of current week
+        const dayOfWeek = currentDate.getDay();
+        const weekStart = new Date(currentDate);
+        weekStart.setDate(currentDate.getDate() - dayOfWeek);
+        
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        
+        results.push({
+          week: {
+            start: weekStart.toISOString().split('T')[0],
+            end: weekEnd.toISOString().split('T')[0]
+          },
+          status: 'recalculated'
+        });
+        
+        // Move to next week
+        currentDate.setDate(currentDate.getDate() + 7);
+      } catch (error) {
+        results.push({
+          week: {
+            start: currentDate.toISOString().split('T')[0]
+          },
+          status: 'error',
+          error: error.message
+        });
+        
+        // Move to next week even if there was an error
+        currentDate.setDate(currentDate.getDate() + 7);
+      }
+    }
+    
+    res.json({
+      message: 'Overtime recalculation completed',
+      results
+    });
+  } catch (error) {
+    console.error('Error recalculating overtime:', error);
+    res.status(500).json({ message: 'Failed to recalculate overtime', error: error.message });
+  }
+};
+
+// Function to calculate weekly overtime
+async function calculateWeeklyOvertime(userId, date) {
+  try {
+    // Convert input date to a Date object if it's a string
+    const currentDate = typeof date === 'string' ? new Date(date) : new Date(date);
+    
+    // Calculate the start of the week (Sunday)
+    const dayOfWeek = currentDate.getDay();
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Calculate the end of the week (Saturday)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    console.log(`Calculating overtime for user ${userId} for week: ${startOfWeek.toISOString()} to ${endOfWeek.toISOString()}`);
+    
+    // Get all timesheet entries for this user within the week
+    const timesheets = await TimeSheet.findAll({
+      where: {
+        user_id: userId,
+        date: {
+          [Op.between]: [startOfWeek.toISOString().split('T')[0], endOfWeek.toISOString().split('T')[0]]
+        },
+        status: {
+          [Op.not]: 'rejected'
+        }
+      },
+      order: [['date', 'ASC'], ['clock_in', 'ASC']]
+    });
+    
+    if (timesheets.length === 0) {
+      console.log('No timesheets found for this week');
+      return;
+    }
+    
+    // Calculate total weekly hours
+    let totalWeeklyHours = 0;
+    let cumulativeHours = 0;
+    let remainingRegularHours = 40; // Standard 40 hour workweek
+    
+    // First pass: Calculate total hours
+    for (const timesheet of timesheets) {
+      totalWeeklyHours += parseFloat(timesheet.total_hours || 0);
+    }
+    
+    console.log(`Total weekly hours: ${totalWeeklyHours}`);
+    
+    // Second pass: Update timesheet types based on cumulative hours
+    const transaction = await sequelize.transaction();
+    
+    try {
+      // If total hours <= 40, make sure all entries are regular/driving/etc (not overtime)
+      if (totalWeeklyHours <= 40) {
+        for (const timesheet of timesheets) {
+          // Skip entries that are already correctly typed (not overtime)
+          if (timesheet.hour_type === 'over_time') {
+            await timesheet.update({
+              hour_type: timesheet.hour_type === 'driving' ? 'driving' : 'regular'
+            }, { transaction });
+          }
+        }
+      } else {
+        // We have overtime to distribute
+        for (const timesheet of timesheets) {
+          const hours = parseFloat(timesheet.total_hours || 0);
+          
+          if (remainingRegularHours >= hours) {
+            // This entire entry is regular time
+            if (timesheet.hour_type === 'over_time') {
+              await timesheet.update({
+                hour_type: timesheet.hour_type === 'driving' ? 'driving' : 'regular'
+              }, { transaction });
+            }
+            
+            remainingRegularHours -= hours;
+            cumulativeHours += hours;
+          } else if (remainingRegularHours > 0) {
+            // This entry contains both regular and overtime hours
+            // We need to split this entry into two records
+            
+            // Update the existing record to contain only regular hours
+            const regularHours = remainingRegularHours;
+            const overtimeHours = hours - remainingRegularHours;
+            
+            // Create a new entry for overtime hours
+            await TimeSheet.create({
+              user_id: userId,
+              date: timesheet.date,
+              clock_in: timesheet.clock_in,
+              clock_out: timesheet.clock_out,
+              total_hours: overtimeHours,
+              hour_type: 'over_time',
+              rate: timesheet.rate, // Use the same rate
+              status: timesheet.status,
+              notes: `Overtime split from timesheet #${timesheet.timesheet_id}`
+            }, { transaction });
+            
+            // Update the original entry to be regular hours only
+            await timesheet.update({
+              total_hours: regularHours
+            }, { transaction });
+            
+            remainingRegularHours = 0;
+            cumulativeHours += hours;
+          } else {
+            // This entire entry is overtime
+            if (timesheet.hour_type !== 'over_time') {
+              await timesheet.update({
+                hour_type: 'over_time'
+              }, { transaction });
+            }
+            
+            cumulativeHours += hours;
+          }
+        }
+      }
+      
+      await transaction.commit();
+      console.log(`Successfully processed overtime for user ${userId}`);
+    } catch (error) {
+      await transaction.rollback();
+      console.error(`Error processing overtime: ${error.message}`);
+      throw error;
+    }
+  } catch (error) {
+    console.error(`Error calculating weekly overtime: ${error.message}`);
+    throw error;
+  }
+}
+
+// Export the overtime calculation function for use in other controllers
+exports.calculateWeeklyOvertime = calculateWeeklyOvertime; 

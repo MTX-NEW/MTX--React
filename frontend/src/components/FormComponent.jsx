@@ -10,6 +10,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormGroup from '@mui/material/FormGroup';
+import TimePickerField from './common/TimePickerField';
 
 import dayjs from "dayjs";
 
@@ -189,37 +190,18 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
             case "time":
               return (
                 <div className="mb-2" key={index}>
-                  <label>{field.label}</label>
-                  <div>
-                    <TimePicker
-                      value={value ? dayjs(value, 'HH:mm') : null}
-                      onChange={(time) => 
-                        setValue(field.name, time ? time.format('HH:mm') : null, {
-                          shouldValidate: true,
-                        })
-                      }
-                      viewRenderers={{
-                        hours: props => <TimeClock {...props} />,
-                        minutes: props => <TimeClock {...props} />
-                      }}
-                      ampm={true}
-                      openTo="hours"
-                      views={['hours', 'minutes']}
-                      slotProps={{
-                        textField: {
-                          className: "form-control mt-2",
-                          variant: "outlined",
-                          placeholder: ""
-                        }
-                      }}
-                      disabled={field.disabled}
-                    />
-                  </div>
-                  {field.helperText && (
-                    <small className="form-text text-muted">
-                      {field.helperText}
-                    </small>
-                  )}
+                  <TimePickerField
+                    name={field.name}
+                    control={control}
+                    label={field.label}
+                    error={errors[field.name]}
+                    helperText={field.helperText}
+                    placeholder={field.placeholder || ""}
+                    fieldProps={{
+                      disabled: field.disabled,
+                      ...(field.fieldProps || {})
+                    }}
+                  />
                   {errors[field.name] && (
                     <span className="form-warning">
                       {errors[field.name].message}

@@ -23,29 +23,12 @@ const TripDetails = ({ trip, onEdit, onCopy, onClose }) => {
 
   // Helper to safely format dates
   const formatDate = (dateStr) => {
+    console.log(dateStr);
     try {
       return dateStr ? format(new Date(dateStr), 'MM/dd/yyyy') : 'N/A';
     } catch (error) {
       console.error('Date format error:', error);
       return 'Invalid date';
-    }
-  };
-
-  // Helper to safely format time-only values
-  const formatTime = (timeStr) => {
-    if (!timeStr) return 'N/A';
-    
-    // Check if it's a time-only string (HH:MM:SS)
-    if (typeof timeStr === 'string' && timeStr.includes(':') && !timeStr.includes('T')) {
-      return formatTimeForDisplay(timeStr) || 'N/A';
-    }
-    
-    // If it's a full datetime
-    try {
-      return format(new Date(timeStr), 'h:mm a');
-    } catch (error) {
-      console.error('Time format error:', error);
-      return 'Invalid time';
     }
   };
 
@@ -223,14 +206,14 @@ const TripDetails = ({ trip, onEdit, onCopy, onClose }) => {
                 <div className="detail-item">
                   <span className="detail-label">Pickup Time:</span>
                   <span className="detail-value">
-                    {formatTime(leg.scheduled_pickup)}
+                    {formatTimeForDisplay(leg.scheduled_pickup) || 'N/A'}
                   </span>
                 </div>
                 
                 <div className="detail-item">
                   <span className="detail-label">Dropoff Time:</span>
                   <span className="detail-value">
-                    {formatTime(leg.scheduled_dropoff)}
+                    {formatTimeForDisplay(leg.scheduled_dropoff) || 'N/A'}
                   </span>
                 </div>
                 

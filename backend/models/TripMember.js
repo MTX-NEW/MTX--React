@@ -27,6 +27,14 @@ const TripMember = sequelize.define(
         key: "program_id",
       },
     },
+    program_plan_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "program_plans",
+        key: "plan_id",
+      },
+    },
     ahcccs_id: {
       type: DataTypes.STRING(50),
       allowNull: true,

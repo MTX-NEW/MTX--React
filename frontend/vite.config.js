@@ -16,7 +16,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      force: true // Force dependencies to be re-optimized on startup
+      force: true, // Force dependencies to be re-optimized on startup
+      include: ['@fortawesome/fontawesome-svg-core', '@fortawesome/free-solid-svg-icons']
     },
     server: {
       host: true,
@@ -27,11 +28,28 @@ export default defineConfig(({ mode }) => {
       },
       allowedHosts: [
         'react.medtransexpress.com',
-        'www.react.medtransexpress.com'
+        'www.react.medtransexpress.com',
       ],
+      headers: {
+        // Add CORS headers for font files
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept'
+      }
     },
     build: {
       outDir: 'dist',
+      // Configure proper handling for font files
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor': ['react', 'react-dom'],
+            'fa-icons': ['@fortawesome/fontawesome-svg-core', '@fortawesome/free-solid-svg-icons']
+          }
+        }
+      },
+      // Ensure static assets like fonts are properly handled
+      assetsInlineLimit: 0
     },
   };
 });

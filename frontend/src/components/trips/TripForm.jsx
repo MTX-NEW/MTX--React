@@ -4,9 +4,8 @@ import { format } from 'date-fns';
 import dayjs from 'dayjs';
 import MemberAutocomplete from '@/components/common/MemberAutocomplete';
 import LocationAutocomplete from '@/components/common/LocationAutocomplete';
+import TimePickerField from '@/components/common/TimePickerField';
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import { TimeClock } from "@mui/x-date-pickers/TimeClock";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Checkbox from '@mui/material/Checkbox';
@@ -258,65 +257,22 @@ const TripFormPresenter = ({
           
           <div className="row">
             <div className="col-md-6 mb-2">
-              <label>Pickup Time <span className="text-danger">*</span></label>
-              <div>
-                <Controller
-                  name="legs[0].scheduled_pickup"
-                  control={control}
-                  render={({ field }) => (
-                    <TimePicker
-                      value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
-                      onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
-                      viewRenderers={{
-                        hours: props => <TimeClock {...props} />,
-                        minutes: props => <TimeClock {...props} />
-                      }}
-                      ampm={true}
-                      openTo="hours"
-                      views={['hours', 'minutes']}
-                      slotProps={{
-                        textField: {
-                          className: "form-control mt-2",
-                          variant: "outlined",
-                          placeholder: "",
-                          error: !!errors.legs?.[0]?.scheduled_pickup,
-                          helperText: errors.legs?.[0]?.scheduled_pickup?.message
-                        }
-                      }}
-                    />
-                  )}
-                />
-              </div>
+              <TimePickerField
+                name="legs[0].scheduled_pickup"
+                control={control}
+                label="Pickup Time"
+                required={true}
+                error={errors.legs?.[0]?.scheduled_pickup}
+                helperText={errors.legs?.[0]?.scheduled_pickup?.message}
+              />
             </div>
             
             <div className="col-md-6 mb-2">
-              <label>Dropoff Time (Optional)</label>
-              <div>
-                <Controller
-                  name="legs[0].scheduled_dropoff"
-                  control={control}
-                  render={({ field }) => (
-                    <TimePicker
-                      value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
-                      onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
-                      viewRenderers={{
-                        hours: props => <TimeClock {...props} />,
-                        minutes: props => <TimeClock {...props} />
-                      }}
-                      ampm={true}
-                      openTo="hours"
-                      views={['hours', 'minutes']}
-                      slotProps={{
-                        textField: {
-                          className: "form-control mt-2",
-                          variant: "outlined",
-                          placeholder: ""
-                        }
-                      }}
-                    />
-                  )}
-                />
-              </div>
+              <TimePickerField
+                name="legs[0].scheduled_dropoff"
+                control={control}
+                label="Dropoff Time (Optional)"
+              />
             </div>
           </div>
           
@@ -327,34 +283,11 @@ const TripFormPresenter = ({
                 <h5>Return Trip</h5>
               </div>
               <div className="col-md-6 mb-2">
-                <label>Return Pickup Time (Optional)</label>
-                <div>
-                  <Controller
-                    name="return_pickup_time"
-                    control={control}
-                    render={({ field }) => (
-                      <TimePicker
-                        value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
-                        onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
-                        viewRenderers={{
-                          hours: props => <TimeClock {...props} />,
-                          minutes: props => <TimeClock {...props} />
-                        }}
-                        ampm={true}
-                        openTo="hours"
-                        views={['hours', 'minutes']}
-                        slotProps={{
-                          textField: {
-                            className: "form-control mt-2",
-                            variant: "outlined",
-                            placeholder: ""
-                          }
-                        }}
-                      />
-                    )}
-                  />
-                </div>
-              {/*   <small className="form-text text-muted">Time when return trip starts (from dropoff back to pickup location)</small>*/}
+                <TimePickerField
+                  name="return_pickup_time"
+                  control={control}
+                  label="Return Pickup Time (Optional)"
+                />
               </div>
             </div>
           )}
@@ -386,65 +319,22 @@ const TripFormPresenter = ({
                     </div>
                     
                     <div className="col-md-6 mb-2">
-                      <label>Pickup Time <span className="text-danger">*</span></label>
-                      <div>
-                        <Controller
-                          name={`legs[${legIndex}].scheduled_pickup`}
-                          control={control}
-                          render={({ field }) => (
-                            <TimePicker
-                              value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
-                              onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
-                              viewRenderers={{
-                                hours: props => <TimeClock {...props} />,
-                                minutes: props => <TimeClock {...props} />
-                              }}
-                              ampm={true}
-                              openTo="hours"
-                              views={['hours', 'minutes']}
-                              slotProps={{
-                                textField: {
-                                  className: "form-control mt-2",
-                                  variant: "outlined",
-                                  placeholder: "",
-                                  error: !!errors.legs?.[legIndex]?.scheduled_pickup,
-                                  helperText: errors.legs?.[legIndex]?.scheduled_pickup?.message
-                                }
-                              }}
-                            />
-                          )}
-                        />
-                      </div>
+                      <TimePickerField
+                        name={`legs[${legIndex}].scheduled_pickup`}
+                        control={control}
+                        label="Pickup Time"
+                        required={true}
+                        error={errors.legs?.[legIndex]?.scheduled_pickup}
+                        helperText={errors.legs?.[legIndex]?.scheduled_pickup?.message}
+                      />
                     </div>
                     
                     <div className="col-md-6 mb-2">
-                      <label>Dropoff Time (Optional)</label>
-                      <div>
-                        <Controller
-                          name={`legs[${legIndex}].scheduled_dropoff`}
-                          control={control}
-                          render={({ field }) => (
-                            <TimePicker
-                              value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
-                              onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
-                              viewRenderers={{
-                                hours: props => <TimeClock {...props} />,
-                                minutes: props => <TimeClock {...props} />
-                              }}
-                              ampm={true}
-                              openTo="hours"
-                              views={['hours', 'minutes']}
-                              slotProps={{
-                                textField: {
-                                  className: "form-control mt-2",
-                                  variant: "outlined",
-                                  placeholder: ""
-                                }
-                              }}
-                            />
-                          )}
-                        />
-                      </div>
+                      <TimePickerField
+                        name={`legs[${legIndex}].scheduled_dropoff`}
+                        control={control}
+                        label="Dropoff Time (Optional)"
+                      />
                     </div>
                   </div>
                 );

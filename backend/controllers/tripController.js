@@ -4,6 +4,7 @@ const TripMember = require("../models/TripMember");
 const TripLocation = require("../models/TripLocation");
 const User = require("../models/User");
 const Program = require("../models/Program");
+const ProgramPlan = require("../models/ProgramPlan");
 const TripSpecialInstruction = require("../models/TripSpecialInstruction");
 const { ValidationError, Op } = require("sequelize");
 const { calculateDistance, formatAddress } = require("../utils/googleMapsService");
@@ -17,7 +18,7 @@ exports.getAllTrips = async (req, res) => {
     
     // Check if we have any active filters
     const hasActiveFilters = city || startDate || endDate || status || search || tripType || driverId || programId;
-    
+    console.log("Filters:", { city, startDate, endDate, status, search, tripType, driverId, programId });
     // Build the main where clause for Trip
     const tripWhere = {};
     
@@ -43,7 +44,15 @@ exports.getAllTrips = async (req, res) => {
     const memberInclude = { 
           model: TripMember,
           include: [
-            Program,
+            {
+              model: Program,
+              include: [
+                {
+                  model: ProgramPlan,
+                  as: 'ProgramPlans'
+                }
+              ]
+            },
             {
               model: TripLocation,
               as: "memberPickupLocation",
@@ -128,6 +137,7 @@ exports.getAllTrips = async (req, res) => {
       // Add a default limit when no filters are applied to prevent returning too many records
       ...(hasActiveFilters ? {} : { limit: 100 })
     });
+    console.log("Trips:", trips);
     
     // Apply post-query filters
     
@@ -178,7 +188,15 @@ exports.getTripById = async (req, res) => {
         { 
           model: TripMember,
           include: [
-            Program,
+            {
+              model: Program,
+              include: [
+                {
+                  model: ProgramPlan,
+                  as: 'ProgramPlans'
+                }
+              ]
+            },
             {
               model: TripLocation,
               as: "memberPickupLocation",
@@ -236,7 +254,9 @@ exports.getTripById = async (req, res) => {
 // Create a new trip with legs
 exports.createTrip = async (req, res) => {
   try {
+    console.log("Creating trip:", req.body);
     const { special_instructions, legs, return_pickup_time, ...tripData } = req.body;
+   // console.log("Trip Data:", tripData);
     
     // Convert date strings to Date objects with timezone handling
     if (tripData.start_date) {
@@ -511,7 +531,15 @@ function getFullTripIncludes() {
     { 
       model: TripMember,
       include: [
-        Program,
+        {
+          model: Program,
+          include: [
+            {
+              model: ProgramPlan,
+              as: 'ProgramPlans'
+            }
+          ]
+        },
         {
           model: TripLocation,
           as: "memberPickupLocation",
@@ -705,7 +733,15 @@ exports.updateTrip = async (req, res) => {
         { 
           model: TripMember,
           include: [
-            Program,
+            {
+              model: Program,
+              include: [
+                {
+                  model: ProgramPlan,
+                  as: 'ProgramPlans'
+                }
+              ]
+            },
             {
               model: TripLocation,
               as: "memberPickupLocation"
@@ -783,6 +819,146 @@ exports.deleteTrip = async (req, res) => {
     res.json({ message: "Trip deleted successfully" });
   } catch (error) {
     console.error("Error deleting trip:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get trip summaries with minimal data for table display
+exports.getTripSummaries = async (req, res) => {
+  try {
+    // Extract filter parameters from the request query
+    const { city, startDate, endDate, status, search, tripType, driverId, programId } = req.query;
+    
+    // Check if we have any active filters
+    const hasActiveFilters = city || startDate || endDate || status || search || tripType || driverId || programId;
+    
+    // Build the main where clause for Trip
+    const tripWhere = {};
+    
+    // Add date filters to trip where clause
+    if (startDate || endDate) {
+      tripWhere.start_date = {};
+      
+      if (startDate) {
+        tripWhere.start_date[Op.gte] = new Date(startDate);
+      }
+      
+      if (endDate) {
+        tripWhere.start_date[Op.lte] = new Date(endDate);
+      }
+    }
+    
+    // Add trip type filter
+    if (tripType) {
+      tripWhere.trip_type = tripType;
+    }
+    
+    // Add program filter (via trip member)
+    const memberInclude = { 
+      model: TripMember,
+      attributes: ['member_id', 'first_name', 'last_name'] // Only the needed fields
+    };
+    
+    if (programId) {
+      memberInclude.where = {
+        program_id: programId
+      };
+      memberInclude.include = [{
+        model: Program,
+        attributes: ['program_id', 'program_name']
+      }];
+    }
+    
+    // Define the leg include with possible filters
+    const legInclude = {
+      model: TripLeg,
+      as: "legs",
+      attributes: ['leg_id', 'sequence', 'status'], // Only the needed fields
+      include: [
+        { 
+          model: TripLocation, 
+          as: "pickupLocation",
+          attributes: ['location_id', 'street_address', 'city']
+        },
+        { 
+          model: TripLocation, 
+          as: "dropoffLocation",
+          attributes: ['location_id', 'street_address', 'city']
+        }
+      ]
+    };
+    
+    // Apply leg filters (status and/or driver)
+    const legWhere = {};
+    
+    // Add status filter to leg where clause
+    if (status) {
+      legWhere.status = status;
+    }
+    
+    // Add driver filter to leg where clause
+    if (driverId) {
+      legWhere.driver_id = driverId;
+    }
+    
+    // Apply where clause to legs if there are any leg filters
+    if (Object.keys(legWhere).length > 0) {
+      legInclude.where = legWhere;
+    }
+    
+    // Execute the query with only the needed fields
+    let trips = await Trip.findAll({
+      attributes: [
+        'trip_id', 
+        'schedule_type', 
+        'start_date', 
+        'trip_type', 
+        'total_distance'
+      ],
+      where: tripWhere,
+      include: [memberInclude, legInclude],
+      distinct: true,
+      order: [['start_date', 'DESC']],
+      ...(hasActiveFilters ? {} : { limit: 100 })
+    });
+    
+    // Apply post-query filters
+    
+    // If city filter is provided, filter trips with the specified city in pickup or dropoff locations
+    if (city) {
+      trips = trips.filter(trip => {
+        // Skip trips without legs
+        if (!trip.legs || trip.legs.length === 0) return false;
+        
+        // Check if any leg has the specified city in pickup or dropoff location
+        return trip.legs.some(leg => 
+          (leg.pickupLocation && leg.pickupLocation.city === city) ||
+          (leg.dropoffLocation && leg.dropoffLocation.city === city)
+        );
+      });
+    }
+    
+    // If search filter is provided, filter trips by trip ID or member name
+    if (search) {
+      const searchLower = search.toLowerCase();
+      trips = trips.filter(trip => {
+        // Search by trip ID
+        if (trip.trip_id.toString().includes(searchLower)) return true;
+        
+        // Search by member name
+        if (trip.TripMember && 
+            `${trip.TripMember.first_name} ${trip.TripMember.last_name}`.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        
+        // No match found
+        return false;
+      });
+    }
+    
+    res.json(trips);
+  } catch (error) {
+    console.error("Error fetching trip summaries:", error);
     res.status(500).json({ message: error.message });
   }
 }; 

@@ -4,6 +4,7 @@ const TripLocation = require("../models/TripLocation");
 const { ValidationError } = require("sequelize");
 const Trip = require("../models/Trip");
 const TripLeg = require("../models/TripLeg");
+const ProgramPlan = require("../models/ProgramPlan");
 
 // Get all trip members
 exports.getAllMembers = async (req, res) => {
@@ -12,7 +13,18 @@ exports.getAllMembers = async (req, res) => {
       include: [
         { 
           model: Program,
-          attributes: ['program_id', 'program_name']
+          attributes: ['program_id', 'program_name'],
+          include: [
+            {
+              model: ProgramPlan,
+              as: 'ProgramPlans'
+            }
+          ]
+        },
+        {
+          model: ProgramPlan,
+          as: 'ProgramPlan',
+          attributes: ['plan_id', 'plan_name']
         },
         {
           model: TripLocation,
@@ -30,7 +42,7 @@ exports.getAllMembers = async (req, res) => {
         }
       ],
       attributes: [
-        'member_id', 'first_name', 'last_name', 'program_id', 
+        'member_id', 'first_name', 'last_name', 'program_id', 'program_plan_id',
         'ahcccs_id', 'insurance_expiry', 'birth_date', 'phone', 
         'pickup_location', 'dropoff_location',
         'gender', 'notes', 'created_at', 'updated_at'
@@ -50,7 +62,18 @@ exports.getMemberById = async (req, res) => {
       include: [
         { 
           model: Program,
-          attributes: ['program_id', 'program_name']
+          attributes: ['program_id', 'program_name'],
+          include: [
+            {
+              model: ProgramPlan,
+              as: 'ProgramPlans'
+            }
+          ]
+        },
+        {
+          model: ProgramPlan,
+          as: 'ProgramPlan',
+          attributes: ['plan_id', 'plan_name']
         },
         {
           model: TripLocation,
@@ -68,7 +91,7 @@ exports.getMemberById = async (req, res) => {
         }
       ],
       attributes: [
-        'member_id', 'first_name', 'last_name', 'program_id', 
+        'member_id', 'first_name', 'last_name', 'program_id', 'program_plan_id',
         'ahcccs_id', 'insurance_expiry', 'birth_date', 'phone', 
         'pickup_location', 'dropoff_location',
         'gender', 'notes', 'created_at', 'updated_at'
@@ -98,7 +121,18 @@ exports.createMember = async (req, res) => {
       include: [
         { 
           model: Program,
-          attributes: ['program_id', 'program_name']
+          attributes: ['program_id', 'program_name'],
+          include: [
+            {
+              model: ProgramPlan,
+              as: 'ProgramPlans'
+            }
+          ]
+        },
+        {
+          model: ProgramPlan,
+          as: 'ProgramPlan',
+          attributes: ['plan_id', 'plan_name']
         },
         {
           model: TripLocation,
@@ -114,7 +148,7 @@ exports.createMember = async (req, res) => {
         }
       ],
       attributes: [
-        'member_id', 'first_name', 'last_name', 'program_id', 
+        'member_id', 'first_name', 'last_name', 'program_id', 'program_plan_id',
         'ahcccs_id', 'insurance_expiry', 'birth_date', 'phone', 
         'pickup_location', 'dropoff_location',
         'gender', 'notes', 'created_at', 'updated_at'
@@ -150,7 +184,18 @@ exports.updateMember = async (req, res) => {
       include: [
         { 
           model: Program,
-          attributes: ['program_id', 'program_name']
+          attributes: ['program_id', 'program_name'],
+          include: [
+            {
+              model: ProgramPlan,
+              as: 'ProgramPlans'
+            }
+          ]
+        },
+        {
+          model: ProgramPlan,
+          as: 'ProgramPlan',
+          attributes: ['plan_id', 'plan_name']
         },
         {
           model: TripLocation,
@@ -168,7 +213,7 @@ exports.updateMember = async (req, res) => {
         }
       ],
       attributes: [
-        'member_id', 'first_name', 'last_name', 'program_id', 
+        'member_id', 'first_name', 'last_name', 'program_id', 'program_plan_id',
         'ahcccs_id', 'insurance_expiry', 'birth_date', 'phone', 
         'pickup_location', 'dropoff_location',
         'gender', 'notes', 'created_at', 'updated_at'

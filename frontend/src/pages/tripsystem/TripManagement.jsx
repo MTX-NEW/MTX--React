@@ -72,7 +72,7 @@ const TripManagement = () => {
   const { data: programs = [], loading: programsLoading, error: programsError } = useResource(programApi, { idField: 'program_id' });
   const programsData = programs.map(p => ({ id: p.program_id, name: p.program_name }));
 
-  const { data: members = [], loading: membersLoading, error: membersError } = useResource(tripMemberApi, { idField: 'member_id' });
+ // const { data: members = [], loading: membersLoading, error: membersError } = useResource(tripMemberApi, { idField: 'member_id' });
 
   // Fetch companies via programApi.getCompanies
   const companiesApiService = { getAll: programApi.getCompanies };
@@ -146,7 +146,9 @@ const TripManagement = () => {
       if (showEditModal) {
         // If selectedTrip has leg_id, it's a leg we're editing
         if (selectedTrip.leg_id) {
-          await handleLegUpdate(selectedTrip.leg_id, data);
+          //await handleLegUpdate(selectedTrip.leg_id, data);
+          console.log('Creating new leg:', data);
+          await createTripLeg(data);
         } else {
           // Otherwise it's a trip
           await updateTrip(selectedTrip.trip_id, data);

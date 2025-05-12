@@ -60,6 +60,7 @@ const TripRequestsPresenter = ({
         onSearch={setSearchQuery}
         onAdd={handleAddTrip}
         addButtonText="New Trip Request"
+        searchQuery={searchQuery}
       />
       
       <TripRequestFilters 

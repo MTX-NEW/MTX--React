@@ -19,6 +19,7 @@ const LocationAutocomplete = ({
   const { control, getValues, watch } = useFormContext();
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [formattedSearchResults, setFormattedSearchResults] = useState([]);
+  console.log('locations', locations);
   
   // Watch for value changes to update the selectedLocation when field is updated programmatically
   const currentValue = watch(name);

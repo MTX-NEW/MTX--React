@@ -124,14 +124,21 @@ const useMemberManagement = () => {
 
   const handleEditMember = (member) => {
     setSelectedMember(member);
-
+    console.log('Editing member:', member);
+    console.log('Programs:', programs);
+    
     // Find the program to get company_id
-    const program = programs.find(p => p.program_id === member.program_id);
+    const program = programs.find(p => p.program_id === Number(member.program_id));
+    const companyId = program ? program.company_id : '';
+    
+    // Check if member has a selected program plan from the Program object
+    const programPlanId = member.program_plan_id || '';
 
     editFormMethods.reset({
       ...member,
       program_id: member.program_id || '',
-      company_id: program ? program.company_id : '',
+      company_id: companyId,
+      program_plan_id: programPlanId,
       birth_date: member.birth_date ? new Date(member.birth_date) : null,
       insurance_expiry: member.insurance_expiry ? new Date(member.insurance_expiry) : null
     });
@@ -338,36 +345,44 @@ const useMemberManagement = () => {
 
   // Helper functions for generating form fields
   const getMemberFields = (formContext) => {
-    // Map data for select options
-    const companyOptions = programs.reduce((companies, program) => {
-      // Check if company already exists in the array
-      const existingCompany = companies.find(c => c.value === program.company_id);
-      if (!existingCompany) {
-        // Add new company
-        companies.push({
-          value: program.company_id,
-          label: program.company_name,
-          programs: [program]
-        });
-      } else {
-        // Add program to existing company
-        existingCompany.programs.push(program);
-      }
-      return companies;
-    }, []);
+    // Create unique company options from programs
+    const companyOptions = [...new Set(programs.map(p => p.company_id))].map(companyId => {
+      const program = programs.find(p => p.company_id === companyId);
+      return {
+        value: companyId,
+        label: program ? program.company_name : `Company ${companyId}`
+      };
+    });
 
     const selectedCompanyId = formContext ? formContext.watch('company_id') : null;
-    const selectedCompany = companyOptions.find(c => c.value === selectedCompanyId);
-
-    const programOptions = selectedCompany
-      ? selectedCompany.programs.map(program => ({
-        value: program.program_id,
-        label: program.program_name
+    const selectedProgramId = formContext ? formContext.watch('program_id') : null;
+    
+    // Convert to number for proper comparison since form values might be strings
+    const companyIdNumber = selectedCompanyId ? Number(selectedCompanyId) : null;
+    
+    // Filter programs based on selected company
+    const filteredPrograms = companyIdNumber 
+      ? programs.filter(p => p.company_id === companyIdNumber)
+      : programs;
+    
+    console.log('Selected company ID:', companyIdNumber);
+    console.log('Filtered programs:', filteredPrograms);
+    
+    const programOptions = filteredPrograms.map(program => ({
+      value: program.program_id,
+      label: program.program_name
+    }));
+    
+    // Get the selected program object to access its plans
+    const selectedProgram = programs.find(p => p.program_id === Number(selectedProgramId));
+    
+    // Get plans from the selected program
+    const programPlanOptions = selectedProgram && selectedProgram.ProgramPlans
+      ? selectedProgram.ProgramPlans.map(plan => ({
+        value: plan.plan_id,
+        label: plan.plan_name
       }))
-      : programs.map(program => ({
-        value: program.program_id,
-        label: program.program_name
-      }));
+      : [];
 
     return [
       { name: 'first_name', label: 'First Name', type: 'text', isRequired: true },
@@ -375,24 +390,35 @@ const useMemberManagement = () => {
       {
         name: 'company_id',
         label: 'Company',
-        type: 'autocomplete',
+        type: 'select',
         options: companyOptions,
-        autocompleteProps: {
-          getOptionLabel: (option) => option.label || '',
-        },
-        onChange: (selectedValue) => {
+        onChange: (e) => {
           // Clear program selection when company changes
           if (formContext) {
             formContext.setValue('program_id', '');
+            formContext.setValue('program_plan_id', '');
           }
         }
       },
       {
         name: 'program_id',
         label: 'Program',
-        type: 'autocomplete',
-        options: selectedCompany ? programOptions : programOptions,
-        disabled: !selectedCompany && companyOptions.length > 0
+        type: 'select',
+        options: programOptions,
+        disabled: !selectedCompanyId,
+        onChange: (e) => {
+          // Clear program plan selection when program changes
+          if (formContext) {
+            formContext.setValue('program_plan_id', '');
+          }
+        }
+      },
+      {
+        name: 'program_plan_id',
+        label: 'Program Plan',
+        type: 'select',
+        options: programPlanOptions,
+        disabled: !selectedProgramId
       },
       { name: 'ahcccs_id', label: 'AHCCCS ID', type: 'text' },
       { name: 'insurance_expiry', label: 'Insurance Expiry', type: 'date' },

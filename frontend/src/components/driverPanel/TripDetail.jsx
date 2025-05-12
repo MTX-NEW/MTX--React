@@ -155,7 +155,7 @@ const TripDetail = () => {
     date.setHours(parseInt(hours, 10));
     date.setMinutes(parseInt(minutes, 10));
     
-    return format(date, 'h:mm a');
+    return format(date, 'HH:mm');
   };
 
   const formatDate = (dateString) => {

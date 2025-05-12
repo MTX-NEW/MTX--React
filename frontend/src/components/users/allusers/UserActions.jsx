@@ -1,13 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const UserActions = ({ 
   onSearch, 
   onAdd, 
   addButtonText = "Add New User",
   secondaryButtonText,
-  onSecondaryAdd 
+  onSecondaryAdd,
+  searchQuery = ""
 }) => {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(searchQuery);
+
+  // Sync with external searchQuery when it changes
+  useEffect(() => {
+    setQuery(searchQuery);
+  }, [searchQuery]);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;

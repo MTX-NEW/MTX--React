@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { UserRoutesProvider } from "./context/UserRoutesContext";
 
 // Lazy load layouts
 const UsersLayout = lazy(() => import("@/layouts/UsersLayout"));
@@ -52,16 +53,23 @@ const DriverTimeOff = lazy(() => import("@/components/driverPanel/DriverTimeOff"
 // Loading fallback component
 //const LoadingFallback = () => <div className="page-loading">Loading...</div>;
 
+// Component for protected routes that need user routes data
+const ProtectedRoutesWithUserRoutes = () => (
+  <UserRoutesProvider>
+    <ProtectedRoute />
+  </UserRoutesProvider>
+);
+
 const Router = () => {
   return (
-    <Suspense >
+    <Suspense>
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Protected Routes - All routes below require authentication */}
-        <Route element={<ProtectedRoute />}>
+        {/* Protected Routes - All routes below require authentication and user routes data */}
+        <Route element={<ProtectedRoutesWithUserRoutes />}>
           {/* Redirect to Trip System */}
           <Route path="/" element={<Navigate to="/trip-system" replace />} />
 

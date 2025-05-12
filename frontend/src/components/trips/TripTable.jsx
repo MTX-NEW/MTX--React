@@ -18,7 +18,7 @@ const TripTable = ({
       cell: (value) => value ? `${value.first_name} ${value.last_name}` : 'N/A',
     },
     {
-      header: 'Schedule Type',
+      header: 'Schedule',
       accessor: 'schedule_type',
       cell: (value) => value || 'N/A',
     },
@@ -28,7 +28,7 @@ const TripTable = ({
       cell: (value) => value ? format(new Date(value), 'MM/dd/yyyy') : 'N/A',
     },
     {
-      header: 'Trip Type',
+      header: 'Type',
       accessor: 'trip_type',
       cell: (value) => {
         switch (value) {

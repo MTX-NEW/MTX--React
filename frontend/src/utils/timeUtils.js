@@ -3,7 +3,7 @@
  */
 
 /**
- * Formats a time string from the database to display format (h:mm AM/PM)
+ * Formats a time string from the database to display format (HH:MM in 24-hour format)
  * @param {string} timeString - Time string from database (HH:MM:SS)
  * @returns {string|null} - Formatted time string or null if input is invalid
  */
@@ -11,31 +11,29 @@ export function formatTimeForDisplay(timeString) {
   if (!timeString) return null;
   
   try {
-    // Handle TIME type (HH:MM:SS)
-    const timeParts = timeString.split(':');
-    
-    if (timeParts.length >= 2) {
-      // Extract hours and minutes
-      let hours = parseInt(timeParts[0], 10);
-      const minutes = timeParts[1].padStart(2, '0');
+    // If we have a time string with colons (like HH:MM:SS or HH:MM)
+    if (typeof timeString === 'string' && timeString.includes(':')) {
+      const timeParts = timeString.split(':');
       
-      // Convert to 12-hour format
-      const period = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
-      
-      return `${hours}:${minutes} ${period}`;
+      // Always take just the first two parts (hours and minutes)
+      if (timeParts.length >= 2) {
+        const hours = parseInt(timeParts[0], 10).toString().padStart(2, '0');
+        const minutes = timeParts[1].padStart(2, '0');
+        
+        console.log(`${hours}:${minutes}`);
+        // Return in 24-hour format, without seconds
+        return `${hours}:${minutes}`;
+      }
     }
     
     // If it's a datetime string, extract time
-    if (timeString.includes('T')) {
+    if (typeof timeString === 'string' && timeString.includes('T')) {
       const date = new Date(timeString);
       if (!isNaN(date.getTime())) {
-        let hours = date.getHours();
+        const hours = date.getHours().toString().padStart(2, '0');
         const minutes = date.getMinutes().toString().padStart(2, '0');
-        const period = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12 || 12;
         
-        return `${hours}:${minutes} ${period}`;
+        return `${hours}:${minutes}`;
       }
     }
     

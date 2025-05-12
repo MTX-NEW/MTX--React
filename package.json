@@ -12,10 +12,17 @@
     "start": "npm run server",
     "build": "npm run build --prefix frontend"
   },
-  "keywords": ["medical", "transportation", "express"],
+  "keywords": [
+    "medical",
+    "transportation",
+    "express"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "bootstrap-icons": "^1.13.1"
   }
-} 
+}

@@ -1,260 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Tab, Tabs, Table, Card, Row, Col, Button } from 'react-bootstrap';
-import { userApi, timeSheetApi, timeSheetBreakApi } from '@/api/baseApi';
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes } from 'date-fns';
+import { Tab, Tabs, Table, Card, Row, Col, Button, OverlayTrigger, Tooltip as BSTooltip } from 'react-bootstrap';
+import { format, parseISO, differenceInMinutes } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import ManualHoursEntry from '@/components/timesheet/ManualHoursEntry';
+import useAuth from '@/hooks/useAuth';
+import useEmployeeTimesheet from '@/hooks/useEmployeeTimesheet';
 
 const EmployeeTimesheetHistory = () => {
   const { employeeId } = useParams();
   const navigate = useNavigate();
-  
-  // State for employee data
-  const [employee, setEmployee] = useState(null);
-  const [timeSheets, setTimeSheets] = useState([]);
-  const [breaks, setBreaks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // State for date range selection
-  const [dateRange, setDateRange] = useState({
-    startDate: format(startOfWeek(new Date()), 'yyyy-MM-dd'),
-    endDate: format(endOfWeek(new Date()), 'yyyy-MM-dd'),
+  const { user: currentUser } = useAuth();
+
+  // Use the enhanced hook with employeeId
+  const {
+    employee,
+    timeSheets,
+    breaks,
+    loading,
+    error,
+    dateRange,
+    activeTab,
+    stats,
+    chartData,
+    earnings,
+    handleDateRangeChange,
+    setViewRange,
+    refreshAllData
+  } = useEmployeeTimesheet({ 
+    employeeId,
+    initialViewMode: 'daily'
   });
-  
-  // State for active tab
-  const [activeTab, setActiveTab] = useState('daily');
-  
-  // Load employee data and timesheet history
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!employeeId || employeeId === 'undefined') {
-        setError("Invalid employee ID or no employee selected");
-        setLoading(false);
-        return;
-      }
-      
-      setLoading(true);
-      try {
-        // Get employee details
-        const employeeResponse = await userApi.getOne(employeeId);
-        setEmployee(employeeResponse.data);
-        
-        // Get timesheet data
-        const timeSheetResponse = await timeSheetApi.getByUser(
-          employeeId,
-          dateRange.startDate,
-          dateRange.endDate
-        );
-        
-        setTimeSheets(timeSheetResponse.data || []);
-        
-        // Get all breaks for the timesheets
-        if (timeSheetResponse.data && timeSheetResponse.data.length > 0) {
-          const breakPromises = timeSheetResponse.data.map(timesheet => 
-            timeSheetBreakApi.getByTimesheet(timesheet.timesheet_id)
-          );
-          
-          const breakResponses = await Promise.all(breakPromises);
-          const allBreaks = breakResponses.flatMap(response => response.data || []);
-          setBreaks(allBreaks);
-        } else {
-          // Reset breaks if no timesheets
-          setBreaks([]);
-        }
-        
-        setError(null);
-      } catch (err) {
-        // Do not redirect, just show error message
-        if (err.response && err.response.status === 404 && err.response.config.url.includes('/users/')) {
-          setError(`Employee ID ${employeeId} not found. Please select an existing employee.`);
-          toast.error(`Employee ID ${employeeId} not found`);
-        } else {
-          setError('Failed to load employee timesheet data. ' + (err.message || ''));
-          toast.error('Error loading timesheet data');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [employeeId, dateRange.startDate, dateRange.endDate]);
-  
-  // Handle date range changes
-  const handleDateRangeChange = (range) => {
-    setDateRange(range);
-  };
-  
-  // Set date range for the selected period
-  const setViewRange = (view) => {
-    const today = new Date();
-    
-    switch(view) {
-      case 'week':
-        setDateRange({
-          startDate: format(startOfWeek(today), 'yyyy-MM-dd'),
-          endDate: format(endOfWeek(today), 'yyyy-MM-dd'),
-        });
-        break;
-      case 'month':
-        setDateRange({
-          startDate: format(startOfMonth(today), 'yyyy-MM-dd'),
-          endDate: format(endOfMonth(today), 'yyyy-MM-dd'),
-        });
-        break;
-      default:
-        // Default to today
-        const todayFormatted = format(today, 'yyyy-MM-dd');
-        setDateRange({
-          startDate: todayFormatted,
-          endDate: todayFormatted,
-        });
-    }
-    
-    setActiveTab(view);
-  };
-  
-  // Calculate statistics for the current date range
-  const calculateStats = () => {
-    if (!timeSheets || timeSheets.length === 0) {
-      return {
-        totalHours: 0,
-        totalDays: 0,
-        avgHoursPerDay: 0,
-        totalBreakMinutes: 0,
-        avgBreakMinutes: 0,
-      };
-    }
-    
-    // Calculate working hours
-    const totalHours = timeSheets.reduce((total, sheet) => {
-      return total + (parseFloat(sheet.total_regular_hours || 0) + parseFloat(sheet.total_overtime_hours || 0));
-    }, 0);
-    
-    // Count unique days
-    const uniqueDays = new Set(timeSheets.map(sheet => sheet.date)).size;
-    
-    // Calculate average hours per day
-    const avgHoursPerDay = uniqueDays ? (totalHours / uniqueDays) : 0;
-    
-    // Calculate break statistics
-    const totalBreakMinutes = breaks.reduce((total, breakItem) => {
-      // If end_time is null, break is ongoing - use current time
-      const endTime = breakItem.end_time ? parseISO(breakItem.end_time) : new Date();
-      const startTime = parseISO(breakItem.start_time);
-      return total + differenceInMinutes(endTime, startTime);
-    }, 0);
-    
-    const avgBreakMinutes = timeSheets.length ? (totalBreakMinutes / timeSheets.length) : 0;
-    
-    return {
-      totalHours,
-      totalDays: uniqueDays,
-      avgHoursPerDay,
-      totalBreakMinutes,
-      avgBreakMinutes,
-    };
-  };
-  
-  // Prepare data for charts
-  const prepareChartData = () => {
-    if (!timeSheets || timeSheets.length === 0) {
-      return { 
-        dailyHours: [],
-        breakDistribution: [
-          { name: 'Working', value: 1, color: '#8884d8' },
-          { name: 'Break', value: 0, color: '#82ca9d' },
-        ] 
-      };
-    }
-    
-    // Daily hours chart data
-    const dailyHours = timeSheets.map(sheet => {
-      return {
-        date: format(parseISO(sheet.date), 'MMM dd'),
-        hours: parseFloat(sheet.total_regular_hours || 0) + parseFloat(sheet.total_overtime_hours || 0),
-      };
-    });
-    
-    // Break distribution chart data
-    const stats = calculateStats();
-    const totalWorkMinutes = stats.totalHours * 60;
-    return {
-      dailyHours,
-      breakDistribution: [
-        { name: 'Working', value: totalWorkMinutes, color: '#8884d8' },
-        { name: 'Break', value: stats.totalBreakMinutes, color: '#82ca9d' },
-      ]
-    };
-  };
-  
-  // Chart data
-  const chartData = prepareChartData();
-  
-  // Stats
-  const stats = calculateStats();
-  
+
   // Go back to employee list
   const handleGoBack = () => {
     navigate('/time-sheet/employee');
   };
-  
-  // Calculate estimated earnings (for payroll preview)
-  const calculateEstimatedEarnings = () => {
-    if (!timeSheets || timeSheets.length === 0) {
-      return {
-        totalHours: 0,
-        regularHours: 0,
-        overtimeHours: 0,
-        estimatedPay: 0,
-        hourlyRate: 15.00 // Always provide a default hourly rate
-      };
-    }
-    
-    // Calculate total hours
-    const regularHours = timeSheets.reduce((total, sheet) => 
-      total + parseFloat(sheet.total_regular_hours || 0), 0);
-    const overtimeHours = timeSheets.reduce((total, sheet) => 
-      total + parseFloat(sheet.total_overtime_hours || 0), 0);
-    const totalHours = regularHours + overtimeHours;
-    
-    // Use employee's actual hourly rate or default
-    const hourlyRate = employee && employee.hourly_rate ? parseFloat(employee.hourly_rate) : 15.00;
-    const overtimeRate = hourlyRate * 1.5; // Overtime at 1.5x
-    
-    // Calculate estimated pay
-    const estimatedPay = (regularHours * hourlyRate) + (overtimeHours * overtimeRate);
-    
-    return {
-      totalHours,
-      regularHours,
-      overtimeHours,
-      estimatedPay,
-      hourlyRate
-    };
-  };
-  
-  // Get estimated earnings
-  const earnings = calculateEstimatedEarnings();
-  
+
   // Navigate to payroll
   const navigateToPayroll = () => {
     navigate(`/time-sheet/employee/${employeeId}/payroll`);
   };
-  
-  // Navigate to employee timesheet history
-  const navigateToEmployeeHistory = (employeeId) => {
-    // Make sure employeeId is valid before navigating
-    if (employeeId) {
-      navigate(`/time-sheet/employee/${employeeId}/history`);
-    } else {
-      toast.error("Cannot view history - invalid employee ID");
-    }
-  };
-  
+
   // Render loading state
   if (loading && !employee) {
     return (
@@ -310,8 +99,14 @@ const EmployeeTimesheetHistory = () => {
           </h1>
         </div>
         
-        <div>
-          <span className="badge bg-secondary me-2">ID: {employee?.emp_code || 'N/A'}</span>
+        <div className="d-flex">
+          <span className="badge bg-secondary me-2 align-self-center">ID: {employee?.emp_code || 'N/A'}</span>
+          {currentUser?.user_type?.type_id === 1 && (
+            <ManualHoursEntry 
+              userId={employeeId} 
+              onSuccess={refreshAllData} 
+            />
+          )}
         </div>
       </div>
       
@@ -324,8 +119,9 @@ const EmployeeTimesheetHistory = () => {
                 src={employee?.profile_image || '/assets/images/profile.jpg'}
                 alt={`${employee?.first_name} ${employee?.last_name}`}
                 className="rounded-circle mb-2"
-                width="100"
-                height="100"
+                width="120"
+                height="120"
+                style={{ objectFit: 'cover', border: '2px solid #f1f1f1' }}
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = '/assets/images/profile.jpg';
@@ -341,9 +137,9 @@ const EmployeeTimesheetHistory = () => {
             <Col md={4}>
               <div className="text-end">
                 <h5>Summary Statistics</h5>
-                <p className="mb-1"><strong>Total Hours:</strong> {stats.totalHours}</p>
+                <p className="mb-1"><strong>Total Hours:</strong> {stats.totalHours.toFixed(2)}</p>
                 <p className="mb-1"><strong>Days Worked:</strong> {stats.totalDays}</p>
-                <p className="mb-1"><strong>Avg. Hours/Day:</strong> {stats.avgHoursPerDay}</p>
+                <p className="mb-1"><strong>Avg. Hours/Day:</strong> {stats.avgHoursPerDay.toFixed(2)}</p>
               </div>
             </Col>
           </Row>
@@ -367,7 +163,7 @@ const EmployeeTimesheetHistory = () => {
                   id="daily-date-picker"
                   name="daily-date-picker"
                   value={dateRange.startDate}
-                  onChange={(e) => setDateRange({...dateRange, startDate: e.target.value, endDate: e.target.value})}
+                  onChange={(e) => handleDateRangeChange({...dateRange, startDate: e.target.value, endDate: e.target.value})}
                 />
               </div>
             </Card.Header>
@@ -384,24 +180,38 @@ const EmployeeTimesheetHistory = () => {
                         <th>Date</th>
                         <th>Clock In</th>
                         <th>Clock Out</th>
-                        <th>Regular Hours</th>
-                        <th>Overtime Hours</th>
-                        <th>Total Hours</th>
+                        <th>Hours Type</th>
+                        <th>Hours</th>
+                        <th>Rate</th>
+                        <th>Notes</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {timeSheets.map((sheet) => (
-                        <tr key={sheet.id}>
+                      {timeSheets.map((sheet, index) => (
+                        <tr key={`sheet-${sheet.timesheet_id || sheet.id}-${index}`}>
                           <td>{format(parseISO(sheet.date), 'MMM dd, yyyy')}</td>
                           <td>{sheet.clock_in ? format(parseISO(sheet.clock_in), 'hh:mm a') : 'N/A'}</td>
                           <td>{sheet.clock_out ? format(parseISO(sheet.clock_out), 'hh:mm a') : 'N/A'}</td>
-                          <td>{parseFloat(sheet.total_regular_hours || 0).toFixed(2)}</td>
-                          <td>{parseFloat(sheet.total_overtime_hours || 0).toFixed(2)}</td>
+                          <td>{sheet.hour_type ? sheet.hour_type.charAt(0).toUpperCase() + sheet.hour_type.slice(1) : 'Regular'}</td>
+                          <td>{parseFloat(sheet.total_hours || 0).toFixed(2)}</td>
+                          <td>${parseFloat(sheet.rate || 0).toFixed(2)}/hr</td>
                           <td>
-                            {(
-                              parseFloat(sheet.total_regular_hours || 0) + 
-                              parseFloat(sheet.total_overtime_hours || 0)
-                            ).toFixed(2)}
+                            {sheet.notes ? (
+                              <OverlayTrigger
+                                placement="top"
+                                overlay={
+                                  <BSTooltip id={`tooltip-${sheet.timesheet_id || sheet.id}`}>
+                                    <div style={{ whiteSpace: 'pre-line', textAlign: 'left' }}>
+                                      {sheet.notes}
+                                    </div>
+                                  </BSTooltip>
+                                }
+                              >
+                                <div className="text-truncate" style={{ maxWidth: '150px', cursor: 'pointer' }}>
+                                  {sheet.notes}
+                                </div>
+                              </OverlayTrigger>
+                            ) : 'N/A'}
                           </td>
                         </tr>
                       ))}
@@ -454,7 +264,7 @@ const EmployeeTimesheetHistory = () => {
                   id="weekly-start-date"
                   name="weekly-start-date"
                   value={dateRange.startDate}
-                  onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
+                  onChange={(e) => handleDateRangeChange({...dateRange, startDate: e.target.value})}
                 />
                 <span className="align-self-center mx-2">to</span>
                 <input
@@ -463,7 +273,7 @@ const EmployeeTimesheetHistory = () => {
                   id="weekly-end-date"
                   name="weekly-end-date"
                   value={dateRange.endDate}
-                  onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
+                  onChange={(e) => handleDateRangeChange({...dateRange, endDate: e.target.value})}
                 />
               </div>
             </Card.Header>
@@ -546,10 +356,11 @@ const EmployeeTimesheetHistory = () => {
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Regular Hours</th>
-                    <th>Overtime Hours</th>
-                    <th>Total Hours</th>
+                    <th>Hours Type</th>
+                    <th>Hours</th>
+                    <th>Rate</th>
                     <th>Break Time (min)</th>
+                    <th>Notes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -565,15 +376,28 @@ const EmployeeTimesheetHistory = () => {
                     return (
                       <tr key={sheet.id}>
                         <td>{format(parseISO(sheet.date), 'MMM dd, yyyy')}</td>
-                        <td>{parseFloat(sheet.total_regular_hours || 0).toFixed(2)}</td>
-                        <td>{parseFloat(sheet.total_overtime_hours || 0).toFixed(2)}</td>
-                        <td>
-                          {(
-                            parseFloat(sheet.total_regular_hours || 0) + 
-                            parseFloat(sheet.total_overtime_hours || 0)
-                          ).toFixed(2)}
-                        </td>
+                        <td>{sheet.hour_type ? sheet.hour_type.charAt(0).toUpperCase() + sheet.hour_type.slice(1) : 'Regular'}</td>
+                        <td>{parseFloat(sheet.total_hours || 0).toFixed(2)}</td>
+                        <td>${parseFloat(sheet.rate || 0).toFixed(2)}/hr</td>
                         <td>{breakMinutes}</td>
+                        <td>
+                          {sheet.notes ? (
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <BSTooltip id={`tooltip-week-${sheet.timesheet_id || sheet.id}`}>
+                                  <div style={{ whiteSpace: 'pre-line', textAlign: 'left' }}>
+                                    {sheet.notes}
+                                  </div>
+                                </BSTooltip>
+                              }
+                            >
+                              <div className="text-truncate" style={{ maxWidth: '150px', cursor: 'pointer' }}>
+                                {sheet.notes}
+                              </div>
+                            </OverlayTrigger>
+                          ) : 'N/A'}
+                        </td>
                       </tr>
                     );
                   })}
@@ -601,7 +425,7 @@ const EmployeeTimesheetHistory = () => {
                     const startDate = `${yearMonth}-01`;
                     const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
                     const endDate = `${yearMonth}-${lastDay}`;
-                    setDateRange({ startDate, endDate });
+                    handleDateRangeChange({ startDate, endDate });
                   }}
                 />
               </div>
@@ -698,37 +522,43 @@ const EmployeeTimesheetHistory = () => {
                       // Group by week
                       const weekMap = timeSheets.reduce((weeks, sheet) => {
                         const date = parseISO(sheet.date);
-                        const weekStart = format(startOfWeek(date), 'yyyy-MM-dd');
+                        const weekStart = format(parseISO(sheet.date), 'yyyy-ww');
                         
                         if (!weeks[weekStart]) {
                           weeks[weekStart] = {
                             sheets: [],
                             dates: new Set(),
+                            start: date,
+                            end: date
                           };
                         }
                         
                         weeks[weekStart].sheets.push(sheet);
                         weeks[weekStart].dates.add(format(date, 'yyyy-MM-dd'));
                         
+                        // Update week start/end for display
+                        if (date < weeks[weekStart].start) {
+                          weeks[weekStart].start = date;
+                        }
+                        if (date > weeks[weekStart].end) {
+                          weeks[weekStart].end = date;
+                        }
+                        
                         return weeks;
                       }, {});
                       
                       // Convert to array and calculate stats
-                      return Object.entries(weekMap).map(([weekStart, data]) => {
-                        const weekEnd = format(endOfWeek(parseISO(weekStart)), 'MMM dd');
+                      return Object.entries(weekMap).map(([weekId, data]) => {
                         const totalHours = data.sheets.reduce((sum, sheet) => {
-                          return sum + (
-                            parseFloat(sheet.total_regular_hours || 0) + 
-                            parseFloat(sheet.total_overtime_hours || 0)
-                          );
+                          return sum + parseFloat(sheet.total_hours || 0);
                         }, 0);
                         
                         const daysWorked = data.dates.size;
                         const avgHoursPerDay = daysWorked ? (totalHours / daysWorked) : 0;
                         
                         return (
-                          <tr key={weekStart}>
-                            <td>{format(parseISO(weekStart), 'MMM dd')} - {weekEnd}</td>
+                          <tr key={weekId}>
+                            <td>{format(data.start, 'MMM dd')} - {format(data.end, 'MMM dd')}</td>
                             <td>{daysWorked}</td>
                             <td>{totalHours.toFixed(2)}</td>
                             <td>{avgHoursPerDay.toFixed(2)}</td>
@@ -756,25 +586,25 @@ const EmployeeTimesheetHistory = () => {
                   <div className="col-md-6">
                     <div className="mb-3">
                       <div className="text-muted small">Regular Hours</div>
-                      <div className="h5">{(earnings && earnings.regularHours !== undefined ? earnings.regularHours : 0).toFixed(2)} hrs</div>
+                      <div className="h5">{earnings.regularHours.toFixed(2)} hrs</div>
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
                       <div className="text-muted small">Overtime Hours</div>
-                      <div className="h5">{(earnings && earnings.overtimeHours !== undefined ? earnings.overtimeHours : 0).toFixed(2)} hrs</div>
+                      <div className="h5">{earnings.overtimeHours.toFixed(2)} hrs</div>
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
                       <div className="text-muted small">Hourly Rate</div>
-                      <div className="h5">${(earnings && earnings.hourlyRate !== undefined ? earnings.hourlyRate : 15.00).toFixed(2)}/hr</div>
+                      <div className="h5">${earnings.hourlyRate.toFixed(2)}/hr</div>
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="mb-3">
                       <div className="text-muted small">Estimated Gross Pay</div>
-                      <div className="h5 text-primary">${(earnings && earnings.estimatedPay !== undefined ? earnings.estimatedPay : 0).toFixed(2)}</div>
+                      <div className="h5 text-primary">${earnings.estimatedPay.toFixed(2)}</div>
                     </div>
                   </div>
                 </div>

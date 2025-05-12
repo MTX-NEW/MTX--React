@@ -4,7 +4,8 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 
 // Using relative URL prevents mixed content issues when site is served over HTTPS
-export const API_BASE_URL = '';
+//export const API_BASE_URL = '';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Set up axios interceptor to include auth token in requests
 const token = localStorage.getItem('token');
@@ -14,7 +15,7 @@ if (token) {
 
 const createApiService = (endpoint) => {
   const API_URL = `${API_BASE_URL}/api/${endpoint}`;
-
+ // console.log('API_URL:', API_URL);
   return {
     getAll: (params = {}) => {
       // Convert params object to URL query string
@@ -59,7 +60,15 @@ export const vehiclePartsApi = createApiService('vehicle-parts');
 export const vehicleServicesApi = createApiService('vehicle-services');
 export const vehicleApi = createApiService('vehicles');
 // Trip System API services
-export const tripApi = createApiService('trips');
+export const tripApi = {
+  ...createApiService('trips'),
+  getSummary: (params = {}) => {
+    const queryString = Object.keys(params).length 
+      ? `?${new URLSearchParams(params).toString()}` 
+      : '';
+    return axios.get(`${API_BASE_URL}/api/trips/summary${queryString}`);
+  }
+};
 export const tripLegApi = {
   ...createApiService('trip-legs'),
   getByTrip: (tripId) => axios.get(`${API_BASE_URL}/api/trip-legs/trip/${tripId}`),
@@ -235,9 +244,12 @@ export const programApi = {
 // Time sheets API services
 export const timeSheetApi = {
   ...createApiService('time-sheets'),
-  clockIn: (userId) => axios.post(`${API_BASE_URL}/api/time-sheets/clock-in`, { user_id: userId }),
+  clockIn: (userId, hourType = 'regular') => axios.post(`${API_BASE_URL}/api/time-sheets/clock-in`, { 
+    user_id: userId,
+    hour_type: hourType 
+  }),
   clockOut: (userId) => axios.post(`${API_BASE_URL}/api/time-sheets/clock-out`, { user_id: userId }),
-  getStatus: (userId) => axios.get(`${API_BASE_URL}/api/time-sheets/status/${userId}`),
+  getStatus: (userId) => axios.get(`${API_BASE_URL}/api/time-sheets/user/${userId}/status`),
   getByUser: (userId, startDate, endDate) => {
     const params = new URLSearchParams();
     params.append('userId', userId);
@@ -245,7 +257,13 @@ export const timeSheetApi = {
     if (endDate) params.append('endDate', endDate);
     return axios.get(`${API_BASE_URL}/api/time-sheets?${params.toString()}`);
   },
-  getActiveTimesheet: (userId) => axios.get(`${API_BASE_URL}/api/time-sheets/active/${userId}`)
+  getActiveTimesheet: (userId) => axios.get(`${API_BASE_URL}/api/time-sheets/user/${userId}/active`),
+  recalculateOvertime: (userId, startDate, endDate) => 
+    axios.post(`${API_BASE_URL}/api/time-sheets/recalculate-overtime`, { 
+      userId, 
+      startDate, 
+      endDate 
+    })
 };
 
 // Time sheet breaks API services

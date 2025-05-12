@@ -1,57 +1,100 @@
-import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api/baseApi';
 import { getStoredUser, getStoredToken, storeAuthData, clearAuthData } from '../utils/authUtils';
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Initialize auth state once on mount
-  useEffect(() => {
+// Create a resource that suspends until authentication is complete
+const createAuthResource = () => {
+  let status = 'pending';
+  let result;
+  let error;
+  
+  const promise = new Promise((resolve, reject) => {
     const initializeAuth = async () => {
-      let initialUser = null; // Hold user state until the end
-      const storedUser = getStoredUser();
-      const token = getStoredToken();
-      
-      if (storedUser && token) {
-        try {
-          // Check if token is expired before using it
-          const tokenData = JSON.parse(atob(token.split('.')[1]));
-          const isExpired = tokenData.exp * 1000 < Date.now();
-          
-          if (isExpired) {
-            // If token is expired, clear auth data silently
+      try {
+        const storedUser = getStoredUser();
+        const token = getStoredToken();
+       // console.log('storedUser', storedUser);
+        
+        if (storedUser && token) {
+          try {
+            // Check if token is expired before using it
+            const tokenData = JSON.parse(atob(token.split('.')[1]));
+            const isExpired = tokenData.exp * 1000 < Date.now();
+            
+            if (isExpired) {
+              // If token is expired, clear auth data silently
+              clearAuthData();
+              resolve({ user: null, token: null });
+            } else {
+              // Only set auth state if token is valid
+              axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+              
+              // Wait a small delay to ensure user data is fully processed
+              setTimeout(() => {
+                resolve({ user: storedUser, token });
+              }, 50);
+            }
+          } catch (error) {
+            console.error('Error parsing token:', error);
             clearAuthData();
-          } else {
-            // Only set auth state if token is valid
-            initialUser = storedUser; // Set potential user
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            resolve({ user: null, token: null });
           }
-        } catch (error) {
-          console.error('Error parsing token:', error);
-          clearAuthData();
+        } else {
+          resolve({ user: null, token: null });
         }
+      } catch (err) {
+        reject(err);
       }
-      
-      // Batch state updates at the end
-      setUser(initialUser); 
-      setLoading(false);
     };
     
     initializeAuth();
-  }, []);
+  });
+  
+  promise.then(
+    (res) => {
+      status = 'success';
+      result = res;
+    },
+    (err) => {
+      status = 'error';
+      error = err;
+    }
+  );
+  
+  return {
+    read() {
+      if (status === 'pending') throw promise;
+      if (status === 'error') throw error;
+      return result;
+    }
+  };
+};
+
+// Create the auth resource
+const authResource = createAuthResource();
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Read from the auth resource, which will suspend if not ready
+  const initialAuth = authResource.read();
+  
+  // Once we get here, auth is initialized
+  useEffect(() => {
+    if (initialAuth.user) {
+     // console.log('Setting auth user with typeId:', initialAuth.user.user_type?.type_id);
+    }
+    setUser(initialAuth.user);
+  }, [initialAuth]);
 
   // Register function
   const register = useCallback(async (userData) => {
     try {
-      // Temporarily set loading true for the duration of the async operation
-      // This loading is different from the initial auth loading
-      // Consider adding a specific 'actionLoading' state if needed elsewhere
-      // setLoading(true); 
       setError(null);
       
       const response = await axios.post(`${API_BASE_URL}/api/auth/register`, userData);
@@ -62,17 +105,14 @@ export const AuthProvider = ({ children }) => {
       const errors = err.response?.data?.errors || [];
       setError(errorMessage);
       throw { message: errorMessage, errors };
-    } finally {
-       // setLoading(false);
     }
   }, []);
 
   // Login function
   const login = useCallback(async (username, password) => {
-    let actionError = null; // Use local error state for the action
+    let actionError = null;
     try {
-      // setLoading(true); // Consider separate loading state if UI needs it
-      setError(null); // Clear global error
+      setError(null);
       
       const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
         username, password
@@ -81,8 +121,7 @@ export const AuthProvider = ({ children }) => {
       const { user: loggedInUser, token } = response.data;
       
       // Update state
-      setUser(loggedInUser); 
-      // No need to set isAuthenticated separately
+      setUser(loggedInUser);
       
       // Store data
       storeAuthData(loggedInUser, token);
@@ -91,59 +130,19 @@ export const AuthProvider = ({ children }) => {
       return loggedInUser;
     } catch (err) {
       const errorData = err.response?.data || {};
-      actionError = errorData.message || 'Login failed'; // Set local error
-      setError(actionError); // Optionally set global error too
+      actionError = errorData.message || 'Login failed';
+      setError(actionError);
       throw { message: actionError, originalError: errorData };
-    } finally {
-      // setLoading(false); // Turn off loading if set at start
     }
   }, []);
 
   // Centralized logout function
   const logout = useCallback(() => {
-    setUser(null); // Only need to clear user
-    // No need to set isAuthenticated
+    setUser(null);
     clearAuthData();
     delete axios.defaults.headers.common['Authorization'];
-    window.location.href = '/login'; // Consider using navigate hook if possible
+    window.location.href = '/login';
   }, []);
-
-  // Setup token refresh interceptor once
-  /* 
-  useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      res => res,
-      async (error) => {
-        const originalRequest = error.config;
-        if (
-          error.response?.status === 401 && 
-          !originalRequest._retry && 
-          getStoredToken() &&
-          !originalRequest.url.includes('/refresh-token')
-        ) {
-          originalRequest._retry = true;
-          try {
-            const response = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`);
-            const newToken = response.data.accessToken;
-            
-            // Update stored token only
-            localStorage.setItem('token', newToken);
-            axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-            
-            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-            return axios(originalRequest);
-          } catch (refreshError) {
-            // Silent logout on refresh failure
-            logout();
-          }
-        }
-        return Promise.reject(error);
-      }
-    );
-    
-    return () => axios.interceptors.response.eject(interceptor);
-  }, []);
-  */
 
   // Derive isAuthenticated directly
   const isAuthenticated = !!user;
@@ -151,13 +150,18 @@ export const AuthProvider = ({ children }) => {
   // Memoize the context value
   const value = useMemo(() => ({
     user,
-    loading, // Initial loading state
+    loading,
     error,
     login,
     logout,
     register,
-    isAuthenticated // Derived state
+    isAuthenticated
   }), [user, loading, error, isAuthenticated, login, logout, register]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // Always render children - don't block unauthenticated users
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }; 

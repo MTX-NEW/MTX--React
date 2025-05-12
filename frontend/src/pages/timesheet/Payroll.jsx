@@ -173,7 +173,6 @@ const Payroll = () => {
     
     // Get the employee's hourly rate or use default
     const hourlyRate = employee && employee.hourly_rate ? parseFloat(employee.hourly_rate) : DEFAULT_HOURLY_RATE;
-    const overtimeRate = hourlyRate * OVERTIME_MULTIPLIER;
     
     // Create an array of all days in the pay period
     const days = eachDayOfInterval({
@@ -181,20 +180,43 @@ const Payroll = () => {
       end: parseISO(payPeriod.endDate)
     });
     
-    // Group days by week for overtime calculation
+    // Group days by week for weekly totals
     const weeklyHours = {};
     
     // Map each day to its time data
     return days.map(day => {
-      // Find timesheet for this day
-      const timesheet = timeSheets.find(ts => 
+      // Find timesheets for this day (could be multiple with different hour_types)
+      const dayTimesheets = timeSheets.filter(ts => 
         isSameDay(parseISO(ts.date), day)
       );
       
-      // Get breaks for this timesheet
-      const timesheetBreaks = timesheet 
-        ? breaks.filter(b => b.timesheet_id === timesheet.timesheet_id)
-        : [];
+      // If no timesheets, return empty day data
+      if (dayTimesheets.length === 0) {
+        // Determine which week this day belongs to
+        const weekNumber = Math.floor(differenceInDays(day, parseISO(payPeriod.startDate)) / 7);
+        
+        return {
+          date: format(day, 'yyyy-MM-dd'),
+          dayOfWeek: format(day, 'EEEE'),
+          clockIn: '-',
+          clockOut: '-',
+          totalHoursForDay: 0,
+          breaks: 0,
+          breakMinutes: 0,
+          weekNumber,
+          hourTypes: {},
+          totalHours: 0,
+          totalPay: 0
+        };
+      }
+      
+      // Use first timesheet for basic info like clock in/out
+      const firstTimesheet = dayTimesheets[0];
+      
+      // Get all breaks for these timesheets
+      const timesheetBreaks = dayTimesheets.flatMap(timesheet => 
+        breaks.filter(b => b.timesheet_id === timesheet.timesheet_id)
+      );
       
       // Calculate total break time in minutes
       const breakMinutes = timesheetBreaks.reduce((total, breakItem) => {
@@ -205,69 +227,53 @@ const Payroll = () => {
                (endTime.getMinutes() - startTime.getMinutes());
       }, 0);
       
-      // Extract total hours from timesheet or set to 0
-      const totalHoursForDay = timesheet ? (parseFloat(timesheet.total_regular_hours || 0) + parseFloat(timesheet.total_overtime_hours || 0)) : 0;
+      // Group hours by type and calculate pay
+      const hourTypes = {};
+      let totalPay = 0;
+      let totalHoursForDay = 0;
       
-      // For overtime calculation based on 40-hour week
-      // Determine which week this day belongs to
+      dayTimesheets.forEach(timesheet => {
+        const type = timesheet.hour_type || 'regular';
+        const hours = parseFloat(timesheet.total_hours || 0);
+        const rate = parseFloat(timesheet.rate || hourlyRate);
+        
+        totalHoursForDay += hours;
+        totalPay += hours * rate;
+        
+        if (!hourTypes[type]) {
+          hourTypes[type] = { hours: 0, rate, pay: 0 };
+        }
+        
+        hourTypes[type].hours += hours;
+        hourTypes[type].pay += hours * rate;
+      });
+      
+      // For weekly hours tracking
       const weekNumber = Math.floor(differenceInDays(day, parseISO(payPeriod.startDate)) / 7);
       
       // Initialize week if not already done
-      if (!weeklyHours[weekNumber]) weeklyHours[weekNumber] = 0;
+      if (!weeklyHours[weekNumber]) weeklyHours[weekNumber] = {};
       
-      // Add this day's hours to the week total
-      weeklyHours[weekNumber] += totalHoursForDay;
+      // Add this day's hours to the week total by type
+      Object.entries(hourTypes).forEach(([type, data]) => {
+        if (!weeklyHours[weekNumber][type]) {
+          weeklyHours[weekNumber][type] = { hours: 0, pay: 0 };
+        }
+        weeklyHours[weekNumber][type].hours += data.hours;
+        weeklyHours[weekNumber][type].pay += data.pay;
+      });
       
-      // Store original values for now, we'll adjust overtime after processing all days
       return {
         date: format(day, 'yyyy-MM-dd'),
         dayOfWeek: format(day, 'EEEE'),
-        clockIn: timesheet?.clock_in ? format(parseISO(timesheet.clock_in), 'hh:mm a') : '-',
-        clockOut: timesheet?.clock_out ? format(parseISO(timesheet.clock_out), 'hh:mm a') : '-',
+        clockIn: firstTimesheet?.clock_in ? format(parseISO(firstTimesheet.clock_in), 'hh:mm a') : '-',
+        clockOut: firstTimesheet?.clock_out ? format(parseISO(firstTimesheet.clock_out), 'hh:mm a') : '-',
         totalHoursForDay,
         breaks: timesheetBreaks.length,
         breakMinutes,
         weekNumber,
-        // These will be calculated after we know weekly totals
-        regularHours: 0,
-        overtimeHours: 0,
+        hourTypes,
         totalHours: totalHoursForDay,
-        regularPay: 0,
-        overtimePay: 0,
-        totalPay: 0
-      };
-    }).map(day => {
-      // Now we have all days and know weekly totals, calculate overtime properly
-      const weeklyTotal = weeklyHours[day.weekNumber];
-      const WEEKLY_OVERTIME_THRESHOLD = 40;
-      
-      let regularHours = day.totalHoursForDay;
-      let overtimeHours = 0;
-      
-      // If this week exceeds 40 hours, calculate proportion of overtime for this day
-      if (weeklyTotal > WEEKLY_OVERTIME_THRESHOLD) {
-        // Calculate what proportion of the week's excess hours should be allocated to this day
-        const weeklyExcessHours = weeklyTotal - WEEKLY_OVERTIME_THRESHOLD;
-        const proportion = day.totalHoursForDay / weeklyTotal;
-        overtimeHours = weeklyExcessHours * proportion;
-        regularHours = day.totalHoursForDay - overtimeHours;
-      }
-      
-      // Get the employee's hourly rate or use default
-      const hourlyRate = employee && employee.hourly_rate ? parseFloat(employee.hourly_rate) : DEFAULT_HOURLY_RATE;
-      const overtimeRate = hourlyRate * OVERTIME_MULTIPLIER;
-      
-      // Calculate pay based on adjusted hours
-      const regularPay = regularHours * hourlyRate;
-      const overtimePay = overtimeHours * overtimeRate;
-      const totalPay = regularPay + overtimePay;
-      
-      return {
-        ...day,
-        regularHours,
-        overtimeHours,
-        regularPay,
-        overtimePay,
         totalPay
       };
     });
@@ -284,24 +290,31 @@ const Payroll = () => {
     const week2Data = dailyData.filter(day => day.weekNumber === 1);
     
     const calculateWeekTotal = (weekData) => {
+      // Initialize accumulators for different hour types
+      const hourTypeAccumulator = {};
+      
+      // Calculate total hours, pay and breaks
       return weekData.reduce((acc, day) => {
+        // Add up hour types
+        Object.entries(day.hourTypes).forEach(([type, data]) => {
+          if (!hourTypeAccumulator[type]) {
+            hourTypeAccumulator[type] = { hours: 0, pay: 0 };
+          }
+          hourTypeAccumulator[type].hours += data.hours;
+          hourTypeAccumulator[type].pay += data.pay;
+        });
+        
         return {
-          regularHours: acc.regularHours + day.regularHours,
-          overtimeHours: acc.overtimeHours + day.overtimeHours,
           totalHours: acc.totalHours + day.totalHours,
           breakMinutes: acc.breakMinutes + day.breakMinutes,
-          regularPay: acc.regularPay + day.regularPay,
-          overtimePay: acc.overtimePay + day.overtimePay,
-          totalPay: acc.totalPay + day.totalPay
+          totalPay: acc.totalPay + day.totalPay,
+          hourTypes: hourTypeAccumulator
         };
       }, {
-        regularHours: 0,
-        overtimeHours: 0,
         totalHours: 0,
         breakMinutes: 0,
-        regularPay: 0,
-        overtimePay: 0,
-        totalPay: 0
+        totalPay: 0,
+        hourTypes: {}
       });
     };
     
@@ -313,28 +326,31 @@ const Payroll = () => {
   
   const weekTotals = calculateWeekTotals();
   
-  // Calculate totals
+  // Calculate overall totals
   const totals = dailyData.reduce((acc, day) => {
+    // Add hour types to accumulator
+    Object.entries(day.hourTypes).forEach(([type, data]) => {
+      if (!acc.hourTypes[type]) {
+        acc.hourTypes[type] = { hours: 0, pay: 0 };
+      }
+      acc.hourTypes[type].hours += data.hours;
+      acc.hourTypes[type].pay += data.pay;
+    });
+    
     return {
-      regularHours: acc.regularHours + day.regularHours,
-      overtimeHours: acc.overtimeHours + day.overtimeHours,
       totalHours: acc.totalHours + day.totalHours,
       breakMinutes: acc.breakMinutes + day.breakMinutes,
-      regularPay: acc.regularPay + day.regularPay,
-      overtimePay: acc.overtimePay + day.overtimePay,
-      totalPay: acc.totalPay + day.totalPay
+      totalPay: acc.totalPay + day.totalPay,
+      hourTypes: acc.hourTypes
     };
   }, {
-    regularHours: 0,
-    overtimeHours: 0,
     totalHours: 0,
     breakMinutes: 0,
-    regularPay: 0,
-    overtimePay: 0,
-    totalPay: 0
+    totalPay: 0,
+    hourTypes: {}
   });
   
-  // Calculate net pay (no deductions now)
+  // Calculate net pay
   const netPay = totals.totalPay;
   
   // Go back to employee list
@@ -409,10 +425,10 @@ const Payroll = () => {
               <th>Day</th>
               <th>Clock In</th>
               <th>Clock Out</th>
-              <th>Regular Hours</th>
-              <th>Overtime Hours</th>
-              <th>Break Time (min)</th>
-              <th>Total Pay</th>
+              <th>Hour Type</th>
+              <th>Hours</th>
+              <th>Rate</th>
+              <th>Pay</th>
             </tr>
           </thead>
           <tbody>
@@ -420,41 +436,70 @@ const Payroll = () => {
               const isLastDayOfWeek1 = day.weekNumber === 0 && 
                 dailyData[index + 1] && dailyData[index + 1].weekNumber === 1;
               
-              let rowHtml = `
-                <tr>
-                  <td>${format(parseISO(day.date), 'MM/dd/yyyy')}</td>
-                  <td>${day.dayOfWeek}</td>
-                  <td>${day.clockIn}</td>
-                  <td>${day.clockOut}</td>
-                  <td>${day.regularHours.toFixed(2)}</td>
-                  <td>${day.overtimeHours.toFixed(2)}</td>
-                  <td>${day.breakMinutes}</td>
-                  <td>$${day.totalPay.toFixed(2)}</td>
+              // Generate rows for each hour type
+              const hourTypeRows = Object.entries(day.hourTypes).map(([type, data], typeIndex) => (
+                <tr key={`${day.date}-${type}`} className={typeIndex > 0 ? "table-light" : ""}>
+                  {typeIndex === 0 && (
+                    <>
+                      <td rowSpan={Object.keys(day.hourTypes).length || 1}>
+                        {format(parseISO(day.date), 'MM/dd/yyyy')}
+                      </td>
+                      <td rowSpan={Object.keys(day.hourTypes).length || 1}>
+                        {day.dayOfWeek}
+                      </td>
+                      <td rowSpan={Object.keys(day.hourTypes).length || 1}>
+                        {day.clockIn}
+                      </td>
+                      <td rowSpan={Object.keys(day.hourTypes).length || 1}>
+                        {day.clockOut}
+                      </td>
+                    </>
+                  )}
+                  <td>{type.charAt(0).toUpperCase() + type.slice(1)}</td>
+                  <td>{data.hours.toFixed(2)}</td>
+                  <td>${data.rate.toFixed(2)}</td>
+                  <td>${data.pay.toFixed(2)}</td>
                 </tr>
-              `;
+              ));
               
-              if (isLastDayOfWeek1 && weekTotals.week1) {
-                rowHtml += `
-                  <tr class="week-totals">
-                    <td colspan="4">Week 1 Totals</td>
-                    <td>${weekTotals.week1.regularHours.toFixed(2)}</td>
-                    <td>${weekTotals.week1.overtimeHours.toFixed(2)}</td>
-                    <td>${weekTotals.week1.breakMinutes}</td>
-                    <td>$${weekTotals.week1.totalPay.toFixed(2)}</td>
+              // If no hour types, show a row with zeros
+              if (hourTypeRows.length === 0) {
+                hourTypeRows.push(
+                  <tr key={day.date}>
+                    <td>{format(parseISO(day.date), 'MM/dd/yyyy')}</td>
+                    <td>{day.dayOfWeek}</td>
+                    <td>{day.clockIn}</td>
+                    <td>{day.clockOut}</td>
+                    <td>-</td>
+                    <td>0.00</td>
+                    <td>$0.00</td>
+                    <td>$0.00</td>
                   </tr>
-                `;
+                );
               }
               
-              return rowHtml;
+              // Weekly total row
+              const weekTotalRow = isLastDayOfWeek1 && weekTotals.week1 && (
+                <tr className="table-info fw-bold">
+                  <td colSpan="4">Week 1 Totals</td>
+                  <td colSpan="2">{weekTotals.week1.totalHours.toFixed(2)} hours</td>
+                  <td colSpan="2">${weekTotals.week1.totalPay.toFixed(2)}</td>
+                </tr>
+              );
+              
+              return (
+                <React.Fragment key={day.date}>
+                  {hourTypeRows}
+                  {weekTotalRow}
+                </React.Fragment>
+              );
             }).join('')}
           </tbody>
           <tfoot>
-            <tr class="totals">
+            <tr className="totals">
               <td colspan="4">Totals</td>
-              <td>${totals.regularHours.toFixed(2)}</td>
-              <td>${totals.overtimeHours.toFixed(2)}</td>
-              <td>${totals.breakMinutes}</td>
-              <td>$${totals.totalPay.toFixed(2)}</td>
+              <td>${totals.totalHours.toFixed(2)}</td>
+              <td>${totals.totalPay.toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>
@@ -462,17 +507,15 @@ const Payroll = () => {
         <div class="summary">
           <h3>Pay Summary</h3>
           <table>
-            <tr>
-              <th>Regular Pay</th>
-              <td>$${totals.regularPay.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <th>Overtime Pay</th>
-              <td>$${totals.overtimePay.toFixed(2)}</td>
-            </tr>
-            <tr class="totals">
+            {Object.entries(totals.hourTypes).map(([type, data]) => (
+              <tr key={type}>
+                <th>{type.charAt(0).toUpperCase() + type.slice(1)} Hours ({data.hours.toFixed(2)})</th>
+                <td>${data.pay.toFixed(2)}</td>
+              </tr>
+            ))}
+            <tr className="totals">
               <th>Net Pay</th>
-              <td>$${netPay.toFixed(2)}</td>
+              <td>${netPay.toFixed(2)}</td>
             </tr>
           </table>
         </div>
@@ -645,10 +688,10 @@ const Payroll = () => {
                         <th>Day</th>
                         <th>Clock In</th>
                         <th>Clock Out</th>
-                        <th>Regular Hours</th>
-                        <th>Overtime Hours</th>
-                        <th>Break Time (min)</th>
-                        <th>Total Pay</th>
+                        <th>Hour Type</th>
+                        <th>Hours</th>
+                        <th>Rate</th>
+                        <th>Pay</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -657,39 +700,70 @@ const Payroll = () => {
                         const isLastDayOfWeek1 = day.weekNumber === 0 && 
                           dailyData[index + 1] && dailyData[index + 1].weekNumber === 1;
                         
-                        return (
-                          <React.Fragment key={day.date}>
-                            <tr>
+                        // Generate rows for each hour type
+                        const hourTypeRows = Object.entries(day.hourTypes).map(([type, data], typeIndex) => (
+                          <tr key={`${day.date}-${type}`} className={typeIndex > 0 ? "table-light" : ""}>
+                            {typeIndex === 0 && (
+                              <>
+                                <td rowSpan={Object.keys(day.hourTypes).length || 1}>
+                                  {format(parseISO(day.date), 'MM/dd/yyyy')}
+                                </td>
+                                <td rowSpan={Object.keys(day.hourTypes).length || 1}>
+                                  {day.dayOfWeek}
+                                </td>
+                                <td rowSpan={Object.keys(day.hourTypes).length || 1}>
+                                  {day.clockIn}
+                                </td>
+                                <td rowSpan={Object.keys(day.hourTypes).length || 1}>
+                                  {day.clockOut}
+                                </td>
+                              </>
+                            )}
+                            <td>{type.charAt(0).toUpperCase() + type.slice(1)}</td>
+                            <td>{data.hours.toFixed(2)}</td>
+                            <td>${data.rate.toFixed(2)}</td>
+                            <td>${data.pay.toFixed(2)}</td>
+                          </tr>
+                        ));
+                        
+                        // If no hour types, show a row with zeros
+                        if (hourTypeRows.length === 0) {
+                          hourTypeRows.push(
+                            <tr key={day.date}>
                               <td>{format(parseISO(day.date), 'MM/dd/yyyy')}</td>
                               <td>{day.dayOfWeek}</td>
                               <td>{day.clockIn}</td>
                               <td>{day.clockOut}</td>
-                              <td>{day.regularHours.toFixed(2)}</td>
-                              <td>{day.overtimeHours.toFixed(2)}</td>
-                              <td>{day.breakMinutes}</td>
-                              <td>${day.totalPay.toFixed(2)}</td>
+                              <td>-</td>
+                              <td>0.00</td>
+                              <td>$0.00</td>
+                              <td>$0.00</td>
                             </tr>
-                            
-                            {isLastDayOfWeek1 && weekTotals.week1 && (
-                              <tr className="table-info fw-bold">
-                                <td colSpan="4">Week 1 Totals</td>
-                                <td>{weekTotals.week1.regularHours.toFixed(2)}</td>
-                                <td>{weekTotals.week1.overtimeHours.toFixed(2)}</td>
-                                <td>{weekTotals.week1.breakMinutes}</td>
-                                <td>${weekTotals.week1.totalPay.toFixed(2)}</td>
-                              </tr>
-                            )}
+                          );
+                        }
+                        
+                        // Weekly total row
+                        const weekTotalRow = isLastDayOfWeek1 && weekTotals.week1 && (
+                          <tr className="table-info fw-bold">
+                            <td colSpan="4">Week 1 Totals</td>
+                            <td colSpan="2">{weekTotals.week1.totalHours.toFixed(2)} hours</td>
+                            <td colSpan="2">${weekTotals.week1.totalPay.toFixed(2)}</td>
+                          </tr>
+                        );
+                        
+                        return (
+                          <React.Fragment key={day.date}>
+                            {hourTypeRows}
+                            {weekTotalRow}
                           </React.Fragment>
                         );
                       })}
                     </tbody>
                     <tfoot className="table-light">
                       <tr className="fw-bold">
-                        <td colSpan="4">Totals</td>
-                        <td>{totals.regularHours.toFixed(2)}</td>
-                        <td>{totals.overtimeHours.toFixed(2)}</td>
-                        <td>{totals.breakMinutes}</td>
-                        <td>${totals.totalPay.toFixed(2)}</td>
+                        <td colSpan="4">Pay Period Totals</td>
+                        <td colSpan="2">{totals.totalHours.toFixed(2)} hours</td>
+                        <td colSpan="2">${totals.totalPay.toFixed(2)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -707,14 +781,12 @@ const Payroll = () => {
                 <div className="card-body">
                   <table className="table table-striped">
                     <tbody>
-                      <tr>
-                        <th>Regular Pay</th>
-                        <td className="text-end">${totals.regularPay.toFixed(2)}</td>
-                      </tr>
-                      <tr>
-                        <th>Overtime Pay</th>
-                        <td className="text-end">${totals.overtimePay.toFixed(2)}</td>
-                      </tr>
+                      {Object.entries(totals.hourTypes).map(([type, data]) => (
+                        <tr key={type}>
+                          <th>{type.charAt(0).toUpperCase() + type.slice(1)} Hours ({data.hours.toFixed(2)})</th>
+                          <td className="text-end">${data.pay.toFixed(2)}</td>
+                        </tr>
+                      ))}
                       <tr className="table-primary fw-bold">
                         <th>Net Pay</th>
                         <td className="text-end">${netPay.toFixed(2)}</td>

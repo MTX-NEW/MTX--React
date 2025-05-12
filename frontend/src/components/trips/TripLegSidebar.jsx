@@ -3,9 +3,8 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import FormComponent from '../../components/FormComponent';
+import LocationAutocomplete from '@/components/common/LocationAutocomplete';
 import { useTripLeg } from '../../hooks/useTripLeg';
-import { useResource } from '../../hooks/useResource';
-import { tripLocationApi } from '../../api/baseApi';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import '../../assets/RightSidebarPopup.css';
@@ -17,7 +16,52 @@ const TripLegSidebar = ({
   onSubmit 
 }) => {
   const { createTripLeg } = useTripLeg();
-  const { data: locations, loading: loadingLocations } = useResource(tripLocationApi);
+  
+  // Extract member locations from trip data
+  const memberLocations = useMemo(() => {
+    if (!trip?.TripMember) return [];
+    
+    const locations = [];
+    
+    // Add pickup location if exists
+    if (trip.TripMember.memberPickupLocation) {
+      locations.push({
+        ...trip.TripMember.memberPickupLocation,
+        location_type: 'pickup'
+      });
+    }
+    
+    // Add dropoff location if exists
+    if (trip.TripMember.memberDropoffLocation) {
+      locations.push({
+        ...trip.TripMember.memberDropoffLocation,
+        location_type: 'dropoff'
+      });
+    }
+    
+    // Add locations from existing legs
+    if (trip.legs && trip.legs.length > 0) {
+      trip.legs.forEach(leg => {
+        // Add pickup location if not already included
+        if (leg.pickupLocation && !locations.some(loc => loc.location_id === leg.pickupLocation.location_id)) {
+          locations.push({
+            ...leg.pickupLocation,
+            location_type: 'pickup'
+          });
+        }
+        
+        // Add dropoff location if not already included
+        if (leg.dropoffLocation && !locations.some(loc => loc.location_id === leg.dropoffLocation.location_id)) {
+          locations.push({
+            ...leg.dropoffLocation,
+            location_type: 'dropoff'
+          });
+        }
+      });
+    }
+    
+    return locations;
+  }, [trip]);
   
   const formMethods = useForm({
     defaultValues: {
@@ -43,15 +87,6 @@ const TripLegSidebar = ({
     }
   }, [trip, formMethods]);
 
-  // Format locations for dropdown
-  const locationOptions = useMemo(() => {
-    if (!locations) return [];
-    return locations.map(location => ({
-      value: location.location_id.toString(),
-      label: `${location.street_address}, ${location.city}, ${location.state} ${location.zip}${location.phone ? ` • Ph: ${location.phone}` : ''}`
-    }));
-  }, [locations]);
-
   // Status options
   const statusOptions = [
     { value: 'Scheduled', label: 'Scheduled' },
@@ -66,29 +101,35 @@ const TripLegSidebar = ({
     { value: 'Cancelled', label: 'Cancelled' }
   ];
 
+  // Render location fields
+  const renderLocationField = (locationType) => {
+    const fieldName = `${locationType}_location`;
+    const label = locationType === 'pickup' ? 'Pickup Location' : 'Dropoff Location';
+    
+    return (
+      <LocationAutocomplete
+        name={fieldName}
+        label={label}
+        locations={memberLocations}
+        required={true}
+        isLoading={false}
+      />
+    );
+  };
+
   // Form fields
   const legFields = [
     {
-      type: 'autocomplete',
+      type: 'custom',
       name: 'pickup_location',
-      label: 'Pickup Location',
-      options: locationOptions,
-      placeholder: 'Select a pickup location',
-      autocompleteProps: {
-        loading: loadingLocations,
-        disabled: loadingLocations
-      }
+     
+      render: () => renderLocationField('pickup')
     },
     {
-      type: 'autocomplete',
+      type: 'custom',
       name: 'dropoff_location',
-      label: 'Dropoff Location',
-      options: locationOptions,
-      placeholder: 'Select a dropoff location',
-      autocompleteProps: {
-        loading: loadingLocations,
-        disabled: loadingLocations
-      }
+   
+      render: () => renderLocationField('dropoff')
     },
     {
       type: 'time',
@@ -124,15 +165,12 @@ const TripLegSidebar = ({
   // Handle form submission
   const handleSubmit = async (data) => {
     try {
-      // Create the trip leg and get the response data
-      const newLeg = await createTripLeg(data);
+      // Pass the data to the parent component to handle the API call
+      // instead of calling createTripLeg directly
+      await onSubmit(data);
       
-      toast.success('New leg added successfully');
+      // Remove the toast since the parent will handle notifications
       formMethods.reset();
-      
-      // Pass the created leg data to the onSubmit callback
-      if (onSubmit) onSubmit(newLeg);
-      
       onClose();
     } catch (err) {
       console.error('Error adding leg:', err);

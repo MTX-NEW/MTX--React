@@ -131,7 +131,15 @@ export const programValidationSchema = Yup.object().shape({
   phone: Yup.string()
     .nullable()
     .max(15, "Phone number cannot exceed 15 characters")
-    .matches(/^\d{10}$/, { message: "Phone number must be exactly 10 digits", excludeEmptyString: true }),
+    .matches(/^\d{15}$/, { message: "Phone number must be exactly 10 digits", excludeEmptyString: true }),
+  plans: Yup.array().of(
+    Yup.object().shape({
+      plan_id: Yup.number().nullable(),
+      plan_name: Yup.string()
+        .required("Plan name is required")
+        .max(100, "Plan name cannot exceed 100 characters")
+    })
+  )
 });
 
 export const vehicleValidationSchema = Yup.object().shape({
@@ -276,7 +284,8 @@ export const memberValidationSchema = Yup.object().shape({
   phone: Yup.string()
     .nullable()
     .max(15, "Phone number cannot exceed 15 characters")
-    .matches(/^\d{10}$/, {
+    
+    .matches(/^[\d-]+$/, { 
       message: "Phone number must be exactly 10 digits",
       excludeEmptyString: true
     }),

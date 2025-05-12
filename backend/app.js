@@ -74,8 +74,13 @@ app.use("/api/member-locations", memberLocationRoutes);
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
+  
 });
-
+// log requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error("Error:", err);

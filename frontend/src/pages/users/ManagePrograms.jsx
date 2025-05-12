@@ -3,7 +3,7 @@ import DynamicTable, { DefaultTableActions } from "@/components/DynamicTable";
 import UserActions from "@/components/users/allusers/UserActions";
 import RightSidebarPopup from "@/components/RightSidebarPopup";
 import FormComponent from "@/components/FormComponent";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { programValidationSchema } from "@/validations/inputValidation";
 import { ToastContainer, toast } from "react-toastify";
@@ -19,6 +19,7 @@ const ManagePrograms = () => {
   const [itemToEdit, setItemToEdit] = useState(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [companies, setCompanies] = useState([]);
+  const [expandedPlans, setExpandedPlans] = useState({});
 
   const { 
     data: programs, 
@@ -57,22 +58,74 @@ const ManagePrograms = () => {
     );
   }, [programs, searchQuery]);
 
+  // Toggle plan expanded state
+  const togglePlanExpanded = (index) => {
+    setExpandedPlans(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
   // Form handlers
   const addFormMethods = useForm({
     resolver: yupResolver(programValidationSchema),
     mode: "onChange",
+    defaultValues: {
+      program_name: '',
+      company_name: '',
+      address: '',
+      city: '',
+      state: '',
+      postal_code: '',
+      phone: '',
+      plans: []
+    }
   });
+  
   const editFormMethods = useForm({
     resolver: yupResolver(programValidationSchema),
     mode: "onChange",
+    defaultValues: {
+      program_name: '',
+      company_name: '',
+      address: '',
+      city: '',
+      state: '',
+      postal_code: '',
+      phone: '',
+      plans: []
+    }
   });
 
   // Reset edit form when itemToEdit changes
   useEffect(() => {
     if (itemToEdit) {
-      editFormMethods.reset(itemToEdit);
+      const formValues = {
+        ...itemToEdit,
+        plans: itemToEdit.ProgramPlans || []
+      };
+      editFormMethods.reset(formValues);
     }
   }, [itemToEdit, editFormMethods]);
+
+  // Setup field arrays for plans
+  const { 
+    fields: addPlanFields, 
+    append: addPlanAppend, 
+    remove: addPlanRemove 
+  } = useFieldArray({
+    control: addFormMethods.control,
+    name: "plans"
+  });
+
+  const { 
+    fields: editPlanFields, 
+    append: editPlanAppend, 
+    remove: editPlanRemove 
+  } = useFieldArray({
+    control: editFormMethods.control,
+    name: "plans"
+  });
 
   // Table columns
   const columns = [
@@ -84,6 +137,11 @@ const ManagePrograms = () => {
     { header: "State", accessor: "state" },
     { header: "zip", accessor: "postal_code" },
     { header: "Phone", accessor: "phone" },
+    {
+      header: "Plans",
+      accessor: "ProgramPlans",
+      render: (value) => value && value.length > 0 ? `${value.length} Plans` : "No Plans",
+    },
     {
       header: "Created At",
       accessor: "created_at",
@@ -207,6 +265,88 @@ const ManagePrograms = () => {
         }
       },
     },
+    // Program Plans Section (Custom Component)
+    {
+     
+      name: "plans",
+      type: "custom",
+      render: ({ field }) => {
+        // The correct way to determine which form to use is based on which popup is open
+        const isAddForm = showAddPopup;
+        const formMethods = isAddForm ? addFormMethods : editFormMethods;
+        const planFields = isAddForm ? addPlanFields : editPlanFields;
+        const appendPlan = isAddForm ? addPlanAppend : editPlanAppend;
+        const removePlan = isAddForm ? addPlanRemove : editPlanRemove;
+        
+        return (
+          <div className="mt-4 mb-3">
+            <h6 className="mb-3">Program Plans</h6>
+            <hr className="mb-3" />
+            
+            {planFields.map((field, index) => (
+              <div key={field.id} className="card mb-3">
+                <div 
+                  className="card-header d-flex justify-content-between align-items-center" 
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => togglePlanExpanded(index)}
+                >
+                  <span>
+                    {formMethods.watch(`plans.${index}.plan_name`) || `Plan ${index + 1}`}
+                  </span>
+                  <span className="ms-auto">
+                    <i className={`bi bi-chevron-${expandedPlans[index] ? 'up' : 'down'}`}></i>
+                  </span>
+                </div>
+                
+                {expandedPlans[index] && (
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-12">
+                        <div className="mb-3">
+                          <label htmlFor={`plans.${index}.plan_name`} className="form-label">Plan Name</label>
+                          <input
+                            type="text"
+                            className={`form-control ${formMethods.formState.errors?.plans?.[index]?.plan_name ? 'is-invalid' : ''}`}
+                            id={`plans.${index}.plan_name`}
+                            placeholder="Enter plan name"
+                            value={formMethods.watch(`plans.${index}.plan_name`) || ''}
+                            onChange={(e) => {
+                              formMethods.setValue(`plans.${index}.plan_name`, e.target.value);
+                            }}
+                          />
+                          {formMethods.formState.errors?.plans?.[index]?.plan_name && (
+                            <div className="invalid-feedback">
+                              {formMethods.formState.errors.plans[index].plan_name.message}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="col-12 text-end">
+                        <button 
+                          type="button" 
+                          className="btn btn-sm btn-danger"
+                          onClick={() => removePlan(index)}
+                        >
+                          <i className="bi bi-trash"></i> Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary mt-2"
+              onClick={() => appendPlan({ plan_name: '' })}
+            >
+              <i className="bi bi-plus-circle"></i> Add Plan
+            </button>
+          </div>
+        );
+      }
+    }
   ];
 
   // CRUD operations
@@ -258,7 +398,16 @@ const ManagePrograms = () => {
 
       await create(payload);
       await refresh();
-      addFormMethods.reset();
+      addFormMethods.reset({
+        program_name: '',
+        company_name: '',
+        address: '',
+        city: '',
+        state: '',
+        postal_code: '',
+        phone: '',
+        plans: []
+      });
       toast.success(`Program "${data.program_name}" added successfully!`);
       setShowAddPopup(false);
     } catch (error) {
@@ -302,7 +451,16 @@ const ManagePrograms = () => {
           title="Add Program"
           onClose={() => {
             setShowAddPopup(false);
-            addFormMethods.reset();
+            addFormMethods.reset({
+              program_name: '',
+              company_name: '',
+              address: '',
+              city: '',
+              state: '',
+              postal_code: '',
+              phone: '',
+              plans: []
+            });
           }}
         >
           <FormProvider {...addFormMethods}>

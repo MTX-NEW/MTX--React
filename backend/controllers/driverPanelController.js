@@ -7,6 +7,8 @@ const TripSpecialInstruction = require("../models/TripSpecialInstruction");
 const TimeSheet = require("../models/TimeSheetEntry");
 const { Op } = require("sequelize");
 const Program = require("../models/Program");
+const ProgramPlan = require("../models/ProgramPlan");
+const { calculateWeeklyOvertime } = require("./timeSheetController");
 
 // Get trips assigned to the driver
 exports.getDriverTrips = async (req, res) => {
@@ -32,7 +34,15 @@ exports.getDriverTrips = async (req, res) => {
             {
               model: TripMember,
               include: [
-                Program,
+                {
+                  model: Program,
+                  include: [
+                    {
+                      model: ProgramPlan,
+                      as: 'ProgramPlans'
+                    }
+                  ]
+                },
                 {
                   model: TripLocation,
                   as: "memberPickupLocation",
@@ -87,7 +97,15 @@ exports.getDriverTripLeg = async (req, res) => {
             {
               model: TripMember,
               include: [
-                Program,
+                {
+                  model: Program,
+                  include: [
+                    {
+                      model: ProgramPlan,
+                      as: 'ProgramPlans'
+                    }
+                  ]
+                },
                 {
                   model: TripLocation,
                   as: "memberPickupLocation",
@@ -175,11 +193,17 @@ exports.updateTripLegStatus = async (req, res) => {
     if (status === 'Picked up') {
       updateData.actual_pickup = currentTime;
       
+      // Get user to fetch hourly rate
+      const user = await User.findByPk(driverId);
+      const hourlyRate = user ? user.hourly_rate : 0;
+      
       // Create TimeSheet entry for clock in
       await TimeSheet.create({
         user_id: driverId,
         date: currentDate,
         clock_in: now,
+        hour_type: 'regular',
+        rate: hourlyRate,
         status: 'draft',
         notes: `Auto clock-in from trip ${tripLeg.trip_id || 'unknown'}, leg ${tripLeg.leg_id}`
       });
@@ -215,12 +239,14 @@ exports.updateTripLegStatus = async (req, res) => {
           // Update the timesheet with clock out time and hours
           await activeTimesheet.update({
             clock_out: now,
-            total_regular_hours: hoursWorked > 8 ? 8 : hoursWorked,
-            total_overtime_hours: hoursWorked > 8 ? hoursWorked - 8 : 0,
-            status: 'clocked_out',
+            total_hours: hoursWorked,
+            status: 'submitted',
             notes: activeTimesheet.notes + `\nAuto clock-out from trip ${tripLeg.trip_id || 'unknown'}, leg ${tripLeg.leg_id}`
           });
           console.log(`Successfully clocked out driver ${driverId} from timesheet`, activeTimesheet.id || activeTimesheet.timesheet_id);
+          
+          // Calculate weekly overtime
+          await calculateWeeklyOvertime(driverId, currentDate);
         } catch (timesheetError) {
           console.error('Error updating timesheet for clock-out:', timesheetError);
         }
@@ -241,14 +267,14 @@ exports.updateTripLegStatus = async (req, res) => {
             {
               model: TripMember,
               include: [
-                Program,
                 {
-                  model: TripLocation,
-                  as: "memberPickupLocation",
-                },
-                {
-                  model: TripLocation,
-                  as: "memberDropoffLocation",
+                  model: Program,
+                  include: [
+                    {
+                      model: ProgramPlan,
+                      as: 'ProgramPlans'
+                    }
+                  ]
                 },
               ],
             },
@@ -316,14 +342,14 @@ exports.updateTripLegOdometer = async (req, res) => {
             {
               model: TripMember,
               include: [
-                Program,
                 {
-                  model: TripLocation,
-                  as: "memberPickupLocation",
-                },
-                {
-                  model: TripLocation,
-                  as: "memberDropoffLocation",
+                  model: Program,
+                  include: [
+                    {
+                      model: ProgramPlan,
+                      as: 'ProgramPlans'
+                    }
+                  ]
                 },
               ],
             },
@@ -374,7 +400,15 @@ exports.getTodayTrips = async (req, res) => {
             {
               model: TripMember,
               include: [
-                Program,
+                {
+                  model: Program,
+                  include: [
+                    {
+                      model: ProgramPlan,
+                      as: 'ProgramPlans'
+                    }
+                  ]
+                },
                 {
                   model: TripLocation,
                   as: "memberPickupLocation",
@@ -460,7 +494,15 @@ exports.getWeeklySchedule = async (req, res) => {
             {
               model: TripMember,
               include: [
-                Program,
+                {
+                  model: Program,
+                  include: [
+                    {
+                      model: ProgramPlan,
+                      as: 'ProgramPlans'
+                    }
+                  ]
+                },
                 {
                   model: TripLocation,
                   as: "memberPickupLocation",
