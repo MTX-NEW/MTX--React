@@ -1,0 +1,66 @@
+
+
+
+requested pickup time : R/U
+actual pickup time : P/U
+Appointment time : APPT
+dropoff time : D/O
+
+ROUND Expected: 
+requested pickup time : R/U2
+actual pickup time : P/U2
+
+dropoff time : ED/O2
+actual dropoff time : D/O2
+
+
+commands to ai:
+address (for issues)
+
+
+command for trip
+
+@tripsystem 
+
+Now currently the trip request page is working perfectly as I want but it has one issue that dealing with creating a new request in a right side by bar pop up is not good for the user what I want is to move it to cards system create another page that will use the same details as the trip request but with a different layout and design make it name it advanced trip request added to routes and then create it enhance its functionality design api all of everything from the main trip request page and its components
+
+
+
+react hooks 
+useState
+
+useReducer
+
+useEffect
+
+useLayoutEffect
+
+useInsertionEffect
+
+useContext
+
+useRef
+
+useImperativeHandle
+
+useMemo
+
+useCallback
+
+useTransition
+
+useDeferredValue
+
+useId
+
+useDebugValue
+
+useSyncExternalStore
+
+Project Plan
+(Regular Hours	Overtime Hours) - drive time ( Driver _ Pickup ) - add time manually to each emplyee (time type) -  
+Found it , the we add a type to the clockin clockout -> regular drive administrative etc.......
+
+Batch should be created only once
+
+last 2 not

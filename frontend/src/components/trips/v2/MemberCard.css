@@ -1,0 +1,87 @@
+.member-card {
+  height: 100%;
+}
+
+.member-card .member-search-container {
+  position: relative;
+}
+
+.member-card-content {
+  padding: 1rem;
+}
+
+.member-info {
+  flex: 1;
+}
+
+.member-details {
+  margin-bottom: 0.5rem;
+}
+
+/* Button styling */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Dropdown styling */
+.dropdown-menu-position {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 1000;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-pointer:hover {
+  background-color: #f8f9fa;
+}
+
+/* Avatar styling */
+.avatar-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* Empty state */
+.member-search-area {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Selected Member Styling */
+.selected-member {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  padding: 1rem;
+}
+
+/* Search results */
+.dropdown-menu {
+  border-radius: 0.375rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  margin-top: 0.5rem;
+}
+
+.members-list {
+  max-height: 250px;
+  overflow-y: auto;
+  border-radius: 0.25rem;
+}
+
+.dropdown-item {
+  transition: background-color 0.2s;
+  border-radius: 0.25rem;
+  margin: 0.25rem;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+} 
