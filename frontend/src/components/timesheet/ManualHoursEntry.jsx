@@ -57,9 +57,7 @@ const ManualHoursEntry = ({ userId, onSuccess }) => {
       options: [
         { value: 'regular', label: 'Regular' },
         { value: 'driving', label: 'Driving' },
-        { value: 'over_time', label: 'Overtime' },
         { value: 'administrative', label: 'Administrative' },
-        { value: 'incentive', label: 'Incentive' }
       ],
       required: true
     },

@@ -29,6 +29,10 @@ TripMember.belongsTo(ProgramPlan, { foreignKey: 'program_plan_id', as: 'ProgramP
 TripMember.belongsTo(TripLocation, { foreignKey: 'pickup_location', as: 'memberPickupLocation' });
 TripMember.belongsTo(TripLocation, { foreignKey: 'dropoff_location', as: 'memberDropoffLocation' });
 
+// User location association
+User.belongsTo(TripLocation, { foreignKey: 'location_id', as: 'location' });
+TripLocation.hasMany(User, { foreignKey: 'location_id' });
+
 // Member multiple locations (many-to-many)
 TripMember.belongsToMany(TripLocation, { 
   through: MemberLocation,

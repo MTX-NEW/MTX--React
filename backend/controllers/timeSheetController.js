@@ -264,7 +264,7 @@ exports.clockIn = async (req, res) => {
       clock_in: now,
       hour_type: hour_type || 'regular',
       rate: user.hourly_rate || 0,
-      status: 'active',
+      status: 'draft',
       notes: notes || 'Manually clocked in',
       total_hours: 0
     });

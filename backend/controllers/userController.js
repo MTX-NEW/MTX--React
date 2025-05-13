@@ -1,7 +1,11 @@
 const User = require("../models/User");
 const UserType = require("../models/UserType");
 const UserGroup = require("../models/UserGroup");
+const TripLocation = require("../models/TripLocation");
 const { ValidationError, UniqueConstraintError } = require("sequelize");
+
+// Common location attributes to use across all query includes
+const locationAttributes = ['location_id', 'street_address', 'building', 'building_type', 'city', 'state', 'zip', 'latitude', 'longitude'];
 
 // Get all users
 exports.getAllUsers = async (req, res) => {
@@ -9,7 +13,8 @@ exports.getAllUsers = async (req, res) => {
     const users = await User.findAll({
       include: [
         { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
-        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] }
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
+        { model: TripLocation, as: 'location', attributes: locationAttributes }
       ]
     });
     res.json(users);
@@ -22,10 +27,11 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id, {
-      attributes: ['id', 'first_name', 'last_name', 'email', 'phone', 'status', 'signature', 'hourly_rate', 'sex', 'spanishSpeaking', 'paymentStructure', 'hiringDate', 'lastEmploymentDate'],
+      attributes: ['id', 'first_name', 'last_name', 'email', 'phone', 'status', 'signature', 'hourly_rate', 'sex', 'spanishSpeaking', 'paymentStructure', 'hiringDate', 'lastEmploymentDate', 'location_id'],
       include: [
         { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
-        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] }
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
+        { model: TripLocation, as: 'location', attributes: locationAttributes }
       ]
     });
     
@@ -53,7 +59,8 @@ exports.createUser = async (req, res) => {
     const userWithRelations = await User.findByPk(newUser.id, {
       include: [
         { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
-        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] }
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
+        { model: TripLocation, as: 'location', attributes: locationAttributes }
       ]
     });
 
@@ -96,7 +103,8 @@ exports.updateUser = async (req, res) => {
     const updatedUser = await User.findByPk(req.params.id, {
       include: [
         { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
-        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] }
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
+        { model: TripLocation, as: 'location', attributes: locationAttributes }
       ]
     });
     
@@ -124,12 +132,20 @@ exports.getDrivers = async (req, res) => {
   console.log('GET /api/users/drivers endpoint called');
   try {
     const drivers = await User.findAll({
-      include: [{
-        model: UserType,
-        where: { type_name: 'driver' },
-        attributes: []
-      }],
-      attributes: ['id', 'first_name', 'last_name']
+      include: [
+        {
+          model: UserType,
+          where: { type_name: 'driver' },
+          attributes: []
+        },
+        {
+          model: TripLocation,
+          as: 'location',
+          attributes: locationAttributes,
+          required: false
+        }
+      ],
+      attributes: ['id', 'first_name', 'last_name', 'location_id']
     });
     console.log(`Found ${drivers.length} drivers`);
     res.json(drivers);
@@ -165,10 +181,10 @@ exports.approveUser = async (req, res) => {
     const approvedUser = await User.findByPk(userId, {
       include: [
         { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
-        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] }
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
+        { model: TripLocation, as: 'location', attributes: locationAttributes }
       ]
     });
-    
     res.json({
       message: "User approved successfully",
       user: approvedUser
@@ -186,7 +202,8 @@ exports.getPendingUsers = async (req, res) => {
       where: { status: 'Pending' },
       include: [
         { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
-        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] }
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
+        { model: TripLocation, as: 'location', attributes: locationAttributes }
       ]
     });
     res.json(pendingUsers);

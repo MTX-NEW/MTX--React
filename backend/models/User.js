@@ -57,6 +57,14 @@ const User = sequelize.define(
         key: 'type_id',
       },
     },
+    location_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'trip_locations',
+        key: 'location_id',
+      },
+    },
     status: {
       type: DataTypes.ENUM('Active', 'Inactive', 'Suspended', 'Pending'),
       defaultValue: 'Active',

@@ -8,9 +8,11 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { userValidationSchema } from "@/validations/inputValidation";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { userApi, userTypeApi, groupApi, groupPermissionsApi } from "@/api/baseApi";
-import { useResource } from "@/hooks/useResource";
+//import { userApi, userTypeApi, groupApi, groupPermissionsApi } from "@/api/baseApi";
+//import { useResource } from "@/hooks/useResource";
 import { useUserData } from '@/pages/users/hooks/useUserData';
+import useUserLocation from '@/hooks/useUserLocation';
+import { FaMapMarkerAlt } from "react-icons/fa";
 
 
 const AllUsers = () => {
@@ -35,6 +37,16 @@ const AllUsers = () => {
     setInitialLoad
   } = useUserData();
 
+  // Get user location functionality
+  const {
+    showLocationModal,
+    setShowLocationModal,
+    locationFormMethods,
+    handleUserLocation,
+    handleLocationSubmit,
+    getLocationFields
+  } = useUserLocation();
+
   // Compute filtered users based on search query
   const filteredUsers = React.useMemo(() => {
     if (!searchQuery) return users;
@@ -42,6 +54,11 @@ const AllUsers = () => {
       Object.values(user).join(" ").toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [users, searchQuery]);
+
+  // Handler for opening the location modal with refresh callback
+  const handleOpenLocationModal = (user) => {
+    handleUserLocation(user, refresh);
+  };
 
   // Watch for group changes in add form
   const addFormMethods = useForm({
@@ -380,7 +397,19 @@ const AllUsers = () => {
       accessor: "actions",
       actions: [
         ({ row, onEdit, onDelete }) => (
-          <DefaultTableActions row={row} onEdit={onEdit} onDelete={onDelete} />
+          <DefaultTableActions 
+            row={row} 
+            onEdit={onEdit} 
+            onDelete={onDelete}
+            customActions={[
+              {
+                label: "Address",
+                className: "home-address-btn",
+                title: "Set Home Address",
+                onClick: (user) => handleOpenLocationModal(user)
+              }
+            ]} 
+          />
         ),
       ],
     },
@@ -452,19 +481,21 @@ const AllUsers = () => {
         onAdd={() => setShowAddPopup(true)}
       />
 
-      {initialLoad && loading ? (
-        <p>Loading users...</p>
-      ) : (
-        <DynamicTable
-          columns={columns}
-          data={filteredUsers}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
-          deleteConfirmMessage={(item) =>
-            `Delete user ${item.first_name} ${item.last_name}?`
-          }
-        />
-      )}
+      <div className="bg-white rounded-lg shadow p-6">
+        {initialLoad && loading ? (
+          <p>Loading users...</p>
+        ) : (
+          <DynamicTable
+            columns={columns}
+            data={filteredUsers}
+            onDelete={handleDelete}
+            onEdit={handleEdit}
+            deleteConfirmMessage={(item) =>
+              `Delete user ${item.first_name} ${item.last_name}?`
+            }
+          />
+        )}
+      </div>
 
       {/* Add User Popup */}
       {showAddPopup && (
@@ -501,6 +532,26 @@ const AllUsers = () => {
             <FormComponent
               fields={getUserFields(editFormMethods)}
               onSubmit={handleEditSubmit}
+            />
+          </FormProvider>
+        </RightSidebarPopup>
+      )}
+
+      {/* User Location Popup */}
+      {showLocationModal && (
+        <RightSidebarPopup
+          show={showLocationModal}
+          title="User Home Address"
+          onClose={() => {
+            setShowLocationModal(false);
+            locationFormMethods.reset();
+          }}
+        >
+          <FormProvider {...locationFormMethods}>
+            <FormComponent
+              fields={getLocationFields()}
+              onSubmit={handleLocationSubmit}
+              submitText="Save Address"
             />
           </FormProvider>
         </RightSidebarPopup>
