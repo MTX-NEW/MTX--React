@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import UserActions from '@/components/users/allusers/UserActions';
@@ -9,6 +9,8 @@ import { useTrip } from '@/hooks/useTrip';
 import useTripFilters from '@/hooks/useTripFilters';
 import { useResource } from '@/hooks/useResource';
 import useMemberLocations from '@/hooks/useMemberLocations';
+import useMemberManagement from '@/hooks/useMemberManagement';
+import FormComponent from '@/components/FormComponent';
 
 // Import our components
 import TripRequestFilters from '@/components/trips/TripRequestFilters';
@@ -45,12 +47,16 @@ const TripRequestsPresenter = ({
   setShowViewModal,
   showRecreateModal,
   setShowRecreateModal,
+  showEditMemberModal,
+  setShowEditMemberModal,
   handleSubmit,
   handleCreateNewTrip,
   selectedTrip,
+  selectedMemberForEdit,
   addTripProps,
   editTripProps,
-  refreshTrips
+  refreshTrips,
+  memberManagement
 }) => {
   return (
     <div>
@@ -158,7 +164,33 @@ const TripRequestsPresenter = ({
             memberLocations={addTripProps.memberLocations}
             isLoadingLocations={addTripProps.isLoadingLocations}
             onMemberSelect={addTripProps.onMemberSelect}
+            onEditMember={addTripProps.onEditMember}
           />
+        </RightSidebarPopup>
+      )}
+      
+      {/* Edit Member Modal */}
+      {showEditMemberModal && selectedMemberForEdit && (
+        <RightSidebarPopup
+          show={showEditMemberModal}
+          title="Edit Member"
+          onClose={() => setShowEditMemberModal(false)}
+        >
+          <FormProvider {...memberManagement.editFormMethods}>
+            <FormComponent
+              fields={memberManagement.getMemberFields(memberManagement.editFormMethods)}
+              onSubmit={async (data) => {
+                await memberManagement.handleEditSubmit(data);
+                setShowEditMemberModal(false);
+                // Refresh member data if needed
+                if (selectedTrip?.TripMember?.member_id === selectedMemberForEdit.member_id) {
+                  refreshTrips();
+                }
+              }}
+              submitText="Update Member"
+              isSubmitting={memberManagement.isLoading}
+            />
+          </FormProvider>
         </RightSidebarPopup>
       )}
     </div>
@@ -197,6 +229,22 @@ const TripRequests = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showRecreateModal, setShowRecreateModal] = useState(false);
+  
+  // Add state for member management
+  const [showEditMemberModal, setShowEditMemberModal] = useState(false);
+  const [selectedMemberForEdit, setSelectedMemberForEdit] = useState(null);
+  
+  // Initialize member management hook
+  const memberManagement = useMemberManagement();
+  
+  // When selectedMemberForEdit changes, initialize the edit form
+  useEffect(() => {
+    if (selectedMemberForEdit) {
+      // Reset the edit form with the selected member data
+      memberManagement.setSelectedMember(selectedMemberForEdit);
+      memberManagement.handleEditMember(selectedMemberForEdit);
+    }
+  }, [selectedMemberForEdit]);
   
   // Form State
   const [selectedMember, setSelectedMember] = useState(null);
@@ -418,6 +466,14 @@ const TripRequests = () => {
     fetchTrips({});
   };
 
+  // Handle editing a member from the trip form
+  const handleEditMember = (member) => {
+    if (member) {
+      setSelectedMemberForEdit(member);
+      setShowEditMemberModal(true);
+    }
+  };
+
   // Optimize render for edit mode - don't need to pass entire members list
   const getEditComponentProps = () => {
     // When editing, we don't need all members - just the selected one
@@ -449,7 +505,8 @@ const TripRequests = () => {
       companies,
       memberLocations,
       isLoadingLocations,
-      onMemberSelect: handleEditMemberSelect
+      onMemberSelect: handleEditMemberSelect,
+      onEditMember: handleEditMember
     };
   };
 
@@ -478,7 +535,8 @@ const TripRequests = () => {
       companies: companies || [],
       memberLocations: memberLocations || [],
       isLoadingLocations,
-      onMemberSelect: handleMemberSelect
+      onMemberSelect: handleMemberSelect,
+      onEditMember: handleEditMember
     };
   };
 
@@ -522,12 +580,16 @@ const TripRequests = () => {
       setShowViewModal={setShowViewModal}
       showRecreateModal={showRecreateModal}
       setShowRecreateModal={setShowRecreateModal}
+      showEditMemberModal={showEditMemberModal}
+      setShowEditMemberModal={setShowEditMemberModal}
       handleSubmit={handleSubmit}
       handleCreateNewTrip={handleCreateNewTrip}
       selectedTrip={selectedTrip}
+      selectedMemberForEdit={selectedMemberForEdit}
       addTripProps={getAddTripProps()}
       editTripProps={getEditComponentProps()}
       refreshTrips={refreshTrips}
+      memberManagement={memberManagement}
     />
   );
 };

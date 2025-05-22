@@ -1,0 +1,663 @@
+/* TripRequestForm.css */
+.trip-request-form {
+  --primary-color: #0d6efd;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --light-gray: #f8f9fa;
+  --border-color: #dee2e6;
+  --text-muted: #6c757d;
+}
+
+/* Compact Form Container */
+.compact-form-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 15px;
+  padding: 15px;
+}
+
+/* Box Containers */
+.form-container-box {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+/* Box sizes */
+.member-box { grid-column: span 4; }
+.schedule-trip-box { grid-column: span 8; }
+.location-containers { grid-column: span 12; display: flex; gap: 15px; }
+.pickup-box, .dropoff-box { flex: 1; }
+.return-box { grid-column: span 12; }
+.multi-stops-box { grid-column: span 12; }
+.instructions-box { grid-column: span 12; }
+.form-actions-container { grid-column: span 12; }
+
+/* Container titles */
+.container-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+}
+
+/* Compact Radio Groups */
+.radio-group.schedule-radio,
+.radio-group.trip-type-radio {
+  display: flex;
+  gap: 8px;
+  background: white;
+  border-radius: 6px;
+  padding: 5px;
+  flex-wrap: nowrap;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid var(--border-color);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.radio-option:hover {
+  background: #f0f4ff;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+}
+
+.radio-option.selected {
+  background: #e7f0ff;
+  border-color: var(--primary-color);
+}
+
+/* Date fields */
+.schedule-date-container {
+  margin-top: 10px;
+}
+
+.date-fields-container {
+  display: flex;
+  gap: 10px;
+}
+
+.date-field {
+  width: 100%;
+}
+
+.date-field.half-width {
+  width: 50%;
+}
+
+/* Date field labels */
+.date-field-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+}
+
+.field-label {
+  font-weight: 500;
+  color: #444;
+}
+
+/* Custom date input styling */
+.date-input {
+  width: 100%;
+  max-width: 150px;
+}
+
+/* Smaller date and time pickers */
+.date-field .MuiFormControl-root,
+.date-field .MuiInputBase-root,
+.time-field-container .MuiFormControl-root,
+.time-field-container .MuiInputBase-root {
+  width: 100%;
+  max-width: 130px;
+}
+
+.date-field .MuiInputBase-root input,
+.time-field-container .MuiInputBase-root input {
+  padding: 4px 6px;
+  font-size: 0.8rem;
+}
+
+/* Fix sizing of the date/time pickers */
+.date-field .MuiTextField-root {
+  margin-top: 0;
+}
+
+/* Time fields */
+.time-field-container {
+  margin-top: 10px;
+}
+
+.time-field-container .MuiFormControl-root {
+  margin-bottom: 0;
+}
+
+/* CSS for LocationAutocomplete fields */
+.pickup-box .MuiAutocomplete-root,
+.dropoff-box .MuiAutocomplete-root {
+  width: 100%;
+}
+
+.pickup-box .MuiOutlinedInput-root,
+.dropoff-box .MuiOutlinedInput-root {
+  padding: 2px 4px;
+  font-size: 0.85rem;
+}
+
+.pickup-box .MuiAutocomplete-input,
+.dropoff-box .MuiAutocomplete-input {
+  padding: 2px 4px !important;
+  height: auto !important;
+}
+
+/* Hide label redundancy in autocomplete fields */
+.pickup-box .MuiFormLabel-root,
+.dropoff-box .MuiFormLabel-root {
+  font-size: 0;
+}
+
+.pickup-box .MuiFormLabel-root::after,
+.dropoff-box .MuiFormLabel-root::after {
+  content: "*";
+  font-size: 0.85rem;
+  color: #d32f2f;
+}
+
+/* Member field styling */
+.member-box .MuiOutlinedInput-root {
+  padding: 2px 4px;
+  font-size: 0.85rem;
+}
+
+.member-box .MuiAutocomplete-input {
+  padding: 2px 4px !important;
+  height: auto !important;
+}
+
+/* Container padding adjustments */
+.form-container-box {
+  padding: 12px;
+}
+
+/* Remove margins from container titles */
+.container-title {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+}
+
+/* Force sizing on form controls */
+.form-control {
+  font-size: 0.8125rem !important;
+  padding: 4px 6px !important;
+  height: calc(1.5em + 0.35rem + 2px) !important;
+  max-width: 100%;
+}
+
+/* Additional leg time fields */
+.leg-location .MuiFormControl-root {
+  width: 100%;
+}
+
+.leg-location .MuiInputBase-root {
+  width: 100%;
+  max-width: 130px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .date-field .MuiFormControl-root,
+  .date-field .MuiInputBase-root,
+  .time-field-container .MuiFormControl-root,
+  .time-field-container .MuiInputBase-root {
+    max-width: 100%;
+  }
+  
+  .date-input {
+    max-width: 100%;
+  }
+}
+
+/* Days of week */
+.days-container {
+  margin-top: 10px;
+}
+
+.days-week-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  background: white;
+  padding: 5px;
+  border-radius: 6px;
+}
+
+.day-item {
+  flex: 1;
+  min-width: 60px;
+}
+
+.day-label {
+  margin: 0 !important;
+  font-size: 0.75rem !important;
+}
+
+.day-label .MuiCheckbox-root {
+  padding: 2px;
+}
+
+/* Special Instructions */
+.special-instructions.compact {
+  background: white;
+  border-radius: 6px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.instruction-section {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.instruction-section-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.compact-instructions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 5px;
+}
+
+.vehicle-options {
+  display: flex;
+  gap: 10px;
+}
+
+.compact-check .MuiCheckbox-root {
+  padding: 2px;
+}
+
+.compact-check .MuiFormControlLabel-label {
+  font-size: 0.75rem !important;
+}
+
+/* Additional legs */
+.additional-legs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.additional-leg-item {
+  background: white;
+  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.leg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.leg-number {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.leg-locations {
+  display: flex;
+  gap: 10px;
+}
+
+.leg-location {
+  flex: 1;
+}
+
+/* Form actions */
+.form-actions-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: #0b5ed7;
+}
+
+.btn-secondary {
+  background: white;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--light-gray);
+}
+
+.btn-secondary.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.btn-link-danger {
+  background: none;
+  border: none;
+  color: var(--danger-color);
+  padding: 0;
+  font-size: 0.75rem;
+  text-decoration: underline;
+}
+
+/* Compact form label */
+.compact-label {
+  margin-bottom: 5px !important;
+  font-size: 0.8rem !important;
+}
+
+/* Member Details Card */
+.member-details {
+  background: white;
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 10px;
+}
+
+.member-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.member-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 5px;
+}
+
+.member-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.75rem;
+}
+
+/* Schedule and Trip Type Containers */
+.schedule-type-container,
+.trip-type-container {
+  margin-bottom: 15px;
+}
+
+.mb-3 {
+  margin-bottom: 15px;
+}
+
+.mt-2 {
+  margin-top: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .compact-form-container {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  
+  .member-box { grid-column: span 6; }
+  .schedule-trip-box { grid-column: span 6; }
+  
+  .special-instructions.compact {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .compact-form-container {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  
+  .member-box, 
+  .schedule-trip-box { 
+    grid-column: span 1; 
+  }
+  
+  .location-containers {
+    flex-direction: column;
+  }
+  
+  .special-instructions.compact {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Other existing styles */
+.member-selection {
+  margin-bottom: 0.75rem;
+}
+
+.member-selection .MuiInputBase-root {
+  font-size: 0.875rem;
+  padding: 0.25rem;
+}
+
+.member-selection .MuiAutocomplete-input {
+  padding: 0.25rem !important;
+  height: 1.75rem;
+}
+
+/* Global date/time picker styles */
+.trip-request-form .MuiTextField-root,
+.trip-request-form .MuiFormControl-root,
+.trip-request-form .MuiInputBase-root {
+  max-width: 100%;
+}
+
+/* Date selector common styles */
+.MuiPickersPopper-root .MuiPaper-root {
+  font-size: 0.8rem;
+}
+
+.MuiPickersPopper-root .MuiButtonBase-root {
+  padding: 4px;
+  min-width: 30px;
+  font-size: 0.75rem;
+}
+
+.MuiPickersFadeTransitionGroup-root {
+  font-size: 0.8rem;
+}
+
+/* Form Validation */
+.error-message {
+  color: var(--danger-color);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.animate-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Location Containers */
+.pickup-box, .dropoff-box {
+  flex: 1;
+}
+
+.pickup-box .MuiFormControl-root,
+.dropoff-box .MuiFormControl-root {
+  width: 100%;
+}
+
+.pickup-box .MuiInputBase-root,
+.dropoff-box .MuiInputBase-root {
+  width: 100%;
+  max-width: 180px;
+}
+
+/* Mobile adjustments for date/time pickers */
+@media (max-width: 768px) {
+  .date-field .MuiFormControl-root,
+  .date-field .MuiInputBase-root,
+  .time-field-container .MuiFormControl-root,
+  .time-field-container .MuiInputBase-root {
+    width: 120px;
+    min-width: 120px;
+  }
+  
+  .pickup-box .MuiInputBase-root,
+  .dropoff-box .MuiInputBase-root {
+    max-width: 100%;
+  }
+}
+
+/* Compact TimePicker styles */
+.time-picker-compact {
+  display: flex;
+  flex-direction: column;
+}
+
+.time-picker-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #444;
+  margin-bottom: 4px;
+}
+
+.time-input {
+  width: 100%;
+  max-width: 130px;
+  padding: 4px 6px !important;
+  font-size: 0.8rem !important;
+  height: calc(1.5em + 0.35rem + 2px) !important;
+}
+
+/* Remove extra margin from time pickers */
+.time-picker-compact .MuiFormControl-root {
+  margin-top: 0 !important;
+}
+
+/* Days of Week horizontal layout */
+.days-week-horizontal {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.day-checkbox {
+  margin-right: 5px;
+}
+
+.day-checkbox-container {
+  display: flex;
+  align-items: center;
+}
+
+.day-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-bottom: 0;
+}
+
+.day-checkbox-label input {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Location details styling */
+.location-details {
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.location-details-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.location-detail-row {
+  display: flex;
+  gap: 15px;
+}
+
+.location-detail-item {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: #555;
+  min-width: 40px;
+}
+
+.detail-value {
+  color: #222;
+} 

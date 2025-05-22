@@ -45,13 +45,11 @@ exports.getAllTrips = async (req, res) => {
           model: TripMember,
           include: [
             {
-              model: Program,
-              include: [
-                {
-                  model: ProgramPlan,
-                  as: 'ProgramPlans'
-                }
-              ]
+              model: Program
+            },
+            {
+              model: ProgramPlan,
+              as: 'ProgramPlan'
             },
             {
               model: TripLocation,
@@ -189,13 +187,11 @@ exports.getTripById = async (req, res) => {
           model: TripMember,
           include: [
             {
-              model: Program,
-              include: [
-                {
-                  model: ProgramPlan,
-                  as: 'ProgramPlans'
-                }
-              ]
+              model: Program
+            },
+            {
+              model: ProgramPlan,
+              as: 'ProgramPlan'
             },
             {
               model: TripLocation,
@@ -299,6 +295,7 @@ exports.createTrip = async (req, res) => {
       // Create trips for each scheduled day within the date range
       const createdTrips = [];
       const currentDate = new Date(startDate);
+      let parentTripId = null;
       
       // Process each day in the date range
       while (currentDate <= endDate) {
@@ -311,7 +308,7 @@ exports.createTrip = async (req, res) => {
             ...tripData,
             start_date: new Date(currentDate),
             end_date: new Date(currentDate),
-            parent_trip_id: null, // Will be updated after creating the first trip
+            parent_trip_id: parentTripId, // Use the stored parent ID
             created_at: new Date(),
             updated_at: new Date()
           };
@@ -324,8 +321,8 @@ exports.createTrip = async (req, res) => {
             const newTrip = await Trip.create(tripForDate);
             createdTrips.push(newTrip);
             
-            // Update parentTripId for future trips in this series
-            tripForDate.parent_trip_id = newTrip.trip_id;
+            // Store parent ID for future trips
+            parentTripId = newTrip.trip_id;
           } else {
             // This is a child trip
             const newTrip = await Trip.create(tripForDate);
@@ -532,13 +529,11 @@ function getFullTripIncludes() {
       model: TripMember,
       include: [
         {
-          model: Program,
-          include: [
-            {
-              model: ProgramPlan,
-              as: 'ProgramPlans'
-            }
-          ]
+          model: Program
+        },
+        {
+          model: ProgramPlan,
+          as: 'ProgramPlan'
         },
         {
           model: TripLocation,
@@ -734,13 +729,11 @@ exports.updateTrip = async (req, res) => {
           model: TripMember,
           include: [
             {
-              model: Program,
-              include: [
-                {
-                  model: ProgramPlan,
-                  as: 'ProgramPlans'
-                }
-              ]
+              model: Program
+            },
+            {
+              model: ProgramPlan,
+              as: 'ProgramPlan'
             },
             {
               model: TripLocation,
@@ -959,6 +952,257 @@ exports.getTripSummaries = async (req, res) => {
     res.json(trips);
   } catch (error) {
     console.error("Error fetching trip summaries:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get all trips in a blanket series
+exports.getBlanketSeries = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the requested trip
+    const trip = await Trip.findByPk(id);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+    
+    // Check if this is a blanket trip
+    if (trip.schedule_type !== 'Blanket') {
+      return res.status(400).json({ message: "Trip is not a blanket trip" });
+    }
+    
+    // If this is a child trip, find the parent trip ID
+    let parentTripId = trip.parent_trip_id;
+    
+    // If parent_trip_id is null, this is the parent trip itself
+    if (!parentTripId) {
+      parentTripId = trip.trip_id;
+    }
+    
+    // Find all trips in this blanket series (parent and all children)
+    const seriesTrips = await Trip.findAll({
+      where: {
+        [Op.or]: [
+          { trip_id: parentTripId },
+          { parent_trip_id: parentTripId }
+        ],
+        schedule_type: 'Blanket'
+      },
+      include: getFullTripIncludes(),
+      order: [['start_date', 'ASC']]
+    });
+    
+    res.json({
+      parent_trip_id: parentTripId,
+      trips: seriesTrips
+    });
+  } catch (error) {
+    console.error("Error fetching blanket trip series:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update all trips in a blanket series
+exports.updateBlanketSeries = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { special_instructions, legs, return_pickup_time, ...tripData } = req.body;
+    const { update_all_trips = true } = req.query; // Default to updating all trips
+    
+    // Begin transaction
+    const transaction = await sequelize.transaction();
+    
+    try {
+      // Find the requested trip
+      const trip = await Trip.findByPk(id, { transaction });
+      if (!trip) {
+        await transaction.rollback();
+        return res.status(404).json({ message: "Trip not found" });
+      }
+      
+      // Check if this is a blanket trip
+      if (trip.schedule_type !== 'Blanket') {
+        await transaction.rollback();
+        return res.status(400).json({ message: "Trip is not a blanket trip" });
+      }
+      
+      // Determine the parent ID
+      let parentTripId = trip.parent_trip_id;
+      if (!parentTripId) {
+        parentTripId = trip.trip_id;
+      }
+      
+      // Find all trips to update (parent and children)
+      const tripsToUpdate = update_all_trips ? 
+        await Trip.findAll({
+          where: {
+            [Op.or]: [
+              { trip_id: parentTripId },
+              { parent_trip_id: parentTripId }
+            ],
+            schedule_type: 'Blanket'
+          },
+          transaction
+        }) : 
+        [trip]; // Only update the specific trip
+      
+      // Update each trip in the series
+      for (const tripItem of tripsToUpdate) {
+        // Don't update start_date and end_date of existing trips
+        const tripUpdateData = { ...tripData };
+        delete tripUpdateData.start_date;
+        delete tripUpdateData.end_date;
+        
+        await tripItem.update({
+          ...tripUpdateData,
+          updated_at: new Date()
+        }, { transaction });
+        
+        // Update legs if provided
+        if (legs && Array.isArray(legs)) {
+          // Filter out legs with missing required data
+          const validLegs = legs.filter(leg => leg && leg.pickup_location && leg.dropoff_location);
+          
+          // Delete existing legs for this trip
+          await TripLeg.destroy({
+            where: { trip_id: tripItem.trip_id },
+            transaction
+          });
+          
+          // Create new legs with the updated data
+          let totalDistance = 0;
+          const createdLegs = [];
+          
+          for (let i = 0; i < validLegs.length; i++) {
+            const legData = { ...validLegs[i] };
+            legData.sequence = i + 1;
+            legData.trip_id = tripItem.trip_id;
+            
+            // Calculate leg distance
+            let leg_distance = 0;
+            
+            if (legData.pickup_location && legData.dropoff_location) {
+              try {
+                const pickupLocation = await TripLocation.findByPk(legData.pickup_location, { transaction });
+                const dropoffLocation = await TripLocation.findByPk(legData.dropoff_location, { transaction });
+                
+                if (pickupLocation && dropoffLocation) {
+                  const pickupAddress = formatAddress(pickupLocation);
+                  const dropoffAddress = formatAddress(dropoffLocation);
+                  
+                  const distanceResult = await calculateDistance(pickupAddress, dropoffAddress);
+                  
+                  if (distanceResult && distanceResult.distance) {
+                    leg_distance = parseFloat((distanceResult.distance.value / 1609.34).toFixed(2));
+                  }
+                }
+              } catch (error) {
+                console.error("Error calculating distance:", error);
+              }
+            }
+            
+            // Format time fields
+            if (legData.scheduled_pickup) {
+              legData.scheduled_pickup = formatTimeForDB(legData.scheduled_pickup);
+            }
+            
+            if (legData.scheduled_dropoff) {
+              legData.scheduled_dropoff = formatTimeForDB(legData.scheduled_dropoff);
+            }
+            
+            // Create leg
+            const { leg_id, ...legDataToCreate } = legData;
+            const createdLeg = await TripLeg.create({
+              ...legDataToCreate,
+              leg_distance,
+              created_at: new Date(),
+              updated_at: new Date()
+            }, { transaction });
+            
+            createdLegs.push(createdLeg);
+            totalDistance += leg_distance;
+          }
+          
+          // For round trips, create return leg
+          if (tripData.trip_type === 'round_trip' && createdLegs.length > 0) {
+            const firstLeg = createdLegs[0];
+            
+            if (firstLeg.pickup_location && firstLeg.dropoff_location) {
+              const returnLeg = await TripLeg.create({
+                trip_id: tripItem.trip_id,
+                sequence: 2,
+                status: 'Scheduled',
+                pickup_location: firstLeg.dropoff_location,
+                dropoff_location: firstLeg.pickup_location,
+                scheduled_pickup: return_pickup_time ? formatTimeForDB(return_pickup_time) : null,
+                scheduled_dropoff: null,
+                leg_distance: firstLeg.leg_distance,
+                is_return: true,
+                created_at: new Date(),
+                updated_at: new Date()
+              }, { transaction });
+              
+              createdLegs.push(returnLeg);
+              totalDistance += firstLeg.leg_distance;
+            }
+          }
+          
+          // Update total distance
+          await tripItem.update({ total_distance: totalDistance }, { transaction });
+        }
+        
+        // Update special instructions
+        if (special_instructions) {
+          await TripSpecialInstruction.destroy({
+            where: { trip_id: tripItem.trip_id },
+            transaction
+          });
+          
+          await TripSpecialInstruction.create({
+            trip_id: tripItem.trip_id,
+            ...special_instructions,
+            created_at: new Date(),
+            updated_at: new Date()
+          }, { transaction });
+        }
+      }
+      
+      // Commit transaction
+      await transaction.commit();
+      
+      // Return updated trips
+      const updatedTrips = await Trip.findAll({
+        where: {
+          [Op.or]: [
+            { trip_id: parentTripId },
+            { parent_trip_id: parentTripId }
+          ],
+          schedule_type: 'Blanket'
+        },
+        include: getFullTripIncludes(),
+        order: [['start_date', 'ASC']]
+      });
+      
+      res.json({
+        message: `Updated ${updatedTrips.length} trips in blanket series`,
+        parent_trip_id: parentTripId,
+        trips: updatedTrips
+      });
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error updating blanket trip series:", error);
+    
+    if (error instanceof ValidationError) {
+      return res.status(400).json({ 
+        message: "Validation error", 
+        errors: error.errors.map(e => ({ field: e.path, message: e.message }))
+      });
+    }
+    
     res.status(500).json({ message: error.message });
   }
 }; 

@@ -11,6 +11,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormGroup from '@mui/material/FormGroup';
+import { FaEdit } from 'react-icons/fa';
 
 // Presenter component - responsible for rendering UI
 const TripFormPresenter = ({ 
@@ -29,7 +30,8 @@ const TripFormPresenter = ({
   selectedMember,
   tripType,
   initialData,
-  isEditMode
+  isEditMode,
+  handleEditMember
 }) => {
   const { register, control, formState: { errors }, watch, setValue, trigger } = formMethods;
   const currentScheduleType = watch('schedule_type');
@@ -45,7 +47,11 @@ const TripFormPresenter = ({
           {/* Member Field */}
           <div className="row">
             <div className="col-12 mb-2">
-              {renderMemberField()}
+              <div className="d-flex align-items-center">
+                <div className="flex-grow-1">
+                  {renderMemberField()}
+                </div>
+              </div>
             </div>
           </div>
           
@@ -54,6 +60,17 @@ const TripFormPresenter = ({
             <div className="row mb-3">
               <div className="col-12">
                 <div className="member-details-container p-3 bg-light rounded small">
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    <div className="fw-bold text-primary">Member Details</div>
+                  {/* <button
+                      type="button"
+                      onClick={() => handleEditMember(memberData)}
+                      className="btn btn-sm p-2 rounded-circle bg-warning-subtle border-0 shadow-sm"
+                      title="Edit Member"
+                    >
+                      <FaEdit className="text-warning" />
+                    </button>*/}
+                  </div>
                   <div className="row mb-2">
                     <div className="col-md-6">
                       <span className="fw-semibold">Program:</span> {memberData?.Program?.program_name || 
@@ -264,6 +281,7 @@ const TripFormPresenter = ({
                 required={true}
                 error={errors.legs?.[0]?.scheduled_pickup}
                 helperText={errors.legs?.[0]?.scheduled_pickup?.message}
+                
               />
             </div>
             
@@ -487,12 +505,14 @@ const TripForm = ({
   memberLocations = [],
   isLoadingLocations = false,
   onMemberSelect = () => {},
-  companies = []
+  companies = [],
+  onEditMember = () => {}
 }) => {
   // Initialize form state
   const [tripType, setTripType] = useState('one_way');
   const [legCount, setLegCount] = useState(1);
   const [selectedMember, setSelectedMember] = useState(null);
+
 
   // Form methods
   const formMethods = useForm({
@@ -539,10 +559,8 @@ const TripForm = ({
 
   // Initialize from initial data if provided
   useEffect(() => {
-    console.log('initialData', initialData);
     if (initialData) {
       // Set trip type directly - no conversion needed with updated API
-      console.log('initialData.trip_type', initialData.trip_type);
       setTripType(initialData.trip_type);
       formMethods.setValue('trip_type', initialData.trip_type);
       
@@ -586,12 +604,16 @@ const TripForm = ({
       
       // Format time fields in legs to HH:MM format
       if (initialData.legs?.length > 0) {
-        const formattedLegs = initialData.legs.map(leg => ({
-          ...leg,
-          // Convert time strings from HH:MM:SS to HH:MM
-          scheduled_pickup: leg.scheduled_pickup ? leg.scheduled_pickup.slice(0, 5) : null,
-          scheduled_dropoff: leg.scheduled_dropoff ? leg.scheduled_dropoff.slice(0, 5) : null
-        }));
+        const formattedLegs = initialData.legs.map(leg => {
+          const formattedLeg = {
+            ...leg,
+            // Convert time strings from HH:MM:SS to HH:MM
+            scheduled_pickup: leg.scheduled_pickup ? leg.scheduled_pickup.slice(0, 5) : null,
+            scheduled_dropoff: leg.scheduled_dropoff ? leg.scheduled_dropoff.slice(0, 5) : null
+          };
+          
+          return formattedLeg;
+        });
         
         // For round trips, extract return pickup time
         if (initialData.trip_type === 'round_trip' && formattedLegs.length > 1) {
@@ -602,6 +624,12 @@ const TripForm = ({
         }
         
         formMethods.setValue('legs', formattedLegs);
+        
+        // Explicitly set individual leg times
+        formattedLegs.forEach((leg, index) => {
+          formMethods.setValue(`legs[${index}].scheduled_pickup`, leg.scheduled_pickup);
+          formMethods.setValue(`legs[${index}].scheduled_dropoff`, leg.scheduled_dropoff);
+        });
       }
     }
   }, [initialData, formMethods]);
@@ -658,6 +686,7 @@ const TripForm = ({
       formMethods.setValue(`legs[${index}].scheduled_dropoff`, leg.scheduled_dropoff);
       formMethods.setValue(`legs[${index}].leg_distance`, leg.leg_distance);
       formMethods.setValue(`legs[${index}].is_return`, leg.is_return);
+      
     });
   }, [formMethods]);
 
@@ -863,6 +892,13 @@ const TripForm = ({
     );
   }, [memberLocations, isLoadingLocations, formMethods, initialData]);
 
+  // Handle editing a member
+  const handleEditMember = useCallback((member) => {
+    if (member && onEditMember) {
+      onEditMember(member);
+    }
+  }, [onEditMember]);
+
   const handleSubmitForm = (data) => {
     onSubmit(data);
   };
@@ -902,6 +938,7 @@ const TripForm = ({
       selectedMember={selectedMember}
       initialData={initialData}
       isEditMode={isEditMode}
+      handleEditMember={handleEditMember}
     />
   );
 };

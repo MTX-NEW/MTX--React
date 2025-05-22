@@ -15,6 +15,7 @@ import { TimePicker } from "@mui/x-date-pickers/TimePicker";
  * @param {Object} props.error - Error object from react-hook-form
  * @param {string} props.helperText - Helper text or error message
  * @param {string} props.placeholder - Placeholder for the TimePicker
+ * @param {boolean} props.compact - Whether to use compact styling
  * @param {Object} props.fieldProps - Additional props for the TimePicker
  */
 const TimePickerField = ({
@@ -25,12 +26,13 @@ const TimePickerField = ({
   error = null,
   helperText = '',
   placeholder = '',
+  compact = false,
   fieldProps = {}
 }) => {
   return (
-    <>
+    <div className={compact ? 'time-picker-compact' : ''}>
       {label && (
-        <label>
+        <label className={compact ? 'time-picker-label' : ''}>
           {label} {required && <span className="text-danger">*</span>}
         </label>
       )}
@@ -38,48 +40,68 @@ const TimePickerField = ({
         <Controller
           name={name}
           control={control}
-          render={({ field }) => (
-            <TimePicker
-              value={field.value ? dayjs(`2022-01-01T${field.value}`) : null}
-              onChange={(time) => field.onChange(time ? time.format('HH:mm') : null)}
-              ampm={false}
-              openTo="hours"
-              views={['hours', 'minutes']}
-              slotProps={{
-                textField: {
-                  className: "form-control mt-2",
-                  variant: "outlined",
-                  placeholder: placeholder,
-                  error: !!error,
-                  helperText: helperText
-                },
-                layout: {
-                  sx: {
-                    "& .MuiMultiSectionDigitalClock-root > ul": {
-                      width: "fit-content",
-                      "&::-webkit-scrollbar": {
-                        display: "none"
+          render={({ field }) => {
+            // Parse the time value correctly
+            let timeValue = null;
+            if (field.value) {
+              try {
+                // Try to parse the time value as HH:MM
+                timeValue = dayjs(`2022-01-01T${field.value}`);
+                if (!timeValue.isValid()) {
+                  timeValue = null;
+                }
+              } catch (error) {
+                // Silently handle parsing errors
+              }
+            }
+            
+            return (
+              <TimePicker
+                value={timeValue}
+                onChange={(time) => {
+                  const formattedTime = time ? time.format('HH:mm') : null;
+                  field.onChange(formattedTime);
+                }}
+                ampm={false}
+                openTo="hours"
+                views={['hours', 'minutes']}
+                slotProps={{
+                  textField: {
+                    className: `form-control ${compact ? 'time-input mt-1' : 'mt-2'}`,
+                    variant: "outlined",
+                    placeholder: placeholder,
+                    error: !!error,
+                    helperText: helperText,
+                    size: "small"
+                  },
+                  layout: {
+                    sx: {
+                      "& .MuiMultiSectionDigitalClock-root > ul": {
+                        width: "fit-content",
+                        "&::-webkit-scrollbar": {
+                          display: "none"
+                        },
+                        scrollbarWidth: "none", /* Firefox */
+                        "-ms-overflow-style": "none", /* IE and Edge */
+                        paddingBottom: 0
                       },
-                      scrollbarWidth: "none", /* Firefox */
-                      "-ms-overflow-style": "none", /* IE and Edge */
-                      paddingBottom: 0
-                    },
-                    "& .MuiMultiSectionDigitalClock-root": {
-                      maxHeight: "unset",
-                      height: "auto"
-                    },
-                    "& .MuiDigitalClock-root": {
-                      height: "auto"
+                      "& .MuiMultiSectionDigitalClock-root": {
+                        maxHeight: "unset",
+                        height: "auto"
+                      },
+                      "& .MuiDigitalClock-root": {
+                        height: "auto"
+                      }
                     }
                   }
-                }
-              }}
-              {...fieldProps}
-            />
-          )}
+                }}
+                {...fieldProps}
+              />
+            );
+          }}
         />
       </div>
-    </>
+    </div>
   );
 };
 

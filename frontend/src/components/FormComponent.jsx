@@ -341,12 +341,12 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
             case "checkbox":
               return (
                 <div className="mb-2" key={index}>
-                  <label>{field.label}</label>
                   <div className="checkbox-item">
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
                         checked={value || false}
+                        disabled={field.disabled}
                         onChange={(e) => {
                           setValue(field.name, e.target.checked);
                           if (field.onChange) field.onChange(e);

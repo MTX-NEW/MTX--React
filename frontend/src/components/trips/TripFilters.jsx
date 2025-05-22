@@ -164,8 +164,8 @@ const TripFilters = ({
               <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
                 <span>{cityFilter}</span>
                 <button 
-                  className="btn-close btn-close-white ms-2"
-                  style={{ fontSize: '0.5rem' }}
+                  className="btn-close btn-close-black ms-2"
+                  style={{ fontSize: '0.6rem' }}
                   onClick={() => handleCityFilterChange('')}
                   aria-label="Remove city filter"
                 ></button>
@@ -176,8 +176,8 @@ const TripFilters = ({
               <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
                 <span>{dateFilter.startDate}{dateFilter.endDate ? ` - ${dateFilter.endDate}` : ''}</span>
                 <button 
-                  className="btn-close btn-close-white ms-2"
-                  style={{ fontSize: '0.5rem' }}
+                  className="btn-close btn-close-black ms-2"
+                  style={{ fontSize: '0.6rem' }}
                   onClick={() => handleDateFilterChange(null, null)}
                   aria-label="Remove date filter"
                 ></button>
@@ -188,8 +188,8 @@ const TripFilters = ({
               <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
                 <span>{statusFilter}</span>
                 <button 
-                  className="btn-close btn-close-white ms-2"
-                  style={{ fontSize: '0.5rem' }}
+                  className="btn-close btn-close-black ms-2"
+                  style={{ fontSize: '0.6rem' }}
                   onClick={() => handleStatusFilterChange('')}
                   aria-label="Remove status filter"
                 ></button>
@@ -200,8 +200,8 @@ const TripFilters = ({
               <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
                 <span>Driver: {driversData.find(d => d.id.toString() === driverFilter.toString())?.name || driverFilter}</span>
                 <button 
-                  className="btn-close btn-close-white ms-2"
-                  style={{ fontSize: '0.5rem' }}
+                  className="btn-close btn-close-black ms-2"
+                  style={{ fontSize: '0.6rem' }}
                   onClick={() => handleDriverFilterChange('')}
                   aria-label="Remove driver filter"
                 ></button>
@@ -212,8 +212,8 @@ const TripFilters = ({
               <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
                 <span>Program: {programsData.find(p => p.id.toString() === programFilter.toString())?.name || programFilter}</span>
                 <button 
-                  className="btn-close btn-close-white ms-2"
-                  style={{ fontSize: '0.5rem' }}
+                  className="btn-close btn-close-black ms-2"
+                  style={{ fontSize: '0.6rem' }}
                   onClick={() => handleProgramFilterChange('')}
                   aria-label="Remove program filter"
                 ></button>

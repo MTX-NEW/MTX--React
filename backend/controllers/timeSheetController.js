@@ -1,4 +1,4 @@
-const { TimeSheet, User, TimeSheetBreak } = require('../models');
+const { TimeSheet, User, TimeSheetBreak, Incentive } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../db');
 
@@ -75,6 +75,54 @@ exports.getTimeSheetById = async (req, res) => {
   }
 };
 
+// Helper function to calculate hours between two datetime values, accounting for breaks
+const calculateHours = async (clockIn, clockOut, timesheetId = null) => {
+  if (!clockIn || !clockOut) return 0;
+  
+  const startTime = new Date(clockIn);
+  const endTime = new Date(clockOut);
+  
+  // Calculate difference in milliseconds
+  let diffMs = endTime - startTime;
+  
+  // Handle overnight shifts (if end time is earlier than start time)
+  if (diffMs < 0) {
+    // Add 24 hours for overnight shift
+    diffMs += 24 * 60 * 60 * 1000;
+  }
+  
+  // Convert to hours
+  let totalHours = diffMs / (1000 * 60 * 60);
+  
+  // Subtract break time if timesheet ID is provided
+  if (timesheetId) {
+    try {
+      // Get breaks for this timesheet
+      const breaks = await TimeSheetBreak.findAll({
+        where: { timesheet_id: timesheetId }
+      });
+      
+      // Calculate total break time
+      let breakHours = 0;
+      for (const breakEntry of breaks) {
+        if (breakEntry.end_time) {
+          const breakStartTime = new Date(breakEntry.start_time);
+          const breakEndTime = new Date(breakEntry.end_time);
+          breakHours += (breakEndTime - breakStartTime) / (1000 * 60 * 60);
+        }
+      }
+      
+      // Subtract break time from total time
+      totalHours -= breakHours;
+    } catch (error) {
+      console.error('Error calculating break time:', error);
+    }
+  }
+  
+  // Round to 2 decimal places and ensure it's not negative
+  return Math.max(0, parseFloat(totalHours.toFixed(2)));
+};
+
 // Create new timesheet
 exports.createTimeSheet = async (req, res) => {
   try {
@@ -101,13 +149,16 @@ exports.createTimeSheet = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    // Calculate hours if clock_out is provided
+    const calculatedHours = clock_out ? await calculateHours(clock_in, clock_out) : 0;
+    
     // Create timesheet
     const timesheet = await TimeSheet.create({
       user_id,
       date,
       clock_in,
       clock_out,
-      total_hours: total_hours || 0,
+      total_hours: calculatedHours, // Use calculated hours instead of the provided total_hours
       hour_type: hour_type || 'regular',
       rate: rate || user.hourly_rate || 0,
       status: status || 'draft',
@@ -142,48 +193,28 @@ exports.updateTimeSheet = async (req, res) => {
       return res.status(404).json({ message: 'Timesheet not found' });
     }
     
+    // If both clock_in and clock_out are provided or changed, recalculate hours
+    const updatedClockIn = clock_in || timesheet.clock_in;
+    const updatedClockOut = clock_out || timesheet.clock_out;
+    let calculatedHours = total_hours;
+    
+    // Calculate hours if both clock times are present
+    if (updatedClockIn && updatedClockOut) {
+      calculatedHours = await calculateHours(updatedClockIn, updatedClockOut, timesheet.timesheet_id);
+    }
+    
     // Update timesheet
     await timesheet.update({
       user_id: user_id || timesheet.user_id,
       date: date || timesheet.date,
-      clock_in: clock_in || timesheet.clock_in,
-      clock_out,
-      total_hours: total_hours !== undefined ? total_hours : timesheet.total_hours,
+      clock_in: updatedClockIn,
+      clock_out: updatedClockOut,
+      total_hours: calculatedHours,
       hour_type: hour_type || timesheet.hour_type,
       rate: rate !== undefined ? rate : timesheet.rate,
       status: status || timesheet.status,
       notes: notes !== undefined ? notes : timesheet.notes
     });
-    
-    // Calculate total hours if clock_out is set
-    if (clock_out && !total_hours) {
-      const clockInTime = new Date(timesheet.clock_in);
-      const clockOutTime = new Date(clock_out);
-      const diffHours = (clockOutTime - clockInTime) / (1000 * 60 * 60);
-      
-      // Get breaks for this timesheet
-      const breaks = await TimeSheetBreak.findAll({
-        where: { timesheet_id: timesheet.timesheet_id }
-      });
-      
-      // Calculate total break time
-      let breakHours = 0;
-      for (const breakEntry of breaks) {
-        if (breakEntry.end_time) {
-          const breakStartTime = new Date(breakEntry.start_time);
-          const breakEndTime = new Date(breakEntry.end_time);
-          breakHours += (breakEndTime - breakStartTime) / (1000 * 60 * 60);
-        }
-      }
-      
-      // Subtract break time from total time
-      const netHours = diffHours - breakHours;
-      
-      // Update the hours
-      await timesheet.update({
-        total_hours: netHours.toFixed(2)
-      });
-    }
     
     // Get the updated timesheet with associations
     const updatedTimesheet = await TimeSheet.findByPk(req.params.id, {
@@ -703,3 +734,214 @@ async function calculateWeeklyOvertime(userId, date) {
 
 // Export the overtime calculation function for use in other controllers
 exports.calculateWeeklyOvertime = calculateWeeklyOvertime; 
+
+// ===== INCENTIVE FUNCTIONS =====
+
+// Get all incentives with optional filtering
+exports.getAllIncentives = async (req, res) => {
+  try {
+    const { userId, startDate, endDate } = req.query;
+    
+    // Build filter conditions
+    let whereConditions = {};
+    
+    if (userId) {
+      whereConditions.user_id = userId;
+    }
+    
+    if (startDate || endDate) {
+      whereConditions.date = {};
+      if (startDate) {
+        whereConditions.date[Op.gte] = startDate;
+      }
+      if (endDate) {
+        whereConditions.date[Op.lte] = endDate;
+      }
+    }
+    
+    const incentives = await Incentive.findAll({
+      where: whereConditions,
+      include: [
+        {
+          model: User,
+          as: 'employee',
+          attributes: ['id', 'first_name', 'last_name', 'email']
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'first_name', 'last_name', 'email']
+        }
+      ],
+      order: [['date', 'DESC']]
+    });
+    
+    res.json(incentives);
+  } catch (error) {
+    console.error('Error fetching incentives:', error);
+    res.status(500).json({ message: 'Failed to fetch incentives', error: error.message });
+  }
+};
+
+// Get incentive by ID
+exports.getIncentiveById = async (req, res) => {
+  try {
+    const incentive = await Incentive.findByPk(req.params.id, {
+      include: [
+        {
+          model: User,
+          as: 'employee',
+          attributes: ['id', 'first_name', 'last_name', 'email']
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'first_name', 'last_name', 'email']
+        }
+      ]
+    });
+    
+    if (!incentive) {
+      return res.status(404).json({ message: 'Incentive not found' });
+    }
+    
+    res.json(incentive);
+  } catch (error) {
+    console.error('Error fetching incentive:', error);
+    res.status(500).json({ message: 'Failed to fetch incentive', error: error.message });
+  }
+};
+
+// Create a new incentive
+exports.createIncentive = async (req, res) => {
+  try {
+    const { user_id, amount, notes, date, created_by } = req.body;
+    
+    // Validate required fields
+    if (!user_id || !amount || !date || !created_by) {
+      return res.status(400).json({ message: 'User ID, amount, date, and created_by are required' });
+    }
+    
+    // Check if user exists
+    const user = await User.findByPk(user_id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Create incentive
+    const incentive = await Incentive.create({
+      user_id,
+      amount,
+      notes,
+      date,
+      created_by
+    });
+    
+    res.status(201).json(incentive);
+  } catch (error) {
+    console.error('Error creating incentive:', error);
+    res.status(500).json({ message: 'Failed to create incentive', error: error.message });
+  }
+};
+
+// Update an incentive
+exports.updateIncentive = async (req, res) => {
+  try {
+    const { user_id, amount, notes, date } = req.body;
+    
+    // Find incentive
+    const incentive = await Incentive.findByPk(req.params.id);
+    if (!incentive) {
+      return res.status(404).json({ message: 'Incentive not found' });
+    }
+    
+    // Update incentive
+    await incentive.update({
+      user_id: user_id || incentive.user_id,
+      amount: amount || incentive.amount,
+      notes: notes !== undefined ? notes : incentive.notes,
+      date: date || incentive.date
+    });
+    
+    // Get the updated incentive with associations
+    const updatedIncentive = await Incentive.findByPk(req.params.id, {
+      include: [
+        {
+          model: User,
+          as: 'employee',
+          attributes: ['id', 'first_name', 'last_name', 'email']
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'first_name', 'last_name', 'email']
+        }
+      ]
+    });
+    
+    res.json(updatedIncentive);
+  } catch (error) {
+    console.error('Error updating incentive:', error);
+    res.status(500).json({ message: 'Failed to update incentive', error: error.message });
+  }
+};
+
+// Delete an incentive
+exports.deleteIncentive = async (req, res) => {
+  try {
+    const incentive = await Incentive.findByPk(req.params.id);
+    
+    if (!incentive) {
+      return res.status(404).json({ message: 'Incentive not found' });
+    }
+    
+    await incentive.destroy();
+    res.json({ message: 'Incentive deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting incentive:', error);
+    res.status(500).json({ message: 'Failed to delete incentive', error: error.message });
+  }
+};
+
+// Get incentives by user for a specific period
+exports.getUserIncentivesForPeriod = async (req, res) => {
+  try {
+    const { userId, startDate, endDate } = req.params;
+    
+    if (!userId || !startDate || !endDate) {
+      return res.status(400).json({ message: 'User ID, start date, and end date are required' });
+    }
+    
+    const incentives = await Incentive.findAll({
+      where: {
+        user_id: userId,
+        date: {
+          [Op.between]: [startDate, endDate]
+        }
+      },
+      include: [
+        {
+          model: User,
+          as: 'employee',
+          attributes: ['id', 'first_name', 'last_name', 'email']
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'first_name', 'last_name', 'email']
+        }
+      ],
+      order: [['date', 'ASC']]
+    });
+    
+    const totalAmount = incentives.reduce((sum, incentive) => sum + parseFloat(incentive.amount), 0);
+    
+    res.json({
+      incentives,
+      totalAmount
+    });
+  } catch (error) {
+    console.error('Error fetching user incentives for period:', error);
+    res.status(500).json({ message: 'Failed to fetch user incentives for period', error: error.message });
+  }
+}; 

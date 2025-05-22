@@ -7,6 +7,7 @@ export const useTrip = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [trips, setTrips] = useState([]);
+  const [blanketSeries, setBlanketSeries] = useState(null);
   const { user } = useAuth();
 
   // Fetch all trips
@@ -47,6 +48,30 @@ export const useTrip = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fetch all trips in a blanket series
+  const fetchBlanketSeries = async (tripId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await tripApi.getBlanketSeries(tripId);
+      console.log('tripApi.getBlanketSeries Response:', response);
+      setBlanketSeries(response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching blanket series:', err);
+      setError('Failed to load blanket series. Please try again.');
+      toast.error("Failed to load blanket trip series");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check if a trip is a blanket trip
+  const isBlanketTrip = (trip) => {
+    return trip && trip.schedule_type === 'Blanket';
   };
 
   // Create a new trip with legs
@@ -155,6 +180,73 @@ export const useTrip = () => {
     }
   };
 
+  // Update all trips in a blanket series
+  const updateBlanketSeries = async (tripId, tripData, updateAllTrips = true) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Process schedule_days from array to string if it's an array
+      if (tripData.schedule_type === 'Blanket' && Array.isArray(tripData.schedule_days)) {
+        tripData.schedule_days = tripData.schedule_days.join(',');
+      }
+      
+      // Extract special instruction fields from the main tripData object
+      const specialInstructionFields = [
+        'mobility_type', 'rides_alone', 'spanish_speaking', 'males_only',
+        'females_only', 'special_assist', 'pickup_time_exact', 'stay_with_client',
+        'car_seat', 'extra_person', 'call_first', 'knock', 'van', 'sedan'
+      ];
+      
+      // Create the special_instructions object with the extracted fields
+      const special_instructions = {};
+      specialInstructionFields.forEach(field => {
+        if (field in tripData) {
+          special_instructions[field] = tripData[field];
+          // Remove from main object to avoid duplication
+          delete tripData[field];
+        }
+      });
+      
+      // Add the special_instructions object to the data
+      tripData.special_instructions = special_instructions;
+      
+      const response = await tripApi.updateBlanketSeries(tripId, tripData, updateAllTrips);
+      
+      // Update blanket series state
+      setBlanketSeries(response.data);
+      
+      // Also update the trips list if we have that trip in the list
+      setTrips(prevTrips => {
+        const updatedTrips = [...prevTrips];
+        const updatedTripsFromSeries = response.data.trips || [];
+        
+        // Update all affected trips in our list
+        updatedTripsFromSeries.forEach(seriesTrip => {
+          const index = updatedTrips.findIndex(trip => trip.trip_id === seriesTrip.trip_id);
+          if (index >= 0) {
+            updatedTrips[index] = seriesTrip;
+          }
+        });
+        
+        return updatedTrips;
+      });
+
+      toast.success(updateAllTrips 
+        ? "All trips in series updated successfully" 
+        : "Trip updated successfully"
+      );
+      
+      return response.data;
+    } catch (err) {
+      console.error('Error updating blanket series:', err);
+      setError('Failed to update trips in series. Please try again.');
+      toast.error("Failed to update trips in series");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Delete a trip
   const deleteTrip = async (tripId) => {
     setLoading(true);
@@ -181,11 +273,16 @@ export const useTrip = () => {
     loading,
     error,
     trips,
+    blanketSeries,
     fetchTrips,
     fetchTrip,
+    fetchBlanketSeries,
+    isBlanketTrip,
     createTrip,
     updateTrip,
+    updateBlanketSeries,
     deleteTrip,
-    setTrips
+    setTrips,
+    setBlanketSeries
   };
 }; 

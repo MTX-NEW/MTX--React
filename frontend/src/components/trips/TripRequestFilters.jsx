@@ -100,8 +100,8 @@ const TripRequestFiltersPresenter = ({
               <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
                 <span>{cityFilter}</span>
                 <button 
-                  className="btn-close btn-close-white ms-2"
-                  style={{ fontSize: '0.5rem' }}
+                  className="btn-close btn-close-black ms-2"
+                  style={{ fontSize: '0.6rem' }}
                   onClick={() => onCityFilterChange('')}
                   aria-label="Remove city filter"
                 ></button>
@@ -112,8 +112,8 @@ const TripRequestFiltersPresenter = ({
               <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
                 <span>{dateFilter.startDate}{dateFilter.endDate ? ` - ${dateFilter.endDate}` : ''}</span>
                 <button 
-                  className="btn-close btn-close-white ms-2"
-                  style={{ fontSize: '0.5rem' }}
+                  className="btn-close btn-close-black ms-2"
+                  style={{ fontSize: '0.6rem' }}
                   onClick={() => onDateFilterChange(null, null)}
                   aria-label="Remove date filter"
                 ></button>
@@ -124,8 +124,8 @@ const TripRequestFiltersPresenter = ({
               <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
                 <span>{tripTypeFilter}</span>
                 <button 
-                  className="btn-close btn-close-white ms-2"
-                  style={{ fontSize: '0.5rem' }}
+                  className="btn-close btn-close-black ms-2"
+                  style={{ fontSize: '0.6rem' }}
                   onClick={() => onTripTypeFilterChange('')}
                   aria-label="Remove trip type filter"
                 ></button>

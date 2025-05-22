@@ -6,13 +6,14 @@ const TripLocation = require('./TripLocation');
 const TripLeg = require('./TripLeg');
 const User = require('./User');
 const TripSpecialInstruction = require('./TripSpecialInstruction');
-const TimeSheet = require('./TimeSheetEntry');
+const TimeSheet = require('./TimeSheet');
 const TimeSheetBreak = require('./TimeSheetBreak');
 const Page = require('./Page');
 const PagePermission = require('./PagePermission');
 const UserType = require('./UserType');
 const MemberLocation = require('./MemberLocation');
 const ProgramPlan = require('./ProgramPlan');
+const Incentive = require('./Incentive');
 // Define associations
 
 // Program associations
@@ -83,6 +84,13 @@ User.hasMany(TimeSheet, { foreignKey: 'user_id' });
 // TimeSheet and TimeSheetBreak associations
 TimeSheet.hasMany(TimeSheetBreak, { foreignKey: 'timesheet_id', onDelete: 'CASCADE' });
 TimeSheetBreak.belongsTo(TimeSheet, { foreignKey: 'timesheet_id' });
+
+// Incentive associations
+Incentive.belongsTo(User, { foreignKey: 'user_id', as: 'employee' });
+User.hasMany(Incentive, { foreignKey: 'user_id', as: 'incentives' });
+
+Incentive.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(Incentive, { foreignKey: 'created_by', as: 'createdIncentives' });
 
 // Pages and PagePermissions associations
 Page.hasMany(PagePermission, { foreignKey: 'page_id' });

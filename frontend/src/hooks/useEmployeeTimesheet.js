@@ -9,7 +9,7 @@ import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, dif
 export const HOUR_TYPES = [
   { value: 'regular', label: 'Regular' },
   { value: 'driving', label: 'Driving' },
-  { value: 'overtime', label: 'Overtime' }
+  { value: 'administrative', label: 'Administrative' },
 ];
 
 const useEmployeeTimesheet = (options = {}) => {

@@ -104,11 +104,11 @@ export const useTripLeg = () => {
   };
 
   // Assign driver to a leg
-  const assignLegDriver = async (legId, driverId) => {
+  const assignLegDriver = async (legId, driverId, sendSms = false) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tripLegApi.assignDriver(legId, driverId);
+      const response = await tripLegApi.assignDriver(legId, driverId, sendSms);
       
       // Update local state
       setTripLegs(prevLegs => 

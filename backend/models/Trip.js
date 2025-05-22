@@ -49,6 +49,14 @@ const Trip = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    parent_trip_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "trips",
+        key: "trip_id",
+      },
+    },
     total_distance: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,

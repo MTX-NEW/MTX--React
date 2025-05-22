@@ -13,7 +13,9 @@ export const useResource = (apiService, options = {}) => {
     setLoading(true);
     try {
       const response = await apiService.getAll();
-      setData(response.data || []);
+      // Ensure data is always an array
+      const responseData = response.data || [];
+      setData(Array.isArray(responseData) ? responseData : []);
       setError(null);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -34,7 +36,13 @@ export const useResource = (apiService, options = {}) => {
   const create = async (itemData) => {
     try {
       const response = await apiService.create(itemData);
-      setData(prev => [...prev, response.data]);
+      setData(prev => {
+        // Check if prev is an array, if not initialize as empty array
+        if (!Array.isArray(prev)) {
+          return [response.data];
+        }
+        return [...prev, response.data];
+      });
       return response.data;
     } catch (err) {
       handleApiError(err);
@@ -45,9 +53,16 @@ export const useResource = (apiService, options = {}) => {
   const update = async (id, itemData) => {
     try {
       const response = await apiService.update(id, itemData);
-      setData(prev => prev.map(item => 
-        item[idField] === id ? response.data : item
-      ));
+      setData(prev => {
+        // Check if prev is an array, if not initialize with the new item
+        if (!Array.isArray(prev)) {
+          return [response.data];
+        }
+        // If it is an array, map through it
+        return prev.map(item => 
+          item[idField] === id ? response.data : item
+        );
+      });
       return response.data;
     } catch (err) {
       handleApiError(err);
@@ -58,7 +73,13 @@ export const useResource = (apiService, options = {}) => {
   const remove = async (id) => {
     try {
       await apiService.delete(id);
-      setData(prev => prev.filter(item => item[idField] !== id));
+      setData(prev => {
+        // Check if prev is an array, if not return empty array
+        if (!Array.isArray(prev)) {
+          return [];
+        }
+        return prev.filter(item => item[idField] !== id);
+      });
     } catch (err) {
       handleApiError(err);
       throw err;
@@ -98,20 +119,25 @@ export const usePaginatedResource = (apiService, options = {}) => {
         params: { page, limit: pageSize, query } 
       });
       
+      let responseData = [];
+      
       // Handle different API response structures
-      if (dataPath) {
+      if (dataPath && response.data) {
         // If dataPath is provided, extract data using it
-        setData(response.data[dataPath] || []);
+        responseData = response.data[dataPath];
       } else {
         // For memberApi that returns { members: [...] }
-        setData(response.data.members || response.data.locations || response.data || []);
+        responseData = response.data?.members || response.data?.locations || response.data;
       }
+      
+      // Ensure data is always an array
+      setData(Array.isArray(responseData) ? responseData : []);
       
       // Extract pagination information
       setPagination({
-        currentPage: response.data.currentPage || 1,
-        totalPages: response.data.totalPages || 1,
-        totalItems: response.data.total || 0,
+        currentPage: response.data?.currentPage || 1,
+        totalPages: response.data?.totalPages || 1,
+        totalItems: response.data?.total || 0,
         pageSize: pageSize
       });
       

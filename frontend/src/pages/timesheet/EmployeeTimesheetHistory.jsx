@@ -101,12 +101,6 @@ const EmployeeTimesheetHistory = () => {
         
         <div className="d-flex">
           <span className="badge bg-secondary me-2 align-self-center">ID: {employee?.emp_code || 'N/A'}</span>
-          {currentUser?.user_type?.type_id === 1 && (
-            <ManualHoursEntry 
-              userId={employeeId} 
-              onSuccess={refreshAllData} 
-            />
-          )}
         </div>
       </div>
       
@@ -190,8 +184,8 @@ const EmployeeTimesheetHistory = () => {
                       {timeSheets.map((sheet, index) => (
                         <tr key={`sheet-${sheet.timesheet_id || sheet.id}-${index}`}>
                           <td>{format(parseISO(sheet.date), 'MMM dd, yyyy')}</td>
-                          <td>{sheet.clock_in ? format(parseISO(sheet.clock_in), 'hh:mm a') : 'N/A'}</td>
-                          <td>{sheet.clock_out ? format(parseISO(sheet.clock_out), 'hh:mm a') : 'N/A'}</td>
+                          <td>{sheet.clock_in ? format(parseISO(sheet.clock_in), 'HH:mm') : 'N/A'}</td>
+                          <td>{sheet.clock_out ? format(parseISO(sheet.clock_out), 'HH:mm') : 'N/A'}</td>
                           <td>{sheet.hour_type ? sheet.hour_type.charAt(0).toUpperCase() + sheet.hour_type.slice(1) : 'Regular'}</td>
                           <td>{parseFloat(sheet.total_hours || 0).toFixed(2)}</td>
                           <td>${parseFloat(sheet.rate || 0).toFixed(2)}/hr</td>
@@ -238,8 +232,8 @@ const EmployeeTimesheetHistory = () => {
                           
                           return (
                             <tr key={breakItem.id}>
-                              <td>{format(startTime, 'hh:mm a')}</td>
-                              <td>{endTime ? format(endTime, 'hh:mm a') : 'Ongoing'}</td>
+                              <td>{format(startTime, 'HH:mm')}</td>
+                              <td>{endTime ? format(endTime, 'HH:mm') : 'Ongoing'}</td>
                               <td>{duration !== 'Ongoing' ? duration : 'Ongoing'}</td>
                             </tr>
                           );

@@ -6,6 +6,7 @@ const TimeOffRequest = require("../models/TimeOffRequest");
 const { ValidationError, Op } = require("sequelize");
 const { calculateDistance, formatAddress } = require("../utils/googleMapsService");
 const { formatTimeForDB } = require("../utils/timeUtils");
+const { sendDriverAssignmentSMS } = require("../utils/smsService");
 const sequelize = require("../db");
 
 // Get all trip legs
@@ -242,6 +243,8 @@ exports.updateLeg = async (req, res) => {
     
     // Extract data from request
     const legData = req.body;
+    const sendSms = legData.send_sms === true; // Check if SMS notification is requested
+    delete legData.send_sms; // Remove send_sms from the data to be saved
     
     // Check if driver is being assigned or changed
     if (legData.driver_id && (!tripLeg.driver_id || legData.driver_id !== tripLeg.driver_id)) {
@@ -266,10 +269,47 @@ exports.updateLeg = async (req, res) => {
             message: "Cannot assign driver. Driver has approved time off during this trip date." 
           });
         }
+        
+        // Auto set status to "Assigned" when a driver is assigned
+        legData.status = "Assigned";
+        
+        // Send SMS notification if requested
+        if (sendSms) {
+          try {
+            // Get driver details - only fetch the fields we need
+            const driver = await User.findByPk(legData.driver_id, {
+              attributes: ['id', 'first_name', 'phone']
+            });
+            
+            // Get pickup and dropoff locations
+            const pickupLocationId = tripLeg.pickup_location;
+            const dropoffLocationId = tripLeg.dropoff_location;
+            
+            const pickupLocation = await TripLocation.findByPk(pickupLocationId);
+            const dropoffLocation = await TripLocation.findByPk(dropoffLocationId);
+            
+            if (driver && pickupLocation && dropoffLocation) {
+              // Format pickup and dropoff addresses
+              const pickupAddress = formatAddress(pickupLocation);
+              const dropoffAddress = formatAddress(dropoffLocation);
+              
+              // Prepare trip info for SMS
+              const tripInfo = {
+                date: trip.start_date ? new Date(trip.start_date).toLocaleDateString() : 'N/A',
+                time: tripLeg.scheduled_pickup || 'N/A',
+                pickup_location: pickupAddress || 'N/A',
+                dropoff_location: dropoffAddress || 'N/A'
+              };
+              
+              // Send SMS notification with only required driver info
+              await sendDriverAssignmentSMS(driver, tripInfo);
+            }
+          } catch (smsError) {
+            console.error("Error sending SMS notification:", smsError);
+            // Don't fail the whole request if SMS fails
+          }
+        }
       }
-      
-      // Auto set status to "Assigned" when a driver is assigned
-      legData.status = "Assigned";
     }
     
     // Format time fields

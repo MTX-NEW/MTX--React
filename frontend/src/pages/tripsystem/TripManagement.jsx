@@ -172,6 +172,8 @@ const TripManagement = () => {
       // Handle driver assignment update
       if (status && typeof status === 'object' && status.type === 'driver') {
         const driverId = status.driverId;
+        const sendSms = status.sendSms || false;
+        
         // Safely find driver info if assigning, otherwise null
         const driverInfo = driverId != null
           ? (drivers.find(d => String(d.id) === String(driverId)) || null)
@@ -195,7 +197,7 @@ const TripManagement = () => {
         );
         // Delegate to hook to assign driver
         try {
-          await assignLegDriver(legId, driverId);
+          await assignLegDriver(legId, driverId, sendSms);
         } catch (error) {
           console.error('Error assigning driver:', error);
           fetchTrips(currentFilters);
@@ -219,11 +221,11 @@ const TripManagement = () => {
       
       // No need to refetch all trips
     } catch (error) {
-            console.error('Error updating leg status:', error);
-            // On error, refetch to ensure data consistency
-            fetchTrips(currentFilters);
-        }
-    };
+      console.error('Error updating leg status:', error);
+      // On error, refetch to ensure data consistency
+      fetchTrips(currentFilters);
+    }
+  };
 
   const handleUpdateTime = async (legId, timeType, time) => {
     const fieldMap = {

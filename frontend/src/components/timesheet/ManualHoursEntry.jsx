@@ -5,7 +5,55 @@ import RightSidebarPopup from '../RightSidebarPopup';
 import FormComponent from '../FormComponent';
 import { timeSheetApi } from '@/api/baseApi';
 
-const ManualHoursEntry = ({ userId, onSuccess }) => {
+// Presenter component - handles UI rendering
+const ManualHoursEntryPresenter = ({ 
+  showPopup, 
+  setShowPopup, 
+  methods, 
+  formFields, 
+  handleSubmit, 
+  isSubmitting, 
+  buttonText, 
+  buttonIcon 
+}) => {
+  return (
+    <>
+      <button 
+        className="btn btn-primary me-2"
+        onClick={() => setShowPopup(true)}
+      >
+        <i className={`fas ${buttonIcon} me-2`}></i>
+        {buttonText}
+      </button>
+      
+      <RightSidebarPopup
+        show={showPopup}
+        title="Add Shift"
+        onClose={() => setShowPopup(false)}
+        width="400px"
+      >
+        <FormProvider {...methods}>
+          <FormComponent
+            fields={formFields}
+            onSubmit={handleSubmit}
+            submitText="Add Hours"
+            isSubmitting={isSubmitting}
+            additionalButtons={[
+              {
+                text: 'Cancel',
+                className: 'btn btn-outline-secondary',
+                onClick: () => setShowPopup(false)
+              }
+            ]}
+          />
+        </FormProvider>
+      </RightSidebarPopup>
+    </>
+  );
+};
+
+// Container component - handles business logic and state
+const ManualHoursEntry = ({ userId, onSuccess, buttonText = "Add Manual Time", buttonIcon = "fa-plus-circle" }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -15,7 +63,6 @@ const ManualHoursEntry = ({ userId, onSuccess }) => {
       date: new Date().toISOString().split('T')[0],
       clock_in: null,
       clock_out: null,
-      total_hours: '',
       hour_type: 'regular',
       rate: '',
       notes: ''
@@ -41,14 +88,6 @@ const ManualHoursEntry = ({ userId, onSuccess }) => {
       name: 'clock_out',
       label: 'Clock Out Time',
       required: true
-    },
-    {
-      type: 'number',
-      name: 'total_hours',
-      label: 'Total Hours',
-      placeholder: 'Enter total hours',
-      required: true,
-      helperText: 'Example: 8.5 for 8 hours and 30 minutes'
     },
     {
       type: 'select',
@@ -103,7 +142,6 @@ const ManualHoursEntry = ({ userId, onSuccess }) => {
         date: data.date,
         clock_in: clockInDate.toISOString(),
         clock_out: clockOutDate.toISOString(),
-        total_hours: parseFloat(data.total_hours),
         hour_type: data.hour_type,
         rate: data.rate ? parseFloat(data.rate) : undefined,
         notes: data.notes,
@@ -121,7 +159,6 @@ const ManualHoursEntry = ({ userId, onSuccess }) => {
         date: new Date().toISOString().split('T')[0],
         clock_in: null,
         clock_out: null,
-        total_hours: '',
         hour_type: 'regular',
         rate: '',
         notes: ''
@@ -132,46 +169,24 @@ const ManualHoursEntry = ({ userId, onSuccess }) => {
         onSuccess();
       }
     } catch (error) {
-      console.error('Error adding timesheet hours:', error);
       toast.error(error.response?.data?.message || 'Failed to add timesheet hours');
     } finally {
       setIsSubmitting(false);
     }
   };
   
+  // Render the presenter component with all necessary props
   return (
-    <>
-      <button 
-        className="btn btn-primary"
-        onClick={() => setShowPopup(true)}
-      >
-        <i className="fas fa-plus-circle me-2"></i>
-        Add Manual Time
-      </button>
-      
-      <RightSidebarPopup
-        show={showPopup}
-        title="Add Timesheet Hours Manually"
-        onClose={() => setShowPopup(false)}
-        width="400px"
-      >
-        <FormProvider {...methods}>
-          <FormComponent
-            fields={formFields}
-            onSubmit={handleSubmit}
-            submitText="Add Hours"
-            isSubmitting={isSubmitting}
-            additionalButtons={[
-              {
-                text: 'Cancel',
-                className: 'btn btn-outline-secondary',
-                onClick: () => setShowPopup(false)
-              }
-            ]}
-          />
-        </FormProvider>
-      </RightSidebarPopup>
-    </>
+    <ManualHoursEntryPresenter
+      showPopup={showPopup}
+      setShowPopup={setShowPopup}
+      methods={methods}
+      formFields={formFields}
+      handleSubmit={handleSubmit}
+      isSubmitting={isSubmitting}
+      buttonText={buttonText}
+      buttonIcon={buttonIcon}
+    />
   );
 };
 

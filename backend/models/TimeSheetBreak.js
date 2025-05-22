@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../db');
-const TimeSheet = require('./TimeSheetEntry');
+const TimeSheet = require('./TimeSheet');
 
 const TimeSheetBreak = sequelize.define('TimeSheetBreak', {
   break_id: {

@@ -8,6 +8,7 @@ export const routes = {
     tabs: [
       { id: "trip-requests", name: "Trip Requests", path: "/trip-system/trip-requests" },
       { id: "trip-requests-v2", name: "Trip Requests v2", path: "/trip-system/trip-requests-v2" },
+      { id: "trip-request-form", name: "Trip Request Form", path: "/trip-system/trip-request-form" },
       { id: "trip-management", name: "Route Sheet",      path: "/trip-system/trip-management" },
       { id: "members", name: "Members",           path: "/trip-system/members" },
       { id: "locations", name: "Locations",       path: "/trip-system/locations" },

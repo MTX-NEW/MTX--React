@@ -41,11 +41,11 @@ export const useDriver = () => {
     }
   };
 
-  const assignDriverToLeg = async (legId, driverId) => {
+  const assignDriverToLeg = async (legId, driverId, sendSms = false) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tripLegApi.assignDriver(legId, driverId);
+      const response = await tripLegApi.assignDriver(legId, driverId, sendSms);
       
       // Refresh drivers list after assignment
       fetchDrivers();

@@ -34,4 +34,22 @@ router.get('/user/:userId/status', timeSheetController.getTimesheetStatus);
 // Recalculate overtime for a user in a date range
 router.post('/recalculate-overtime', timeSheetController.recalculateOvertime);
 
+// Get all incentives with optional filtering
+router.get('/incentives', timeSheetController.getAllIncentives);
+
+// Get incentive by ID
+router.get('/incentives/:id', timeSheetController.getIncentiveById);
+
+// Create new incentive
+router.post('/incentives', timeSheetController.createIncentive);
+
+// Update incentive
+router.put('/incentives/:id', timeSheetController.updateIncentive);
+
+// Delete incentive
+router.delete('/incentives/:id', timeSheetController.deleteIncentive);
+
+// Get incentives for a user in a specific period
+router.get('/incentives/user/:userId/period/:startDate/:endDate', timeSheetController.getUserIncentivesForPeriod);
+
 module.exports = router; 

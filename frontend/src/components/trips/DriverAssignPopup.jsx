@@ -10,13 +10,17 @@ const DriverAssignPopup = ({ onSubmit, onClose, legId, currentDriverId }) => {
 
   const methods = useForm({
     defaultValues: {
-      driver_id: currentDriverId || ''
+      driver_id: currentDriverId || '',
+      send_sms: true  // Default to true for SMS notification
     }
   });
 
   // Reset form field when currentDriverId changes so the select reflects the current driver
   useEffect(() => {
-    methods.reset({ driver_id: currentDriverId || '' });
+    methods.reset({ 
+      driver_id: currentDriverId || '',
+      send_sms: true
+    });
   }, [currentDriverId]);
 
   // Convert drivers to options format when drivers data changes
@@ -45,14 +49,20 @@ const DriverAssignPopup = ({ onSubmit, onClose, legId, currentDriverId }) => {
       label: 'Assign Driver',
       options: driverOptions,
       helperText: error ? 'Error loading drivers. Please try again.' : ''
+    },
+    {
+      type: 'checkbox',
+      name: 'send_sms',
+      label: 'Send SMS notification',
+      disabled: !methods.watch('driver_id') // Disable if no driver selected
     }
   ];
 
   const handleSubmit = (data) => {
-    console.log('Submitting driver assignment:', { legId, driverId: data.driver_id });
+    console.log('Submitting driver assignment:', { legId, driverId: data.driver_id, sendSms: data.send_sms });
     // Convert empty string to null for the API
     const driverId = data.driver_id === '' ? null : data.driver_id;
-    onSubmit(legId, driverId);
+    onSubmit(legId, driverId, data.send_sms);
   };
 
   return (
@@ -79,7 +89,7 @@ const DriverAssignPopup = ({ onSubmit, onClose, legId, currentDriverId }) => {
           <FormComponent 
             fields={driverFields} 
             onSubmit={handleSubmit} 
-            submitText="Assign Driver"
+            submitText="Submit"
             cancelText="Cancel"
             onCancel={onClose}
           />

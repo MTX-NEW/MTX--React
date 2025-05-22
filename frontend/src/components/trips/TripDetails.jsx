@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { formatTimeForDisplay } from '@/utils/timeUtils';
 
 const TripDetails = ({ trip, onEdit, onCopy, onClose }) => {
+  console.log(trip);
   // Get Bootstrap color class based on leg status
   const getLegStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -38,8 +39,7 @@ const TripDetails = ({ trip, onEdit, onCopy, onClose }) => {
         {trip.TripMember 
           ? `${trip.TripMember.first_name} ${trip.TripMember.last_name}` 
           : 'N/A'}
-        {trip.Program?.program_name && ` - ${trip.Program.program_name}`}
-      </p>
+ </p>
       
       {trip.TripMember && (
         <div className="details-section">
@@ -68,6 +68,18 @@ const TripDetails = ({ trip, onEdit, onCopy, onClose }) => {
             <div className="detail-item">
               <span className="detail-label">Gender:</span>
               <span className="detail-value">{trip.TripMember.gender || 'N/A'}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Program:</span>
+              <span className="detail-value">
+                {trip.TripMember.Program?.program_name || 'N/A'}
+              </span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Program Plan:</span>
+              <span className="detail-value">
+                {trip.TripMember.ProgramPlan?.plan_name || 'N/A'}
+              </span>
             </div>
           </div>
           

@@ -191,10 +191,22 @@ const useLocationManagement = () => {
     
     setIsLoading(true);
     try {
-      await tripLocationApi.update(selectedLocation.location_id, data);
+      const response = await tripLocationApi.update(selectedLocation.location_id, data);
       toast.success('Location updated successfully');
       setShowEditModal(false);
-      fetchLocations(currentPage, pageSize, searchQuery);
+      
+      // If the API returns the updated item
+      if (response.data) {
+        // Just update the item in the existing arrays
+        const updateItem = item => 
+          item.location_id === selectedLocation.location_id ? response.data : item;
+        
+        setLocations(prev => prev.map(updateItem));
+        setFilteredLocations(prev => prev.map(updateItem));
+      } else {
+        // Fallback to fetching if response doesn't include the item
+        fetchLocations(currentPage, pageSize, searchQuery);
+      }
     } catch (error) {
       console.error('Error updating location:', error);
       toast.error('Failed to update location');

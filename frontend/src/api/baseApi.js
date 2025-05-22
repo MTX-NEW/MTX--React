@@ -18,9 +18,12 @@ const createApiService = (endpoint) => {
  // console.log('API_URL:', API_URL);
   return {
     getAll: (params = {}) => {
+      // Handle the case where params is passed as { params: {...} }
+      const queryParams = params.params ? params.params : params;
+      
       // Convert params object to URL query string
-      const queryString = Object.keys(params).length 
-        ? `?${new URLSearchParams(params).toString()}` 
+      const queryString = Object.keys(queryParams).length 
+        ? `?${new URLSearchParams(queryParams).toString()}` 
         : '';
       
       return axios.get(`${API_URL}${queryString}`);
@@ -67,14 +70,21 @@ export const tripApi = {
       ? `?${new URLSearchParams(params).toString()}` 
       : '';
     return axios.get(`${API_BASE_URL}/api/trips/summary${queryString}`);
-  }
+  },
+  // Get all trips in a blanket series
+  getBlanketSeries: (tripId) => 
+    axios.get(`${API_BASE_URL}/api/trips/${tripId}/blanket-series`),
+  // Update all trips in a blanket series
+  updateBlanketSeries: (tripId, tripData, updateAllTrips = true) => 
+    axios.put(`${API_BASE_URL}/api/trips/${tripId}/blanket-series?update_all_trips=${updateAllTrips}`, tripData)
 };
 export const tripLegApi = {
   ...createApiService('trip-legs'),
   getByTrip: (tripId) => axios.get(`${API_BASE_URL}/api/trip-legs/trip/${tripId}`),
   updateStatus: (legId, status) => axios.put(`${API_BASE_URL}/api/trip-legs/${legId}`, { status }),
-  assignDriver: (legId, driverId) => axios.put(`${API_BASE_URL}/api/trip-legs/${legId}`, { 
+  assignDriver: (legId, driverId, sendSms = false) => axios.put(`${API_BASE_URL}/api/trip-legs/${legId}`, { 
     driver_id: driverId,
+    send_sms: sendSms,
     updated_at: new Date() 
   }),
   // New methods for updating leg data
@@ -263,7 +273,27 @@ export const timeSheetApi = {
       userId, 
       startDate, 
       endDate 
-    })
+    }),
+  
+  // Incentive-related methods
+  getAllIncentives: (filters = {}) => {
+    const { userId, startDate, endDate } = filters;
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    return axios.get(`${API_BASE_URL}/api/time-sheets/incentives${params.toString() ? `?${params.toString()}` : ''}`);
+  },
+  getIncentive: (id) => axios.get(`${API_BASE_URL}/api/time-sheets/incentives/${id}`),
+  createIncentive: (incentiveData) => axios.post(`${API_BASE_URL}/api/time-sheets/incentives`, incentiveData),
+  updateIncentive: (id, incentiveData) => axios.put(`${API_BASE_URL}/api/time-sheets/incentives/${id}`, incentiveData),
+  deleteIncentive: (id) => axios.delete(`${API_BASE_URL}/api/time-sheets/incentives/${id}`),
+  getUserIncentivesForPeriod: (userId, startDate, endDate) => 
+    axios.get(`${API_BASE_URL}/api/time-sheets/incentives/user/${userId}/period/${startDate}/${endDate}`),
+  
+  // Add update method
+  update: (id, data) => axios.put(`${API_BASE_URL}/api/time-sheets/${id}`, data)
 };
 
 // Time sheet breaks API services

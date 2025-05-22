@@ -16,6 +16,7 @@ const useTripFilters = (trips) => {
   const [tripTypeFilter, setTripTypeFilter] = useState(loadFilterFromStorage('tripTypeFilter', ''));
   const [driverFilter, setDriverFilter] = useState(loadFilterFromStorage('driverFilter', ''));
   const [programFilter, setProgramFilter] = useState(loadFilterFromStorage('programFilter', ''));
+  const [scheduleTypeFilter, setScheduleTypeFilter] = useState(loadFilterFromStorage('scheduleTypeFilter', ''));
 
   // Save filter changes to localStorage
   useEffect(() => {
@@ -45,6 +46,10 @@ const useTripFilters = (trips) => {
   useEffect(() => {
     localStorage.setItem('tripFilters_programFilter', JSON.stringify(programFilter));
   }, [programFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('tripFilters_scheduleTypeFilter', JSON.stringify(scheduleTypeFilter));
+  }, [scheduleTypeFilter]);
 
   // Extract available cities from trip data for filter options
   const availableCities = useMemo(() => {
@@ -104,6 +109,7 @@ const useTripFilters = (trips) => {
     setTripTypeFilter('');
     setDriverFilter('');
     setProgramFilter('');
+    setScheduleTypeFilter('');
     
     // Clear localStorage items
     localStorage.removeItem('tripFilters_cityFilter');
@@ -112,6 +118,7 @@ const useTripFilters = (trips) => {
     localStorage.removeItem('tripFilters_tripTypeFilter');
     localStorage.removeItem('tripFilters_driverFilter');
     localStorage.removeItem('tripFilters_programFilter');
+    localStorage.removeItem('tripFilters_scheduleTypeFilter');
   };
 
   return {
@@ -129,6 +136,8 @@ const useTripFilters = (trips) => {
     setDriverFilter,
     programFilter,
     setProgramFilter,
+    scheduleTypeFilter,
+    setScheduleTypeFilter,
     availableCities,
     availableDrivers,
     availablePrograms,
