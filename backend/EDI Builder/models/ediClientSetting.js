@@ -1,0 +1,36 @@
+export const ediClientSetting = {
+  
+
+  clearing_house_client_id: 101,
+  enterprise_id: 501,
+  edi_type: "837P",
+  ISA01: "00",
+  ISA02: "          ",
+  ISA03: "00",
+  ISA04: "          ",
+  ISA05: "ZZ",
+  ISA06: "SUBMITTERID",
+  ISA07: "ZZ",
+  ISA08: "RECEIVERID",
+  ISA11: "^",
+  ISA12: "00501",
+  ISA13: "000000905",
+  ISA14: "0",
+  ISA15: "P",
+  ISA16: ":",
+  GS02: "SUBMITTERID",
+  GS03: "RECEIVERID",
+  GS08: "005010X222A1",
+  SubmitterEntityTypeID: "2",
+  SubmitterLastName: "Doe",
+  SubmitterFirstName: "John",
+  SubmitterID: "123456789",
+  SubmitterContact: "John Doe",
+  SubmitterPhone: "8005551234",
+  SubmitterPhoneExt: "123",
+  SubmitterFax: "8005555678",
+  SubmitterEmail: "john.doe@example.com",
+  ReceiverName: "Medicare",
+  ReceiverID: "987654321"
+  
+};

@@ -48,3 +48,4 @@ tmp/
 # Cache
 .cache/
 .npm/
+pnpm-lock.yaml

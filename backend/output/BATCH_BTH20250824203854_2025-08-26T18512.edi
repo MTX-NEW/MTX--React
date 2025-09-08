@@ -1,0 +1,65 @@
+ISA*00*          *00*          *ZZ*MTXPROVIDER    *ZZ*AHCCCS         *250826*2351*U*00501*000000001*0*P*:~
+  GS*HC*MTXPROVIDER*AHCCCS*20250826*2351*1*X*005010X222A1~
+    ST*837*0001*005010X222A1~
+    BHT*0019*00*1*20250826*2351*CH~
+      NM1*41*2*MTX Medical Transport*****46*MTXPROVIDER~
+        PER*IC*MTX Support*TE*6025551234~
+      NM1*40*2*ARIZONA HEALTH CARE*****46*AHCCCS~
+      HL*1**20*1~
+        PRV*BI*PXC*343900000X~
+        NM1*85*2*MTX Medical Transport*****XX*1234567890~
+        HL*2*1*22*0~
+          SBR*P*18**Arizona Medicaid*****MC~
+          NM1*IL*1*LAWRENCE*JULIA****MI*A00437530~
+            N3*2718 N MALLEE PL~
+            N4*Maricopa*AZ*85139~
+            DMG*D8*19571027*F~
+          NM1*PR*2*Arizona Health Care*****PI*87726~
+            CLM*141-1755017417487*60.17***41:B:1*Y*A*Y*Y~
+            HI*ABK:Z51.11*ABF:M79.603~
+              LX*1~
+              SV1*HC:A0120*15.80*UN*2*41**1~
+              LX*2~
+              SV1*HC:S0215*44.37*UN*29*41**1~
+        HL*3*1*22*0~
+          SBR*P*18**Arizona Medicaid*****MC~
+          NM1*IL*1*Allan*Eric****MI*A46092129~
+            N3*2832 W MACKENZIE DR~
+            N4*Phoenix*AZ*85017~
+            DMG*D8*19800615*M~
+          NM1*PR*2*Arizona Health Care*****PI*87726~
+            CLM*144-1755019032441*9.85***41:B:1*Y*A*Y*Y~
+            HI*ABK:Z51.11*ABF:M79.603~
+              LX*1~
+              SV1*HC:A0120*7.21*UN*1*41**1~
+              LX*2~
+              SV1*HC:S0215*2.64*UN*2*41**1~
+        HL*4*1*22*0~
+          SBR*P*18**Arizona Medicaid*****MC~
+          NM1*IL*1*CLAWSON*Mike****MI*A04975113~
+            N3*15453 W MADISON ST~
+            N4*Goodyear*AZ*85338~
+            DMG*D8*19680303*M~
+          NM1*PR*2*Arizona Health Care*****PI*87726~
+            CLM*139-1755094344495*31.58***41:B:1*Y*A*Y*Y~
+            HI*ABK:Z51.11*ABF:M79.603~
+              LX*1~
+              SV1*HC:A0120*13.28*UN*2*41**1~
+              LX*2~
+              SV1*HC:A0120*14.42*UN*2*41**1~
+              LX*3~
+              SV1*HC:S0215*17.16*UN*13*41**1~
+        HL*5*1*22*0~
+          SBR*P*18**Arizona Medicaid*****MC~
+          NM1*IL*1*Allan*Eric****MI*A46092129~
+            N3*2832 W MACKENZIE DR~
+            N4*Phoenix*AZ*85017~
+            DMG*D8*19800615*M~
+          NM1*PR*2*Arizona Health Care*****PI*87726~
+            CLM*146-1755095376948*7.21***41:B:1*Y*A*Y*Y~
+            HI*ABK:Z51.11*ABF:M79.603~
+              LX*1~
+              SV1*HC:A0120*7.21*UN*1*41**1~
+    SE*61*0001~
+  GE*1*1~
+IEA*1*000000001~

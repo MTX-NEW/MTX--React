@@ -28,6 +28,11 @@ const driverRoutes = require("./routes/drivers");
 const driverPanelRoutes = require("./routes/driverPanel");
 const authRoutes = require("./routes/auth");
 const memberLocationRoutes = require("./routes/memberLocation");
+const claimRoutes = require('./routes/claims');
+const ediSettingsRoutes = require('./routes/ediSettings');
+const batchRoutes = require('./routes/batchRoutes');
+
+require('./models/associations');
 
 const app = express();
 
@@ -69,7 +74,9 @@ app.use("/api/time-off-requests", timeOffRequestRoutes);
 app.use("/api/drivers", driverRoutes);
 app.use("/api/driver-panel", driverPanelRoutes);
 app.use("/api/member-locations", memberLocationRoutes);
-
+app.use("/api/claims", claimRoutes);
+app.use("/api/edi-settings", ediSettingsRoutes);
+app.use("/api/batches", batchRoutes);
 // Debug middleware to log requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);

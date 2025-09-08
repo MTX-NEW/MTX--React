@@ -1,0 +1,23 @@
+ISA*00*          *00*          *ZZ*SUBMITTERID    *ZZ*RECEIVERID     *250826*1845*^*00501*000000001*1*P*:~
+  GS*HC*SUBMITTERID*RECEIVERID*20250826*1845*1*X*005010X222A1~
+    ST*837*0001*005010X222A1~
+    BHT*0019*00*1756215907910*20250826*1845*CH~
+      NM1*41*2*MTX Medical Transport*****46*MTXPROVIDER~
+        PER*IC*MTX Support*TE*6025551234~
+      NM1*40*2*ARIZONA HEALTH CARE*****46*AHCCCS~
+      HL*1**20*1~
+        PRV*BI*PXC*343900000X~
+        NM1*85*2*MTX Medical Transport*****XX*1234567890~
+        HL*2*1*22*0~
+          SBR*P*18*GRP001*Arizona Medicaid*****MC~
+          NM1*IL*1*Allan*Eric****MI*16552~
+            DMG*D8**MALE~
+          NM1*PR*2*Arizona Complete Health*****PI*87726~
+            CLM*146-1755095376948*7.21***41:B:1*Y*A*Y*Y~
+            HI*ABK:Z51.11*ABF:M79.603~
+              LX*1~
+              SV1*HC:A0120*7.21*UN*1*41**1~
+              DTP*472*D8*20250810~
+    SE*19*0001~
+  GE*1*1~
+IEA*1*000000001~

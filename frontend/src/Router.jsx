@@ -8,6 +8,7 @@ const UsersLayout = lazy(() => import("@/layouts/UsersLayout"));
 const VehiclesLayout = lazy(() => import("@/layouts/VehiclesLayout"));
 const TripSystemLayout = lazy(() => import("@/layouts/TripSystemLayout"));
 const TimeSheetLayout = lazy(() => import("@/layouts/TimeSheetLayout"));
+const ClaimsLayout = lazy(() => import("@/layouts/ClaimsLayout"));
 const ComingSoonLayout = lazy(() => import("@/layouts/ComingSoonLayout"));
 const DriverPanelLayout = lazy(() => import("@/components/driverPanel/DriverPanelLayout"));
 
@@ -36,6 +37,12 @@ const TripRequestForm = lazy(() => import("@/pages/tripsystem/v2/TripRequestForm
 const TripManagement = lazy(() => import("@/pages/tripsystem/TripManagement"));
 const Members = lazy(() => import("@/pages/tripsystem/Members"));
 const Locations = lazy(() => import("@/pages/tripsystem/Locations"));
+
+// Lazy load claims pages
+const Claims = lazy(() => import("@/pages/claims/Claims"));
+const ClaimsManagement = lazy(() => import("@/pages/claims/ClaimsManagement"));
+const BatchManagement = lazy(() => import("@/pages/claims/BatchManagement"));
+const EDIFiles = lazy(() => import("@/pages/claims/EDIFiles"));
 
 // Lazy load timesheet pages
 const EmployeeTimesheet = lazy(() => import("@/pages/timesheet/EmployeeTimesheet"));
@@ -82,6 +89,7 @@ const Router = () => {
             <Route path="trip-request-form" element={<TripRequestForm />} />
             <Route path="trip-management" element={<TripManagement />} />
             <Route path="members" element={<Members />} />
+            <Route path="claims" element={<Claims />} />
             <Route path="locations" element={<Locations />} />
           </Route>
           
@@ -110,9 +118,19 @@ const Router = () => {
           <Route path="/manage-emails" element={<ComingSoonLayout />} />
           <Route path="/hr" element={<ComingSoonLayout />} />
           <Route path="/forms" element={<ComingSoonLayout />} />
-          <Route path="/claims" element={<ComingSoonLayout />} />
+          
+          {/* Claims Routes */}
+          <Route path="/claims" element={<ClaimsLayout />}>
+            <Route index element={<Navigate to="management" replace />} />
+            <Route path="management" element={<ClaimsManagement />} />
+
+            <Route path="batches" element={<BatchManagement />} />
+            <Route path="edi" element={<EDIFiles />} />
+          </Route>
+          
           <Route path="/route-sheet" element={<ComingSoonLayout />} />
           
+
           {/* Manage Vehicles Routes */}
           <Route path="/manage-vehicles" element={<VehiclesLayout />}>
             <Route index element={<Navigate to="vehicles" replace />} />

@@ -49,14 +49,14 @@ const Trip = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    parent_trip_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: "trips",
-        key: "trip_id",
-      },
-    },
+    // parent_trip_id: {
+    //   type: DataTypes.INTEGER,
+    //   allowNull: true,
+    //   references: {
+    //     model: "trips",
+    //     key: "trip_id",
+    //   },
+    // },
     total_distance: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
@@ -64,6 +64,10 @@ const Trip = sequelize.define(
         const value = this.getDataValue('total_distance');
         return value === null ? null : parseFloat(value);
       }
+    },
+    billing_status: {
+      type: DataTypes.ENUM('unbilled', 'ready_for_billing', 'claim_generated', 'billed', 'paid'),
+      defaultValue: 'unbilled'
     },
     created_at: {
       type: DataTypes.DATE,

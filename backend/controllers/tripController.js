@@ -1205,4 +1205,81 @@ exports.updateBlanketSeries = async (req, res) => {
     
     res.status(500).json({ message: error.message });
   }
+};
+
+// Get trips ready for billing
+exports.getTripsForBilling = async (req, res) => {
+  try {
+    const { status, startDate, endDate, member, program } = req.query;
+    
+    // Build where clause
+    const whereClause = {
+      billing_status: status || { [Op.in]: ['unbilled', 'ready_for_billing'] },
+      status: 'completed' // Only completed trips can be billed
+    };
+    
+    // Date range filter
+    if (startDate || endDate) {
+      whereClause.start_date = {};
+      if (startDate) {
+        whereClause.start_date[Op.gte] = new Date(startDate);
+      }
+      if (endDate) {
+        whereClause.start_date[Op.lte] = new Date(endDate);
+      }
+    }
+    
+    // Member and program filters
+    let memberWhere = {};
+    if (member) {
+      memberWhere = {
+        [Op.or]: [
+          { first_name: { [Op.iLike]: `%${member}%` } },
+          { last_name: { [Op.iLike]: `%${member}%` } },
+          { '$first_name$ $last_name$': { [Op.iLike]: `%${member}%` } }
+        ]
+      };
+    }
+    
+    let programWhere = {};
+    if (program) {
+      programWhere.program_name = { [Op.iLike]: `%${program}%` };
+    }
+
+    const trips = await Trip.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: TripMember,
+          where: Object.keys(memberWhere).length > 0 ? memberWhere : undefined,
+          include: [
+            {
+              model: Program,
+              where: Object.keys(programWhere).length > 0 ? programWhere : undefined
+            }
+          ]
+        },
+        {
+          model: TripLeg,
+          as: 'legs',
+          include: [
+            { model: TripLocation, as: 'pickupLocation' },
+            { model: TripLocation, as: 'dropoffLocation' },
+            { model: User, as: 'driver', attributes: ['id', 'first_name', 'last_name'] }
+          ]
+        },
+        {
+          model: User,
+          as: 'coordinator',
+          attributes: ['id', 'first_name', 'last_name']
+        }
+      ],
+      order: [['start_date', 'DESC']]
+    });
+
+    res.json(trips);
+  } catch (error) {
+    console.error('Error fetching trips for billing:', error);
+    res.status(500).json({ error: 'Failed to fetch trips for billing' });
+  }
 }; 

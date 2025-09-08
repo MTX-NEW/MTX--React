@@ -1,0 +1,36 @@
+ISA*00*          *00*          *ZZ*SUBMITTERID    *ZZ*RECEIVERID     *250824*2126*^*00501*000000008*1*P*:~
+  GS*HC*SUBMITTERID*RECEIVERID*20250824*2126*8*X*005010X222A1~
+    ST*837*0001*005010X222A1~
+    BHT*0019*00*8*20250824*2126*CH~
+      NM1*41*2******46~
+      NM1*40*2******46*AHCCCS~
+      HL*1**20*1~
+        PRV*BI*PXC*343900000X~
+        NM1*85*2*MTX Medical Transport*****XX*1234567890~
+        HL*2*1*22*0~
+          SBR*P*18**Arizona Medicaid*****MC~
+          NM1*IL*1*Allan*Eric****MI*A46092129~
+            N3*2832 W MACKENZIE DR~
+            N4*Phoenix*AZ*85017~
+            DMG*D8*19800615*M~
+          NM1*PR*2*Arizona Health Care*****PI*87726~
+            CLM*144-1755019032441*9.85***41:B:1*Y*A*Y*Y~
+            HI*ABK:Z51.11*ABF:M79.603~
+              LX*1~
+              SV1*HC:A0120*NaN*UN*1*41**1~
+              LX*2~
+              SV1*HC:S0215*NaN*UN*2*41**1~
+        HL*3*1*22*0~
+          SBR*P*18**Arizona Medicaid*****MC~
+          NM1*IL*1*Allan*Eric****MI*A46092129~
+            N3*2832 W MACKENZIE DR~
+            N4*Phoenix*AZ*85017~
+            DMG*D8*19800615*M~
+          NM1*PR*2*Arizona Health Care*****PI*87726~
+            CLM*146-1755095376948*7.21***41:B:1*Y*A*Y*Y~
+            HI*ABK:Z51.11*ABF:M79.603~
+              LX*1~
+              SV1*HC:A0120*NaN*UN*1*41**1~
+    SE*32*0001~
+  GE*1*8~
+IEA*1*000000008~

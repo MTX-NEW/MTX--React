@@ -9,9 +9,38 @@ const TripTable = ({
   onView, 
   onCopy, 
   onRecreate,
-  isLoading 
+  isLoading,
+  // Batch operations props
+  selectedTrips = [],
+  onTripSelection,
+  onSelectAll,
+  selectAll = false
 }) => {
   const tripColumns = [
+    // Checkbox column for batch selection (only show if onTripSelection is provided)
+    ...(onTripSelection ? [{
+      header: (
+        <div className="d-flex align-items-center">
+          <input
+            type="checkbox"
+            checked={selectAll}
+            onChange={(e) => onSelectAll(e.target.checked)}
+            className="me-2"
+            title="Select All"
+          />
+          <span>Select</span>
+        </div>
+      ),
+      accessor: 'select',
+      cell: (value, row) => (
+        <input
+          type="checkbox"
+          checked={selectedTrips.includes(row.trip_id)}
+          onChange={(e) => onTripSelection(row.trip_id, e.target.checked)}
+          className="form-check-input"
+        />
+      ),
+    }] : []),
     {
       header: 'Member',
       accessor: 'TripMember',

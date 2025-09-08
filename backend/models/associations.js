@@ -14,6 +14,9 @@ const UserType = require('./UserType');
 const MemberLocation = require('./MemberLocation');
 const ProgramPlan = require('./ProgramPlan');
 const Incentive = require('./Incentive');
+const Claim = require('./Claim');
+const ClaimCharge = require('./ClaimCharge');
+const EDIClientSetting = require('./EDIClientSetting');
 // Define associations
 
 // Program associations
@@ -99,6 +102,21 @@ PagePermission.belongsTo(Page, { foreignKey: 'page_id' });
 // UserType and PagePermissions associations
 UserType.hasMany(PagePermission, { foreignKey: 'type_id' });
 PagePermission.belongsTo(UserType, { foreignKey: 'type_id' });
+
+// Claim associations
+Claim.belongsTo(Trip, { foreignKey: 'trip_id' });
+Trip.hasOne(Claim, { foreignKey: 'trip_id' });
+
+Claim.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(Claim, { foreignKey: 'created_by', as: 'createdClaims' });
+
+// Claim and ClaimCharge associations
+Claim.hasMany(ClaimCharge, { foreignKey: 'claim_id', as: 'charges' });
+ClaimCharge.belongsTo(Claim, { foreignKey: 'claim_id' });
+
+// ClaimCharge and TripLeg associations
+ClaimCharge.belongsTo(TripLeg, { foreignKey: 'trip_leg_id' });
+TripLeg.hasMany(ClaimCharge, { foreignKey: 'trip_leg_id' });
 
 // Export for use in other files
 module.exports = {

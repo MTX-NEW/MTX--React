@@ -1,0 +1,100 @@
+ISA*00*          *01*SECRET    *ZZ*MTXPROVIDER    *ZZ*AHCCCS         *250826*1843*U*00501*000000123*0*P*:~
+  GS*HC*MTXPROVIDER*AHCCCS*20250826*1843*123*X*005010X222A1~
+    ST*837*0001*005010X222A1~
+    BHT*0019*00*123*20250826*1843*CH~
+      NM1*41*2*MTX Healthcare Services*****46*MTXSUBMITTER~
+        PER*IC*Billing Department*TE*6025551234*EX*100~
+      NM1*40*2*Arizona Health Care Cost Containment System*****46*AHCCCS~
+      HL*1**20*1~
+        PRV*BI*PXC*343900000X~
+        NM1*85*2*MTX Medical Transport*****XX*1234567890~
+          N3*456 Healthcare Blvd~
+          N4*Phoenix*AZ*85002~
+          REF*EI*123456789~
+        HL*2*1*22*0~
+          SBR*P*18*GRP001*Arizona Medicaid*****MC~
+          NM1*IL*1*Doe*John*Michael***MI*MED123456789~
+            N3*123 Main Street~
+            N4*Phoenix*AZ*85001~
+            DMG*D8*19850315*M~
+          NM1*PR*2*Arizona Complete Health*****PI*87726~
+            CLM*PAT001001*125.5***41:B:1*Y*A*Y*Y~
+            HI*ABK:Z51.11*ABF:M79.603~
+              LX*1~
+              SV1*HC:A0130*85.50*UN*1*41**1~
+              DTP*472*D8*20250820~
+              LX*2~
+              SV1*HC:A0425*40.00*UN*10*41**1~
+              DTP*472*D8*20250820~
+        HL*3*1*22*0~
+          SBR*P*18*GRP002*Arizona Medicaid*****MC~
+          NM1*IL*1*Garcia*Maria*Elena***MI*MED987654321~
+            N3*789 Oak Avenue~
+            N4*Tucson*AZ*85701~
+            DMG*D8*19781122*F~
+          NM1*PR*2*Banner University Family Care*****PI*87727~
+            CLM*PAT001002*95.75***41:B:1*Y*A*Y*Y~
+            HI*ABK:Z51.81*ABF:I25.10~
+              LX*1~
+              SV1*HC:A0425*95.75*UN*15*41**1~
+              DTP*472*D8*20250821~
+        HL*4*1*22*1~
+          SBR*P**GRP003*Arizona Medicaid*****MC~
+          NM1*IL*1*Johnson*Robert****MI*MED555444333~
+            N3*321 Pine Street~
+            N4*Mesa*AZ*85201~
+            DMG*D8*19880214*M~
+          NM1*PR*2*Mercy Care Plan*****PI*87728~
+          HL*5*4*23*0~
+            PAT*19~
+            NM1*QC*1*Johnson*Emma*Rose~
+              N3*321 Pine Street~
+              N4*Mesa*AZ*85201~
+              DMG*D8*20150510*F~
+              CLM*PAT001003*185.25***41:B:1*Y*A*Y*Y~
+              HI*ABK:G93.1*ABF:Z51.11~
+                LX*1~
+                SV1*HC:A0140*145.25*UN*1*41**1~
+                DTP*472*D8*20250822~
+                LX*2~
+                SV1*HC:A0425*40.00*UN*8*41**1~
+                DTP*472*D8*20250822~
+        HL*6*1*22*0~
+          SBR*P*18*GRP004*Arizona Medicaid*****MC~
+          NM1*IL*1*Brown*William*James***MI*MED111222333~
+            N3*654 Cedar Lane~
+            N4*Glendale*AZ*85301~
+            DMG*D8*19650930*M~
+          NM1*PR*2*Health Choice Arizona*****PI*87729~
+            CLM*PAT001004*158***41:B:1*Y*A*Y*Y~
+            HI*ABK:N950*ABF:Z3402~
+              LX*1~
+              SV1*HC:A0120*75.00*UN*1*41**1~
+              DTP*472*D8*20250823~
+              LX*2~
+              SV1*HC:A0425*83.00*UN*20*41**4~
+              DTP*472*D8*20250823~
+        HL*7*1*22*1~
+          SBR*P**GRP005*Arizona Medicaid*****MC~
+          NM1*IL*1*Wilson*David****MI*MED777888999~
+            N3*987 Maple Drive~
+            N4*Scottsdale*AZ*85251~
+            DMG*D8*19680818*M~
+          NM1*PR*2*United Healthcare Community Plan*****PI*87730~
+          HL*8*7*23*0~
+            PAT*01~
+            NM1*QC*1*Wilson*Linda*Ann~
+              N3*987 Maple Drive~
+              N4*Scottsdale*AZ*85251~
+              DMG*D8*19701205*F~
+              CLM*PAT001005*185.5***41:B:1*Y*A*Y*Y~
+              HI*ABK:M54.5*ABF:Z51.89~
+                LX*1~
+                SV1*HC:A0130:QM:GM*110.50*UN*1*41**1~
+                DTP*472*D8*20250824~
+                LX*2~
+                SV1*HC:A0425:QN*75.00*UN*18*41**2~
+                DTP*472*D8*20250824~
+    SE*96*0001~
+  GE*1*123~
+IEA*1*000000123~

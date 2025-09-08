@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DatePicker from '@/components/DatePicker';
 import dayjs from 'dayjs';
 import { Autocomplete, TextField } from '@mui/material';
 import { arizonaCities } from '@/utils/arizonaCities';
+import { programApi } from '@/api/baseApi';
 
 // Presenter component for rendering UI only
 const TripRequestFiltersPresenter = ({ 
@@ -12,6 +13,9 @@ const TripRequestFiltersPresenter = ({
   onDateFilterChange,
   tripTypeFilter,
   onTripTypeFilterChange,
+  programFilter,
+  onProgramFilterChange,
+  programs,
   onClearFilters,
   appliedFilters
 }) => {
@@ -51,7 +55,24 @@ const TripRequestFiltersPresenter = ({
             </div>
           </div>
 
-          <div className="col-md-6">
+          <div className="col-md-3">
+            <div className="form-group">
+              <label className="form-label">Program</label>
+              <Autocomplete
+                value={programFilter ? programs.find(p => p.program_id === parseInt(programFilter)) || null : null}
+                onChange={(e, newValue) => onProgramFilterChange(newValue ? newValue.program_id.toString() : '')}
+                options={programs}
+                getOptionLabel={(option) => `${option.program_name} - ${option.company_name}`}
+                renderInput={(params) => (
+                  <TextField {...params} placeholder="Select program" size="small" />
+                )}
+                fullWidth
+                size="small"
+              />
+            </div>
+          </div>
+
+          <div className="col-md-3">
             <div className="form-group">
               <label className="form-label">Date Range</label>
               <div className="d-flex align-items-center" style={{ marginTop: '4px' }}>
@@ -131,6 +152,20 @@ const TripRequestFiltersPresenter = ({
                 ></button>
               </div>
             )}
+            
+            {programFilter && (
+              <div className="badge bg-primary rounded-pill me-2 d-flex align-items-center">
+                <span>
+                  {programs.find(p => p.program_id === parseInt(programFilter))?.program_name || 'Program'}
+                </span>
+                <button 
+                  className="btn-close btn-close-black ms-2"
+                  style={{ fontSize: '0.6rem' }}
+                  onClick={() => onProgramFilterChange('')}
+                  aria-label="Remove program filter"
+                ></button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -146,8 +181,30 @@ const TripRequestFilters = ({
   setDateFilter,
   tripTypeFilter,
   setTripTypeFilter,
+  programFilter,
+  setProgramFilter,
   clearFilters
 }) => {
+  const [programs, setPrograms] = useState([]);
+  const [loadingPrograms, setLoadingPrograms] = useState(false);
+
+  // Fetch programs on component mount
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        setLoadingPrograms(true);
+        const response = await programApi.getAll();
+        setPrograms(response.data || []);
+      } catch (error) {
+        console.error('Error fetching programs:', error);
+        setPrograms([]);
+      } finally {
+        setLoadingPrograms(false);
+      }
+    };
+
+    fetchPrograms();
+  }, []);
   // Filter handlers
   const handleCityFilterChange = (city) => {
     setCityFilter(city);
@@ -161,8 +218,12 @@ const TripRequestFilters = ({
     setTripTypeFilter(type);
   };
 
+  const handleProgramFilterChange = (programId) => {
+    setProgramFilter(programId);
+  };
+
   // Determine if any filters are applied
-  const appliedFilters = !!(cityFilter || dateFilter.startDate || tripTypeFilter);
+  const appliedFilters = !!(cityFilter || dateFilter.startDate || tripTypeFilter || programFilter);
 
   return (
     <TripRequestFiltersPresenter
@@ -172,6 +233,9 @@ const TripRequestFilters = ({
       onDateFilterChange={handleDateFilterChange}
       tripTypeFilter={tripTypeFilter}
       onTripTypeFilterChange={handleTripTypeFilterChange}
+      programFilter={programFilter}
+      onProgramFilterChange={handleProgramFilterChange}
+      programs={programs}
       onClearFilters={clearFilters}
       appliedFilters={appliedFilters}
     />

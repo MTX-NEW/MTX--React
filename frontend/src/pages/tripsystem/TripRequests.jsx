@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
-import { ToastContainer } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import UserActions from '@/components/users/allusers/UserActions';
 import RightSidebarPopup from '@/components/RightSidebarPopup';
@@ -32,6 +32,8 @@ const TripRequestsPresenter = ({
   setDateFilter,
   tripTypeFilter,
   setTripTypeFilter,
+  programFilter,
+  setProgramFilter,
   handleClearFilters,
   handleAddTrip,
   handleEditTrip,
@@ -39,6 +41,15 @@ const TripRequestsPresenter = ({
   handleRecreateTrip,
   handleDeleteTrip,
   handleCopyTrip,
+  // Batch operations props
+  selectedTrips,
+  onTripSelection,
+  onSelectAll,
+  selectAll,
+  batchMode,
+  batchLoading,
+  onToggleBatchMode,
+  onGenerateBatch,
   showAddModal,
   setShowAddModal,
   showEditModal,
@@ -67,7 +78,68 @@ const TripRequestsPresenter = ({
         onAdd={handleAddTrip}
         addButtonText="New Trip Request"
         searchQuery={searchQuery}
+        // Enhanced batch mode functionality
+        secondaryButtonText={batchMode 
+          ? (batchLoading 
+              ? "Generating Claims..." 
+              : (selectedTrips.length > 0 
+                  ? ` Generate Batch (${selectedTrips.length} trip${selectedTrips.length !== 1 ? 's' : ''})` 
+                  : " Generate Batch"
+                )
+            )
+          : "Enable Batch Generation"
+        }
+        onSecondaryAdd={batchMode ? onGenerateBatch : onToggleBatchMode}
+        secondaryButtonDisabled={(batchMode && selectedTrips.length === 0) || batchLoading}
+        secondaryButtonLoading={batchLoading}
       />
+
+      {/* Enhanced Batch Mode Status Indicator */}
+      {batchMode && (
+        <div className={`alert d-flex align-items-center justify-content-between mb-3 ${batchLoading ? 'alert-warning' : 'alert-info'}`} role="alert">
+          <div className="d-flex align-items-center">
+            <i className={`fas ${batchLoading ? 'fa-spinner fa-spin' : 'fa-layer-group'} fs-5 me-3 ${batchLoading ? 'text-warning' : 'text-info'}`}></i>
+            <div>
+              <h6 className={`mb-1 fw-bold ${batchLoading ? 'text-warning' : 'text-info'}`}>
+                {batchLoading ? (
+                  <>
+                    <i className="fas fa-cog fa-spin me-1"></i>
+                    Generating Claims...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-check-circle me-1"></i>
+                    Batch Selection Mode Active
+                  </>
+                )}
+              </h6>
+              <small className="text-muted">
+                {batchLoading 
+                  ? `Processing ${selectedTrips.length} selected trip${selectedTrips.length !== 1 ? 's' : ''}...` 
+                  : 'Select trips from the table below to create a batch for processing'
+                }
+              </small>
+              {selectedTrips.length > 0 && !batchLoading && (
+                <div className="mt-1">
+                  <span className="badge bg-info px-3 py-2">
+                    <i className="fas fa-clipboard-list me-1"></i>
+                    {selectedTrips.length} trip{selectedTrips.length !== 1 ? 's' : ''} selected
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <button 
+            className="btn btn-outline-secondary btn-sm d-flex align-items-center"
+            onClick={onToggleBatchMode}
+            title="Exit Batch Mode"
+            disabled={batchLoading}
+          >
+            <i className="fas fa-times me-2"></i>
+            Exit Batch Generation Mode
+          </button>
+        </div>
+      )}
       
       <TripRequestFilters 
         cityFilter={cityFilter}
@@ -76,6 +148,8 @@ const TripRequestsPresenter = ({
         setDateFilter={setDateFilter}
         tripTypeFilter={tripTypeFilter}
         setTripTypeFilter={setTripTypeFilter}
+        programFilter={programFilter}
+        setProgramFilter={setProgramFilter}
         clearFilters={handleClearFilters}
       />
 
@@ -99,6 +173,11 @@ const TripRequestsPresenter = ({
           onCopy={handleCopyTrip}
           onRecreate={handleRecreateTrip}
           isLoading={tripsLoading}
+          // Batch operations props (only show when in batch mode)
+          selectedTrips={batchMode ? selectedTrips : undefined}
+          onTripSelection={batchMode ? onTripSelection : undefined}
+          onSelectAll={batchMode ? onSelectAll : undefined}
+          selectAll={batchMode ? selectAll : undefined}
         />
         )}
 
@@ -220,6 +299,8 @@ const TripRequests = () => {
     setDateFilter,
     tripTypeFilter,
     setTripTypeFilter,
+    programFilter,
+    setProgramFilter,
     clearFilters
   } = useTripFilters(trips);
 
@@ -248,6 +329,12 @@ const TripRequests = () => {
   
   // Form State
   const [selectedMember, setSelectedMember] = useState(null);
+
+  // Batch Operations State
+  const [selectedTrips, setSelectedTrips] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchLoading, setBatchLoading] = useState(false);
 
   // Member locations state via custom hook
   const { locations: memberLocations, loading: isLoadingLocations, error: locationsError, fetchLocations: fetchMemberLocations } = useMemberLocations();
@@ -286,10 +373,11 @@ const TripRequests = () => {
     if (dateFilter.startDate) filters.startDate = dateFilter.startDate;
     if (dateFilter.endDate) filters.endDate = dateFilter.endDate;
     if (tripTypeFilter) filters.tripType = tripTypeFilter;
+    if (programFilter) filters.programId = programFilter;
     
     // Send the query with whatever filters we have (or none)
     fetchTrips(filters);
-  }, [searchQuery, cityFilter, dateFilter.startDate, dateFilter.endDate, tripTypeFilter]);
+  }, [searchQuery, cityFilter, dateFilter.startDate, dateFilter.endDate, tripTypeFilter, programFilter]);
 
   // Trip handlers
   const handleAddTrip = () => {
@@ -456,6 +544,7 @@ const TripRequests = () => {
     if (dateFilter.startDate) filters.startDate = dateFilter.startDate;
     if (dateFilter.endDate) filters.endDate = dateFilter.endDate;
     if (tripTypeFilter) filters.tripType = tripTypeFilter;
+    if (programFilter) filters.program = programFilter;
     return filters;
   };
 
@@ -551,6 +640,121 @@ const TripRequests = () => {
     
     fetchTrips(filters);
   };
+
+  // Batch Operations Handlers
+  const handleTripSelection = (tripId, isSelected) => {
+    if (isSelected) {
+      setSelectedTrips(prev => [...prev, tripId]);
+    } else {
+      setSelectedTrips(prev => prev.filter(id => id !== tripId));
+      setSelectAll(false);
+    }
+  };
+
+  const handleSelectAll = (isSelected) => {
+    setSelectAll(isSelected);
+    if (isSelected) {
+      setSelectedTrips(trips.map(trip => trip.trip_id));
+    } else {
+      setSelectedTrips([]);
+    }
+  };
+
+  const handleToggleBatchMode = () => {
+    setBatchMode(!batchMode);
+    if (batchMode) {
+      // Exit batch mode - clear selections
+      setSelectedTrips([]);
+      setSelectAll(false);
+    }
+  };
+
+  const handleGenerateBatch = async () => {
+    if (selectedTrips.length === 0) {
+      alert('Please select at least one trip to create a batch.');
+      return;
+    }
+
+    // Set loading state
+    setBatchLoading(true);
+
+    // Get the selected trip data
+    const selectedTripData = trips.filter(trip => selectedTrips.includes(trip.trip_id));
+    
+    console.log('=== BATCH GENERATION ===');
+    console.log('Selected trips for batch creation:', selectedTripData);
+    console.log('Selected trip IDs:', selectedTrips);
+    console.log('Batch data summary:');
+    console.log({
+      totalTrips: selectedTrips.length,
+      tripIds: selectedTrips,
+      members: selectedTripData.map(trip => ({
+        id: trip.TripMember?.member_id,
+        name: `${trip.TripMember?.first_name} ${trip.TripMember?.last_name}`,
+        phone: trip.TripMember?.phone
+      })),
+      programs: [...new Set(selectedTripData.map(trip => trip.program_id))],
+      dateRange: {
+        earliest: Math.min(...selectedTripData.map(trip => new Date(trip.start_date).getTime())),
+        latest: Math.max(...selectedTripData.map(trip => new Date(trip.start_date).getTime()))
+      }
+    });
+    
+    try {
+      // Import the API function
+      const { claimsApi } = await import('../../api/claimsApi');
+      
+      // Call the batch generation API
+      const response = await claimsApi.generateBatch(selectedTrips);
+      
+      console.log('Batch created successfully:', response.data);
+      
+      // Reset selections after successful batch creation
+      setSelectedTrips([]);
+      setSelectAll(false);
+      setBatchMode(false);
+      
+      // Show enhanced success message with detailed feedback
+      const { summary } = response.data;
+      let successMessage = 'Batch processing completed!\n\n';
+      
+      if (summary.created > 0) {
+        toast.success(`✅ ${summary.created} new claim(s) created`);
+      }
+      if (summary.updated > 0) {
+        toast.info(`🔄 ${summary.updated} existing claim(s) updated`);
+      }
+      if (summary.failed > 0) {
+        toast.error(`❌ ${summary.failed} trip(s) failed`);
+      }
+      
+      successMessage += `\nTotal processed: ${summary.total} trip(s)`;
+
+      toast.success(successMessage, {
+        position: toast.POSITION.TOP_RIGHT
+      });
+
+      // Show failed details if any
+      if (response.data.failed && response.data.failed.length > 0) {
+        console.log('Failed trips:', response.data.failed);
+        const failedDetails = response.data.failed.map(f => `Trip ${f.tripId}: ${f.error}`).join('\n');
+        toast.error(`Some trips failed to process:\n\n${failedDetails}`);
+      }
+      
+      // Refresh trips data to update billing status
+      fetchTrips();
+      
+    } catch (error) {
+      console.error('Error creating batch:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create batch. Please try again.';
+      toast.error(`Error: ${errorMessage}`, {
+        position: toast.POSITION.TOP_RIGHT
+      });
+    } finally {
+     
+      setBatchLoading(false);
+    }
+  };
   
   return (
     <TripRequestsPresenter
@@ -565,6 +769,8 @@ const TripRequests = () => {
       setDateFilter={setDateFilter}
       tripTypeFilter={tripTypeFilter}
       setTripTypeFilter={setTripTypeFilter}
+      programFilter={programFilter}
+      setProgramFilter={setProgramFilter}
       handleClearFilters={handleClearFilters}
       handleAddTrip={handleAddTrip}
       handleEditTrip={handleEditTrip}
@@ -572,6 +778,16 @@ const TripRequests = () => {
       handleRecreateTrip={handleRecreateTrip}
       handleDeleteTrip={deleteTrip}
       handleCopyTrip={handleCopyTrip}
+      // Batch operations props
+      selectedTrips={selectedTrips}
+      onTripSelection={handleTripSelection}
+      onSelectAll={handleSelectAll}
+      selectAll={selectAll}
+      batchMode={batchMode}
+      batchLoading={batchLoading}
+      onToggleBatchMode={handleToggleBatchMode}
+      onGenerateBatch={handleGenerateBatch}
+
       showAddModal={showAddModal}
       setShowAddModal={setShowAddModal}
       showEditModal={showEditModal}

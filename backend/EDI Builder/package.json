@@ -1,0 +1,16 @@
+{
+  "name": "edi-builder",
+  "version": "1.0.0",
+  "description": "Library For EDI 837 File Generation",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "837",
+    "edi"
+  ],
+  "author": "ShahidSoft",
+  "license": "ISC"
+}

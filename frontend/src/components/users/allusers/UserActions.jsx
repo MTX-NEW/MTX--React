@@ -6,6 +6,7 @@ const UserActions = ({
   addButtonText = "Add New User",
   secondaryButtonText,
   onSecondaryAdd,
+  secondaryButtonDisabled = false,
   searchQuery = ""
 }) => {
   const [query, setQuery] = useState(searchQuery);
@@ -38,9 +39,14 @@ const UserActions = ({
         </button>
         {secondaryButtonText && (
           <button 
-            className="add-user-btn secondary-btn" 
+            className={`add-user-btn ${secondaryButtonDisabled ? 'disabled' : 'secondary-btn'}`} 
             onClick={onSecondaryAdd}
-            style={{ marginLeft: '8px' }}
+            disabled={secondaryButtonDisabled}
+            style={{ 
+              marginLeft: '8px',
+              opacity: secondaryButtonDisabled ? 0.6 : 1,
+              cursor: secondaryButtonDisabled ? 'not-allowed' : 'pointer'
+            }}
           >
             {secondaryButtonText}
           </button>

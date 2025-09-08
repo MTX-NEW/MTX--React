@@ -10,6 +10,7 @@ export const routes = {
       { id: "trip-requests-v2", name: "Trip Requests v2", path: "/trip-system/trip-requests-v2" },
       { id: "trip-request-form", name: "Trip Request Form", path: "/trip-system/trip-request-form" },
       { id: "trip-management", name: "Route Sheet",      path: "/trip-system/trip-management" },
+      { id: "claims", name: "Claims",            path: "/trip-system/claims" },
       { id: "members", name: "Members",           path: "/trip-system/members" },
       { id: "locations", name: "Locations",       path: "/trip-system/locations" },
       // Additional tabs can be added here in the future
@@ -65,7 +66,12 @@ export const routes = {
     id: "claims",
     path: "/claims",
     label: "Claims",
-    icon: "faClipboard"
+    icon: "faClipboard",
+    tabs: [
+      { id: "claims-management", name: "Claims Management", path: "/claims/management" },
+      { id: "batch-management", name: "Batch Management", path: "/claims/batches" },
+      { id: "edi-files", name: "EDI Files", path: "/claims/edi" }
+    ]
   },
  // routeSheet: { path: "/route-sheet", label: "Route sheet", icon: "faRoute" },
   vehicles: { 

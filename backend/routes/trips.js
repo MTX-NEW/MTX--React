@@ -5,6 +5,9 @@ const tripController = require("../controllers/tripController");
 // Get all trips with related data
 router.get("/", tripController.getAllTrips);
 
+// Get trips ready for billing
+router.get("/for-billing", tripController.getTripsForBilling);
+
 // Get trip summaries for table display
 router.get("/summary", tripController.getTripSummaries);
 
