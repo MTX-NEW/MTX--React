@@ -270,6 +270,13 @@ exports.createTrip = async (req, res) => {
     // Filter out any legs with missing required data
     const validLegs = legs?.filter(leg => leg && leg.pickup_location && leg.dropoff_location) || [];
     
+    // Convert schedule_days array to string for database storage
+    if (Array.isArray(tripData.schedule_days)) {
+      tripData.schedule_days = tripData.schedule_days.length > 0 
+        ? tripData.schedule_days.join(',') 
+        : null;
+    }
+    
     // For Blanket trips, create multiple trips based on schedule_days
     if (tripData.schedule_type === 'Blanket' && tripData.schedule_days) {
       const startDate = new Date(tripData.start_date);
