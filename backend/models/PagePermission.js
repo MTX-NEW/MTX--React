@@ -1,10 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db");
 
-// Import models
-const UserType = require("./UserType");
-const Page = require("./Page");
-
 const PagePermission = sequelize.define(
   "PagePermission",
   {
@@ -50,24 +46,6 @@ const PagePermission = sequelize.define(
         fields: ['page_id', 'type_id']
       }
     ]
-  }
-);
-
-UserType.belongsToMany(
-  sequelize.define(
-    'Page',
-    {
-      page_name: {
-        type: DataTypes.STRING(50),
-        primaryKey: true
-      }
-    },
-    { tableName: 'pages', timestamps: false }
-  ),
-  {
-    through: PagePermission,
-    foreignKey: 'type_id',
-    otherKey: 'page_name'
   }
 );
 

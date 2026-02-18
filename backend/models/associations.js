@@ -5,6 +5,7 @@ const TripMember = require('./TripMember');
 const TripLocation = require('./TripLocation');
 const TripLeg = require('./TripLeg');
 const User = require('./User');
+const UserGroup = require('./UserGroup');
 const TripSpecialInstruction = require('./TripSpecialInstruction');
 const TimeSheet = require('./TimeSheet');
 const TimeSheetBreak = require('./TimeSheetBreak');
@@ -17,6 +18,8 @@ const Incentive = require('./Incentive');
 const Claim = require('./Claim');
 const ClaimCharge = require('./ClaimCharge');
 const EDIClientSetting = require('./EDIClientSetting');
+const OrgProgram = require('./OrgProgram');
+const Provider = require('./Provider');
 // Define associations
 
 // Program associations
@@ -117,6 +120,14 @@ ClaimCharge.belongsTo(Claim, { foreignKey: 'claim_id' });
 // ClaimCharge and TripLeg associations
 ClaimCharge.belongsTo(TripLeg, { foreignKey: 'trip_leg_id' });
 TripLeg.hasMany(ClaimCharge, { foreignKey: 'trip_leg_id' });
+
+// OrgProgram (Organisation Programs) associations
+OrgProgram.belongsTo(UserGroup, { foreignKey: 'group_id', as: 'Organisation' });
+UserGroup.hasMany(OrgProgram, { foreignKey: 'group_id', as: 'Programs' });
+
+// Provider associations
+Provider.belongsTo(OrgProgram, { foreignKey: 'program_id', as: 'Program' });
+OrgProgram.hasMany(Provider, { foreignKey: 'program_id', as: 'Providers' });
 
 // Export for use in other files
 module.exports = {

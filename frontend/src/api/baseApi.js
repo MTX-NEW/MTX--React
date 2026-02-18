@@ -309,3 +309,15 @@ export const timeSheetBreakApi = {
 
 // Time off requests API services
 export const timeOffRequestApi = createApiService('time-off-requests');
+
+// Organisation Programs API
+export const orgProgramApi = {
+  ...createApiService('org-programs'),
+  getByOrganisation: (groupId) => axios.get(`${API_BASE_URL}/api/org-programs/organisation/${groupId}`)
+};
+
+// Providers API
+export const providerApi = {
+  ...createApiService('providers'),
+  getByProgram: (programId) => axios.get(`${API_BASE_URL}/api/providers/program/${programId}`)
+};

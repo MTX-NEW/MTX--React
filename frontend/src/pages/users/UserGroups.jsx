@@ -82,13 +82,35 @@ const UserGroups = () => {
   const columns = [
     { header: "Full Name", accessor: "full_name" },
     { header: "Common", accessor: "common_name" },
-    { header: "Short", accessor: "short_name" },
-    { header: "Email", accessor: "email" },
     { header: "Phone", accessor: "phone" },
     { 
-      header: "Parent Group",
+      header: "Website", 
+      accessor: "website",
+      render: (value) => value ? (
+        <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+          {value.replace(/^https?:\/\//, '').slice(0, 25)}{value.length > 25 ? '...' : ''}
+        </a>
+      ) : '-'
+    },
+    { 
+      header: "Address", 
+      accessor: "street_address",
+      render: (value, row) => {
+        const addressParts = [row.street_address, row.city, row.state, row.zip].filter(Boolean);
+        const fullAddress = addressParts.join(', ');
+        return fullAddress ? (
+          <span title={fullAddress}>{fullAddress.slice(0, 35)}{fullAddress.length > 35 ? '...' : ''}</span>
+        ) : '-';
+      }
+    },
+    { 
+      header: "Parent Organisation",
       accessor: "parent_group_id",
-      render: (value, row) => value || '-'
+      render: (value, row) => {
+        if (!value) return '-';
+        const parentGroup = userGroups.find(g => g.group_id === value);
+        return parentGroup ? parentGroup.common_name : value;
+      }
     },
     {
       header: "Auto Routing",
@@ -134,7 +156,6 @@ const UserGroups = () => {
   const groupFields = [
     { label: "Full Name", name: "full_name", type: "text", validation: { required: true } },
     { label: "Common Name", name: "common_name", type: "text", validation: { required: true } },
-    { label: "Short Name", name: "short_name", type: "text", validation: { required: true } },
     { 
       label: "Phone", 
       name: "phone", 
@@ -150,23 +171,72 @@ const UserGroups = () => {
       }
     },
     { 
-      label: "Email", 
-      name: "email", 
-      type: "email",
+      label: "Website", 
+      name: "website", 
+      type: "url",
       inputProps: {
-        placeholder: "Enter email address"
+        placeholder: "https://example.com"
       },
       validation: { 
-        required: true,
-        pattern: { value: /\S+@\S+\.\S+/, message: "Invalid email format" }
+        required: false
       }
     },
     { 
-      label: "Parent Group ID", 
-      name: "parent_group_id", 
+      label: "Street Address", 
+      name: "street_address", 
       type: "text",
       inputProps: {
-        placeholder: "Enter parent group ID (optional)"
+        placeholder: "Enter street address"
+      },
+      validation: { 
+        required: false
+      }
+    },
+    { 
+      label: "City", 
+      name: "city", 
+      type: "text",
+      inputProps: {
+        placeholder: "Enter city"
+      },
+      validation: { 
+        required: false
+      }
+    },
+    { 
+      label: "State", 
+      name: "state", 
+      type: "text",
+      inputProps: {
+        placeholder: "e.g., AZ",
+        maxLength: 2,
+        style: { textTransform: 'uppercase' }
+      },
+      validation: { 
+        required: false
+      }
+    },
+    { 
+      label: "ZIP Code", 
+      name: "zip", 
+      type: "text",
+      inputProps: {
+        placeholder: "e.g., 85001",
+        maxLength: 10
+      },
+      validation: { 
+        required: false
+      }
+    },
+    { 
+      label: "Parent Organisation", 
+      name: "parent_group_id", 
+      type: "select",
+      options: userGroups
+        ?.filter(group => group.status === 'Active')
+        ?.map(group => ({ label: group.full_name, value: group.group_id })) || [],
+      inputProps: {
+        placeholder: "Select parent organisation (optional)"
       }
     },
     {
@@ -210,10 +280,10 @@ const UserGroups = () => {
     try {
       await remove(item.group_id);
       await refresh();
-      toast.success(`Group "${item.full_name}" deleted successfully!`);
+      toast.success(`Organisation "${item.full_name}" deleted successfully!`);
     } catch (error) {
-      toast.error("Failed to delete group");
-      console.error("Error deleting group:", error);
+      toast.error("Failed to delete organisation");
+      console.error("Error deleting organisation:", error);
     }
   };
 
@@ -233,11 +303,11 @@ const UserGroups = () => {
       
       await update(itemToEdit.group_id, formattedData);
       await refresh();
-      toast.success(`Group "${formattedData.full_name}" updated successfully!`);
+      toast.success(`Organisation "${formattedData.full_name}" updated successfully!`);
       setShowEditPopup(false);
     } catch (error) {
-      toast.error("Failed to update group");
-      console.error("Error updating group:", error);
+      toast.error("Failed to update organisation");
+      console.error("Error updating organisation:", error);
     }
   };
 
@@ -258,11 +328,11 @@ const UserGroups = () => {
         auto_routing: "0",
         parent_group_id: null
       });
-      toast.success(`Group "${formattedData.full_name}" added successfully!`);
+      toast.success(`Organisation "${formattedData.full_name}" added successfully!`);
       setShowAddPopup(false);
     } catch (error) {
-      toast.error("Failed to add group");
-      console.error("Error adding group:", error);
+      toast.error("Failed to add organisation");
+      console.error("Error adding organisation:", error);
     }
   };
 
@@ -282,7 +352,7 @@ const UserGroups = () => {
       <UserActions
         onSearch={handleSearch}
         onAdd={() => setShowAddPopup(true)}
-        addButtonText="Add New Group"
+        addButtonText="Add New Organisation"
       />
 
       <DynamicTable
@@ -295,11 +365,11 @@ const UserGroups = () => {
         }
       />
 
-      {/* Add Group Popup */}
+      {/* Add Organisation Popup */}
       {showAddPopup && (
         <RightSidebarPopup
           show={showAddPopup}
-          title="Add New Group"
+          title="Add New Organisation"
           onClose={() => {
             setShowAddPopup(false);
             addFormMethods.reset({
@@ -319,11 +389,11 @@ const UserGroups = () => {
         </RightSidebarPopup>
       )}
 
-      {/* Edit Group Popup */}
+      {/* Edit Organisation Popup */}
       {showEditPopup && itemToEdit && (
         <RightSidebarPopup
           show={showEditPopup}
-          title="Edit Group"
+          title="Edit Organisation"
           onClose={() => setShowEditPopup(false)}
         >
           <FormProvider {...editFormMethods}>

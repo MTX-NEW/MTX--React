@@ -46,6 +46,7 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
             case "email":
             case "number":
             case "tel":
+            case "url":
               const registerOptions = field.validateOnChange 
                 ? { ...register(field.name), onChange: (e) => handleOnChange(e, field.name) } 
                 : register(field.name);

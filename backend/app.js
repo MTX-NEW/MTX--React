@@ -31,6 +31,8 @@ const memberLocationRoutes = require("./routes/memberLocation");
 const claimRoutes = require('./routes/claims');
 const ediSettingsRoutes = require('./routes/ediSettings');
 const batchRoutes = require('./routes/batchRoutes');
+const orgProgramRoutes = require('./routes/orgPrograms');
+const providerRoutes = require('./routes/providers');
 
 require('./models/associations');
 
@@ -77,6 +79,8 @@ app.use("/api/member-locations", memberLocationRoutes);
 app.use("/api/claims", claimRoutes);
 app.use("/api/edi-settings", ediSettingsRoutes);
 app.use("/api/batches", batchRoutes);
+app.use("/api/org-programs", orgProgramRoutes);
+app.use("/api/providers", providerRoutes);
 // Debug middleware to log requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);

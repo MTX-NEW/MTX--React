@@ -1,8 +1,8 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
 import useUserRoutes from "@/hooks/useUserRoutes";
-import Header from "@/components/Header";
+import GroupedHeader from "@/components/GroupedHeader";
 
 const UsersLayout = () => {
   const navigate = useNavigate();
@@ -13,18 +13,40 @@ const UsersLayout = () => {
   const manageUsersSection = filteredRoutes.find(route => route.id === 'manage-users');
   const tabs = manageUsersSection?.tabs || [];
 
+  // Group tabs by their group property
+  const tabGroups = useMemo(() => {
+    console.log('UsersLayout - tabs with group property:', tabs.map(t => ({ name: t.name, group: t.group })));
+    
+    const groupOrder = ["Users", "Organisation Setup", "Permissions", "Config"];
+    const groups = {};
+    
+    tabs.forEach(tab => {
+      const groupName = tab.group || "Other";
+      if (!groups[groupName]) {
+        groups[groupName] = [];
+      }
+      groups[groupName].push(tab.name);
+    });
+    
+    console.log('UsersLayout - grouped tabs:', groups);
+    
+    // Return groups in the specified order, only including groups that have tabs
+    return groupOrder
+      .filter(groupName => groups[groupName]?.length > 0)
+      .map(groupName => ({
+        label: groupName,
+        tabs: groups[groupName]
+      }));
+  }, [tabs]);
+
   // Determine active tab directly from location
-  // Use startsWith for potentially nested routes under a tab
   const currentActiveTab = tabs.find((tab) => location.pathname.startsWith(tab.path))?.name || tabs[0]?.name;
 
   // Simplified useEffect - Redirect if base path hit or no match
   useEffect(() => {
-    // Don't redirect if still loading
     if (loading || tabs.length === 0) return;
     
     const pathMatchesTab = tabs.some((tab) => location.pathname.startsWith(tab.path));
-    // Redirect to the first tab if the current path doesn't match any tab root
-    // Or if the base path is hit
     if ((!pathMatchesTab && location.pathname.startsWith('/manage-users')) || location.pathname === '/manage-users' || location.pathname === '/manage-users/') {
       if (tabs.length > 0) {
         navigate(tabs[0].path, { replace: true });
@@ -32,7 +54,7 @@ const UsersLayout = () => {
     }
   }, [location.pathname, navigate, tabs, loading]);
 
-  // Handle tab switching - wrapped in useCallback
+  // Handle tab switching
   const handleTabChange = useCallback((tabName) => {
     const selectedTab = tabs.find((tab) => tab.name === tabName);
     if (selectedTab) {
@@ -47,15 +69,14 @@ const UsersLayout = () => {
         {loading ? (
           <div className="p-3">Loading...</div>
         ) : (
-          <Header
-            tabs={tabs.map((tab) => tab.name)}
+          <GroupedHeader
+            tabGroups={tabGroups}
             activeTab={currentActiveTab}
             onTabChange={handleTabChange}
-            className="sticky-top bg-white"
           />
         )}
         <div className="users-container flex-grow-1 overflow-auto" style={{ 
-          height: 'calc(100vh - 89px)' // Adjust 64px to match your header height
+          height: 'calc(100vh - 89px)'
         }}>
           <div className="content">
             <Outlet />

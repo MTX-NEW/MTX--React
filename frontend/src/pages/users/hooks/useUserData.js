@@ -28,7 +28,7 @@ export const useUserData = () => {
         setUserTypes(typesResponse.data);
         setUserGroups(groupsResponse.data);
       } catch (error) {
-        toast.error("Failed to fetch user types or groups");
+        toast.error("Failed to fetch user types or organisations");
       }
     };
     fetchStaticData();
@@ -48,7 +48,7 @@ export const useUserData = () => {
       }));
     } catch (error) {
       console.error("Error fetching allowed types:", error);
-      toast.error("Failed to fetch allowed types for group");
+      toast.error("Failed to fetch allowed types for organisation");
       return [];
     }
   };

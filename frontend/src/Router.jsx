@@ -24,6 +24,8 @@ const GroupPermissions = lazy(() => import("@/pages/users/GroupPermissions"));
 const PagePermissions = lazy(() => import("@/pages/users/PagePermissions"));
 const UserTypes = lazy(() => import("@/pages/users/UserTypes"));
 const ManagePrograms = lazy(() => import("@/pages/users/ManagePrograms"));
+const OrgPrograms = lazy(() => import("@/pages/users/OrgPrograms"));
+const Providers = lazy(() => import("@/pages/users/Providers"));
 
 // Lazy load vehicles pages
 const Vehicles = lazy(() => import("@/pages/vehicles/Vehicles"));
@@ -109,6 +111,8 @@ const Router = () => {
           <Route path="/manage-users" element={<UsersLayout />}>
             <Route path="all-users" element={<AllUsers />} />
             <Route path="user-groups" element={<UserGroups />} />
+            <Route path="org-programs" element={<OrgPrograms />} />
+            <Route path="providers" element={<Providers />} />
             <Route path="clinic-pocs" element={<ClinicPOC />} />
             <Route path="group-permissions" element={<GroupPermissions />} />
             <Route path="page-permissions" element={<PagePermissions />} />

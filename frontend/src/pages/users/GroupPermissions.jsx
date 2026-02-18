@@ -84,8 +84,8 @@ const GroupPermissions = () => {
     <div className="container mx-auto px-4">
       <div className=" shadow-md rounded-lg p-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Group Permissions</h2>
-          <p className="text-gray-600">Manage access rights for each user group</p>
+          <h2 className="text-2xl font-bold text-gray-800">Organisation Permissions</h2>
+          <p className="text-gray-600">Manage access rights for each organisation</p>
         </div>
 
         <div className="space-y-4">

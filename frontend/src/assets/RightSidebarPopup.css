@@ -1,32 +1,48 @@
-/* Right Sidebar Popup */
+/* Center Modal Popup */
 .right-sidebar-popup {
     position: fixed;
-    top: 0;
-    right: 0;
-    width: 430px;
-    height: 100vh;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    max-height: 90vh;
     background-color: #ffffff;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
     display: flex;
     flex-direction: column;
     z-index: 1000;
     opacity: 1;
     pointer-events: all;
-    transition: width 0.3s ease;
+    transition: all 0.3s ease;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -48%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
 }
 
 /* For wide forms */
 .right-sidebar-popup.wide {
     width: 700px;
+    max-width: 95vw;
 }
 
 .popup-header {
-    padding: 16px 20px;
+    padding: 16px 24px;
     border-bottom: 1px solid #e0e0e0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     background-color: #f8fafc;
+    border-radius: 8px 8px 0 0;
 }
 
 .popup-header h2 {
@@ -54,9 +70,10 @@
 
 .popup-content {
     flex: 1;
-    padding: 20px;
+    padding: 24px;
     overflow-y: auto;
     opacity: 1;
+    max-height: calc(90vh - 70px);
 }
 
 /* Overlay */
@@ -144,7 +161,8 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .right-sidebar-popup {
-        width: 90vw;
+        width: 95vw;
+        max-width: 95vw;
     }
     
     .right-sidebar-popup.wide {
@@ -154,6 +172,29 @@
     .checkbox-grid .checkbox-item {
         flex: 0 0 50%;
         max-width: 50%;
+    }
+    
+    .popup-content {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 576px) {
+    .right-sidebar-popup {
+        width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+        top: 0;
+        left: 0;
+        transform: none;
+    }
+    
+    .popup-header {
+        border-radius: 0;
+    }
+    
+    .popup-content {
+        max-height: calc(100vh - 60px);
     }
 }
 

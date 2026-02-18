@@ -1,33 +1,36 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db");
 
-const UserGroup = sequelize.define(
-  "UserGroup",
+const Provider = sequelize.define(
+  "Provider",
   {
-    group_id: {
+    provider_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    full_name: {
-      type: DataTypes.STRING(100),
+    program_id: {
+      type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: 'org_programs',
+        key: 'program_id'
+      }
     },
-    common_name: {
-      type: DataTypes.STRING(50),
+    provider_name: {
+      type: DataTypes.STRING(100),
       allowNull: false,
     },
     short_name: {
-      type: DataTypes.STRING(10),
-      allowNull: true, // Made optional
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    phone: {
+      type: DataTypes.STRING(15),
+      allowNull: true,
     },
     email: {
       type: DataTypes.STRING(100),
-      unique: true,
-      allowNull: true, // Made optional since we're using website now
-    },
-    website: {
-      type: DataTypes.STRING(255),
       allowNull: true,
     },
     street_address: {
@@ -46,22 +49,6 @@ const UserGroup = sequelize.define(
       type: DataTypes.STRING(10),
       allowNull: true,
     },
-    phone: {
-      type: DataTypes.STRING(15),
-      allowNull: false,
-    },
-    parent_group_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
-    auto_routing: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    send_pdf: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
     status: {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active',
@@ -78,14 +65,11 @@ const UserGroup = sequelize.define(
     }
   },
   {
-    tableName: 'user_groups',
+    tableName: 'providers',
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   }
 );
 
-// Self-referential relationship
-UserGroup.belongsTo(UserGroup, { as: 'parentGroup', foreignKey: 'parent_group_id' });
-
-module.exports = UserGroup; 
+module.exports = Provider;

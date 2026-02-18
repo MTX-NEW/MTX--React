@@ -6,7 +6,7 @@ export const userTableColumns = [
   { header: "Phone", accessor: "phone" },
   { header: "EMP Code", accessor: "emp_code" },
   { 
-    header: "User Group", 
+    header: "Organisation", 
     accessor: "UserGroup",
     render: (value) => value?.common_name || 'N/A'
   },
@@ -43,7 +43,7 @@ export const getFormFields = (isEditMode, userGroups, allowedTypes, selectedGrou
     { label: "Email", name: "email", type: "email" },
     { label: "Phone", name: "phone", type: "text" },
     {
-      label: "User Group",
+      label: "Organisation",
       name: "user_group",
       type: "select",
       options: userGroups

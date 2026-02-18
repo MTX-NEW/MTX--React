@@ -237,7 +237,7 @@ const AllUsers = () => {
         )
       },
       {
-        label: "User Group",
+        label: "Organisation",
         name: "user_group",
         type: "select",
         options: userGroups

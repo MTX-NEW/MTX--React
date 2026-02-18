@@ -42,7 +42,7 @@ export const userValidationSchema = Yup.object().shape({
   emp_code: Yup.string()
     .strip() // This will remove the field from the data before validation
     .nullable(),
-  user_group: Yup.number().integer().required("User group is required"),
+  user_group: Yup.number().integer().required("Organisation is required"),
   user_type: Yup.number().integer().required("User type is required"),
   hiringDate: Yup.date()
     .nullable()
@@ -80,14 +80,27 @@ export const userValidationSchema = Yup.object().shape({
 export const groupValidationSchema = Yup.object().shape({
   full_name: Yup.string().required("Full name is required"),
   common_name: Yup.string().required("Common name is required"),
-  short_name: Yup.string().required("Short name is required"),
   phone: Yup.string()
     .required("Phone is required")
     .matches(/^[0-9]{10,15}$/, "Invalid phone number"),
-  email: Yup.string()
-    .required("Email is required")
-    .email("Invalid email address"),
-  parent_group_id: Yup.string().nullable(),
+  website: Yup.string()
+    .nullable()
+    .transform((value) => value === '' ? null : value)
+    .url("Please enter a valid URL (e.g., https://example.com)"),
+  street_address: Yup.string()
+    .nullable()
+    .max(255, "Street address cannot exceed 255 characters"),
+  city: Yup.string()
+    .nullable()
+    .max(100, "City cannot exceed 100 characters"),
+  state: Yup.string()
+    .nullable()
+    .max(2, "State must be 2 characters (e.g., AZ)")
+    .transform((value) => value ? value.toUpperCase() : value),
+  zip: Yup.string()
+    .nullable()
+    .matches(/^(\d{5}(-\d{4})?)?$/, { message: "Invalid ZIP code format (e.g., 85001 or 85001-1234)", excludeEmptyString: true }),
+  parent_group_id: Yup.number().nullable().integer().transform((value) => (isNaN(value) || value === '' ? null : value)),
   status: Yup.string()
     .required("Status is required")
     .oneOf(["Active", "Inactive"], "Invalid status"),
@@ -329,4 +342,58 @@ export const locationValidationSchema = Yup.object().shape({
     .required("Location type is required")
     .oneOf(['Urban', 'Rural'], "Invalid location type"),
   recipient_default: Yup.boolean().default(true)
+});
+
+// Organisation Program validation schema
+export const orgProgramValidationSchema = Yup.object().shape({
+  group_id: Yup.number()
+    .required("Organisation is required")
+    .integer(),
+  program_name: Yup.string()
+    .required("Program name is required")
+    .max(100, "Program name cannot exceed 100 characters"),
+  short_name: Yup.string()
+    .nullable()
+    .max(20, "Short name cannot exceed 20 characters"),
+  phone: Yup.string()
+    .nullable()
+    .matches(/^[0-9]{10,15}$/, { message: "Invalid phone number", excludeEmptyString: true }),
+  status: Yup.string()
+    .required("Status is required")
+    .oneOf(["Active", "Inactive"], "Invalid status"),
+});
+
+// Provider validation schema
+export const providerValidationSchema = Yup.object().shape({
+  program_id: Yup.number()
+    .required("Program is required")
+    .integer(),
+  provider_name: Yup.string()
+    .required("Provider name is required")
+    .max(100, "Provider name cannot exceed 100 characters"),
+  short_name: Yup.string()
+    .nullable()
+    .max(20, "Short name cannot exceed 20 characters"),
+  phone: Yup.string()
+    .nullable()
+    .matches(/^[0-9]{10,15}$/, { message: "Invalid phone number", excludeEmptyString: true }),
+  email: Yup.string()
+    .nullable()
+    .email("Invalid email address"),
+  street_address: Yup.string()
+    .nullable()
+    .max(255, "Street address cannot exceed 255 characters"),
+  city: Yup.string()
+    .nullable()
+    .max(100, "City cannot exceed 100 characters"),
+  state: Yup.string()
+    .nullable()
+    .max(2, "State must be 2 characters (e.g., AZ)")
+    .transform((value) => value ? value.toUpperCase() : value),
+  zip: Yup.string()
+    .nullable()
+    .matches(/^(\d{5}(-\d{4})?)?$/, { message: "Invalid ZIP code format", excludeEmptyString: true }),
+  status: Yup.string()
+    .required("Status is required")
+    .oneOf(["Active", "Inactive"], "Invalid status"),
 });
