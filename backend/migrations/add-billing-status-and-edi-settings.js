@@ -24,6 +24,7 @@ module.exports = {
         'SELECT COUNT(*) as count FROM edi_client_settings'
       );
       if (existing[0].count === 0) {
+        // Only insert columns that exist on all schemas (omit created_at/updated_at in case table was created without them)
         await queryInterface.bulkInsert('edi_client_settings', [{
           sender_id: 'MTXPROVIDER',
           receiver_id: 'AHCCCS',
@@ -33,14 +34,13 @@ module.exports = {
           default_taxonomy: '343900000X', // Transportation services
           mileage_rate: 2.50,
           base_transport_rate: 25.00,
-          is_active: true,
-          created_at: new Date(),
-          updated_at: new Date()
+          is_active: true
         }], {});
       }
     } catch (err) {
-      // Table might not exist yet (will be created by create-claims-tables), ignore
-      if (!err.message.includes("doesn't exist")) throw err;
+      // Table might not exist yet, or column mismatch (e.g. no created_at), skip insert
+      if (err.message.includes("doesn't exist") || err.message.includes('Unknown column')) return;
+      throw err;
     }
   },
 
