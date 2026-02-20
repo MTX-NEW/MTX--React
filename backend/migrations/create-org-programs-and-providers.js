@@ -1,7 +1,17 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
+    const skipIfExists = async (fn) => {
+      try {
+        await fn();
+      } catch (err) {
+        if (err.message && (err.message.includes('already exists') || err.message.includes('Duplicate'))) return;
+        throw err;
+      }
+    };
+
     // Create org_programs table
-    await queryInterface.createTable('org_programs', {
+    await skipIfExists(async () => {
+      await queryInterface.createTable('org_programs', {
       program_id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -44,9 +54,11 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
       }
     });
+    });
 
     // Create providers table
-    await queryInterface.createTable('providers', {
+    await skipIfExists(async () => {
+      await queryInterface.createTable('providers', {
       provider_id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -109,12 +121,13 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
       }
     });
+    });
 
     // Add indexes for better query performance
-    await queryInterface.addIndex('org_programs', ['group_id']);
-    await queryInterface.addIndex('org_programs', ['status']);
-    await queryInterface.addIndex('providers', ['program_id']);
-    await queryInterface.addIndex('providers', ['status']);
+    await skipIfExists(() => queryInterface.addIndex('org_programs', ['group_id']));
+    await skipIfExists(() => queryInterface.addIndex('org_programs', ['status']));
+    await skipIfExists(() => queryInterface.addIndex('providers', ['program_id']));
+    await skipIfExists(() => queryInterface.addIndex('providers', ['status']));
   },
 
   async down(queryInterface, Sequelize) {
