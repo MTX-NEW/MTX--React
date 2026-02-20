@@ -2,7 +2,17 @@ const { DataTypes } = require('sequelize');
 
 module.exports = {
   up: async (queryInterface) => {
-    await queryInterface.createTable('employees', {
+    const skipIfExists = async (fn) => {
+      try {
+        await fn();
+      } catch (err) {
+        if (err.message && (err.message.includes('already exists') || err.message.includes('Duplicate'))) return;
+        throw err;
+      }
+    };
+
+    await skipIfExists(async () => {
+      await queryInterface.createTable('employees', {
       employee_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -99,13 +109,14 @@ module.exports = {
         defaultValue: DataTypes.NOW,
       }
     });
+    });
 
     // Add indexes
-    await queryInterface.addIndex('employees', ['emp_id'], { unique: true });
-    await queryInterface.addIndex('employees', ['user_id']);
-    await queryInterface.addIndex('employees', ['status']);
-    await queryInterface.addIndex('employees', ['user_type_id']);
-    await queryInterface.addIndex('employees', ['user_group_id']);
+    await skipIfExists(() => queryInterface.addIndex('employees', ['emp_id'], { unique: true }));
+    await skipIfExists(() => queryInterface.addIndex('employees', ['user_id']));
+    await skipIfExists(() => queryInterface.addIndex('employees', ['status']));
+    await skipIfExists(() => queryInterface.addIndex('employees', ['user_type_id']));
+    await skipIfExists(() => queryInterface.addIndex('employees', ['user_group_id']));
   },
 
   down: async (queryInterface) => {
