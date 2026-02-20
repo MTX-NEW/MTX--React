@@ -1,5 +1,14 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
+    const skipIfExists = async (fn) => {
+      try {
+        await fn();
+      } catch (err) {
+        if (err.message && (err.message.includes('already exists') || err.message.includes('Duplicate'))) return;
+        throw err;
+      }
+    };
+
     // Remove the old address column if it exists
     try {
       await queryInterface.removeColumn('user_groups', 'address');
@@ -9,32 +18,32 @@ module.exports = {
     }
 
     // Add street_address column
-    await queryInterface.addColumn('user_groups', 'street_address', {
+    await skipIfExists(() => queryInterface.addColumn('user_groups', 'street_address', {
       type: Sequelize.STRING(255),
       allowNull: true,
       after: 'website'
-    });
+    }));
 
     // Add city column
-    await queryInterface.addColumn('user_groups', 'city', {
+    await skipIfExists(() => queryInterface.addColumn('user_groups', 'city', {
       type: Sequelize.STRING(100),
       allowNull: true,
       after: 'street_address'
-    });
+    }));
 
     // Add state column
-    await queryInterface.addColumn('user_groups', 'state', {
+    await skipIfExists(() => queryInterface.addColumn('user_groups', 'state', {
       type: Sequelize.STRING(2),
       allowNull: true,
       after: 'city'
-    });
+    }));
 
     // Add zip column
-    await queryInterface.addColumn('user_groups', 'zip', {
+    await skipIfExists(() => queryInterface.addColumn('user_groups', 'zip', {
       type: Sequelize.STRING(10),
       allowNull: true,
       after: 'state'
-    });
+    }));
   },
 
   down: async (queryInterface, Sequelize) => {
