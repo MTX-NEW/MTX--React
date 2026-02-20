@@ -2,8 +2,18 @@ const { DataTypes } = require('sequelize');
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
+    const skipIfExists = async (fn) => {
+      try {
+        await fn();
+      } catch (err) {
+        if (err.message && (err.message.includes('already exists') || err.message.includes('Duplicate'))) return;
+        throw err;
+      }
+    };
+
     // Create edi_client_settings table
-    await queryInterface.createTable('edi_client_settings', {
+    await skipIfExists(async () => {
+      await queryInterface.createTable('edi_client_settings', {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -57,9 +67,11 @@ module.exports = {
         defaultValue: DataTypes.NOW
       }
     });
+    });
 
     // Create claims table
-    await queryInterface.createTable('claims', {
+    await skipIfExists(async () => {
+      await queryInterface.createTable('claims', {
       claim_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -144,9 +156,11 @@ module.exports = {
         defaultValue: DataTypes.NOW
       }
     });
+    });
 
     // Create claims_charges table
-    await queryInterface.createTable('claims_charges', {
+    await skipIfExists(async () => {
+      await queryInterface.createTable('claims_charges', {
       charge_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -243,13 +257,14 @@ module.exports = {
         defaultValue: DataTypes.NOW
       }
     });
+    });
 
     // Add indexes for better performance
-    await queryInterface.addIndex('claims', ['trip_id']);
-    await queryInterface.addIndex('claims', ['claim_number']);
-    await queryInterface.addIndex('claims', ['status']);
-    await queryInterface.addIndex('claims_charges', ['claim_id']);
-    await queryInterface.addIndex('claims_charges', ['cpt_code']);
+    await skipIfExists(() => queryInterface.addIndex('claims', ['trip_id']));
+    await skipIfExists(() => queryInterface.addIndex('claims', ['claim_number']));
+    await skipIfExists(() => queryInterface.addIndex('claims', ['status']));
+    await skipIfExists(() => queryInterface.addIndex('claims_charges', ['claim_id']));
+    await skipIfExists(() => queryInterface.addIndex('claims_charges', ['cpt_code']));
   },
 
   down: async (queryInterface, Sequelize) => {
