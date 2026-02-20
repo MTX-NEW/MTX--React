@@ -35,12 +35,63 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
     });
   };
 
+  // Format US phone as (XXX) XXX-XXXX while typing
+  const formatPhoneDisplay = (value) => {
+    if (!value) return "";
+    const digits = value.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 3) return digits.length ? `(${digits}` : "";
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <form onSubmit={handleSubmit(onSubmit)}>
         {fields.map((field, index) => {
           const value = watch(field.name);
           switch (field.type) {
+            case "phone":
+              return (
+                <div className="mb-2" key={index}>
+                  <label>{field.label}</label>
+                  <Controller
+                    name={field.name}
+                    control={control}
+                    defaultValue={value ?? ""}
+                    render={({ field: { onChange, value, ref } }) => (
+                      <input
+                        type="tel"
+                        ref={ref}
+                        value={formatPhoneDisplay(value)}
+                        onChange={(e) => {
+                          const formatted = formatPhoneDisplay(e.target.value);
+                          onChange(formatted);
+                          setValue(field.name, formatted, {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                            shouldTouch: true,
+                          });
+                        }}
+                        placeholder={field.placeholder ?? field.inputProps?.placeholder ?? "e.g., (123) 456-7890"}
+                        className="form-control mt-2"
+                        disabled={field.disabled}
+                        readOnly={field.readOnly}
+                        {...(field.inputProps || {})}
+                      />
+                    )}
+                  />
+                  {field.helperText && (
+                    <small className="form-text text-muted">
+                      {field.helperText}
+                    </small>
+                  )}
+                  {errors[field.name] && (
+                    <span className="form-warning">
+                      {errors[field.name].message}
+                    </span>
+                  )}
+                </div>
+              );
             case "text":
             case "password":
             case "email":

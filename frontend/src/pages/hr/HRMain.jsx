@@ -149,7 +149,7 @@ const HRMain = () => {
         <Col lg={8}>
           <Card className="mb-4">
             <Card.Header>
-              <h5 className="mb-0">VMT HR Management</h5>
+              <h5 className="mb-0">MTX HR Management</h5>
             </Card.Header>
             <Card.Body>
               <UserActions

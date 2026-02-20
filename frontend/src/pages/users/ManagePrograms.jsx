@@ -251,19 +251,7 @@ const ManagePrograms = () => {
     {
       label: "Phone Number",
       name: "phone",
-      type: "tel",
-      placeholder: "Enter 10-digit phone number (optional)",
-      inputProps: {
-        pattern: "[0-9]{10}",
-        inputMode: "numeric",
-        title: "Please enter exactly 10 digits"
-      },
-      validation: { 
-        pattern: {
-          value: /^\d{10}$/,
-          message: "Phone number must be exactly 10 digits"
-        }
-      },
+      type: "phone",
     },
     // Program Plans Section (Custom Component)
     {

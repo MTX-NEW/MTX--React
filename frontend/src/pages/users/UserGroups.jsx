@@ -160,16 +160,8 @@ const UserGroups = () => {
     { 
       label: "Phone", 
       name: "phone", 
-      type: "tel",
-      inputProps: {
-        placeholder: "Enter 10-digit phone number",
-        maxLength: 15,
-        pattern: "[0-9]*"
-      },
-      validation: { 
-        required: true,
-        pattern: { value: /^[0-9]{10,15}$/, message: "Invalid phone format" }
-      }
+      type: "phone",
+      validation: { required: true }
     },
     { 
       label: "Website", 

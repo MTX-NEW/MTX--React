@@ -116,11 +116,7 @@ const Providers = () => {
     { 
       label: "Phone", 
       name: "phone", 
-      type: "tel",
-      inputProps: {
-        placeholder: "Enter phone number",
-        maxLength: 15
-      }
+      type: "phone",
     },
     { 
       label: "Email", 

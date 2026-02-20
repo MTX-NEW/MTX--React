@@ -101,11 +101,7 @@ const OrgPrograms = () => {
     { 
       label: "Phone", 
       name: "phone", 
-      type: "tel",
-      inputProps: {
-        placeholder: "Enter phone number (optional)",
-        maxLength: 15
-      }
+      type: "phone",
     },
     {
       label: "Status",

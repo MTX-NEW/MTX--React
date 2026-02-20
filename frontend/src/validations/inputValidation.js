@@ -1,6 +1,19 @@
 // validations/userValidation.js
 import * as Yup from "yup";
 
+// US phone: 10 digits, optional formatting (spaces, dashes, parentheses, +1 or 1 prefix)
+const US_PHONE_MESSAGE = "Enter a valid US phone number (e.g., 123-456-7890, (123) 456-7890, 123 456 7890)";
+const normalizeUsPhone = (value) => {
+  if (!value || typeof value !== "string") return "";
+  return value.replace(/\D/g, "");
+};
+const isValidUsPhone = (value) => {
+  const digits = normalizeUsPhone(value);
+  if (digits.length === 10) return true;
+  if (digits.length === 11 && digits.startsWith("1")) return true;
+  return false;
+};
+
 export const userValidationSchema = Yup.object().shape({
   first_name: Yup.string()
     .required("First name is required")
@@ -38,7 +51,7 @@ export const userValidationSchema = Yup.object().shape({
     }),
   phone: Yup.string()
     .required("Phone number is required")
-    .matches(/^\d{10,15}$/, "Phone number must be between 10-15 digits"),
+    .test("us-phone", US_PHONE_MESSAGE, (value) => value != null && isValidUsPhone(value)),
   emp_code: Yup.string()
     .strip() // This will remove the field from the data before validation
     .nullable(),
@@ -82,7 +95,7 @@ export const groupValidationSchema = Yup.object().shape({
   common_name: Yup.string().required("Common name is required"),
   phone: Yup.string()
     .required("Phone is required")
-    .matches(/^[0-9]{10,15}$/, "Invalid phone number"),
+    .test("us-phone", US_PHONE_MESSAGE, (value) => value != null && isValidUsPhone(value)),
   website: Yup.string()
     .nullable()
     .transform((value) => value === '' ? null : value)
@@ -143,8 +156,7 @@ export const programValidationSchema = Yup.object().shape({
     .matches(/^\d{5}(-\d{4})?$/, { message: "Invalid postal code format (e.g., 12345 or 12345-6789)", excludeEmptyString: true }),
   phone: Yup.string()
     .nullable()
-    .max(15, "Phone number cannot exceed 15 characters")
-    .matches(/^\d{15}$/, { message: "Phone number must be exactly 10 digits", excludeEmptyString: true }),
+    .test("us-phone", US_PHONE_MESSAGE, (value) => !value || isValidUsPhone(value)),
   plans: Yup.array().of(
     Yup.object().shape({
       plan_id: Yup.number().nullable(),
@@ -357,7 +369,7 @@ export const orgProgramValidationSchema = Yup.object().shape({
     .max(20, "Short name cannot exceed 20 characters"),
   phone: Yup.string()
     .nullable()
-    .matches(/^[0-9]{10,15}$/, { message: "Invalid phone number", excludeEmptyString: true }),
+    .test("us-phone", US_PHONE_MESSAGE, (value) => !value || isValidUsPhone(value)),
   status: Yup.string()
     .required("Status is required")
     .oneOf(["Active", "Inactive"], "Invalid status"),
@@ -376,7 +388,7 @@ export const providerValidationSchema = Yup.object().shape({
     .max(20, "Short name cannot exceed 20 characters"),
   phone: Yup.string()
     .nullable()
-    .matches(/^[0-9]{10,15}$/, { message: "Invalid phone number", excludeEmptyString: true }),
+    .test("us-phone", US_PHONE_MESSAGE, (value) => !value || isValidUsPhone(value)),
   email: Yup.string()
     .nullable()
     .email("Invalid email address"),

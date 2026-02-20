@@ -15,13 +15,28 @@ const steps = [
   { id: 4, title: "Finish" }
 ];
 
+// US phone: 10 digits, optional formatting (spaces, dashes, parentheses, +1 or 1 prefix)
+const isValidUsPhone = (value) => {
+  if (!value || typeof value !== "string") return false;
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 10 || (digits.length === 11 && digits.startsWith("1"));
+};
+const formatPhoneDisplay = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits.length ? `(${digits}` : "";
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
+const US_PHONE_MSG = "Enter a valid US phone number (e.g., (123) 456-7890)";
+
 const fullSchema = yup.object().shape({
   first_name: yup.string().required("First name is required"),
   last_name: yup.string().required("Last name is required"),
   email: yup.string().email("Invalid email").nullable(),
   phone: yup.string()
     .required("Phone number is required")
-    .matches(/^[0-9]{10,15}$/, "Phone must be 10-15 digits"),
+    .test("us-phone", US_PHONE_MSG, isValidUsPhone),
   username: yup.string().required("Username is required").min(3, "Username must be at least 3 characters"),
   password: yup.string().required("Password is required").min(5, "Password must be at least 5 characters"),
   confirm_password: yup.string()
@@ -32,9 +47,7 @@ const fullSchema = yup.object().shape({
   ssn: yup.string().nullable(),
   business_phone: yup.string()
     .nullable()
-    .test('phone-format', 'Phone must be 10-15 digits', value => 
-      !value || /^[0-9]{10,15}$/.test(value.replace(/[-\s]/g, ''))
-    ),
+    .test("us-phone", US_PHONE_MSG, (value) => !value || isValidUsPhone(value)),
   hire_date: yup.date().typeError("Hire date is required").required("Hire date is required"),
   last_employment_date: yup.date().nullable(),
   employee_type: yup.string().required("Employee type is required")
@@ -222,11 +235,20 @@ const AddEmployeeWizard = ({ show, onClose, onComplete }) => {
         <Col md={6}>
           <Form.Group className="mb-3">
             <Form.Label>Phone <span className="text-danger">*</span></Form.Label>
-            <Form.Control
-              type="text"
-              {...register("phone")}
-              isInvalid={!!errors.phone}
-              placeholder="10-15 digit phone number"
+            <Controller
+              name="phone"
+              control={control}
+              defaultValue=""
+              render={({ field: { onChange, value, ref } }) => (
+                <Form.Control
+                  type="tel"
+                  ref={ref}
+                  value={formatPhoneDisplay(value)}
+                  onChange={(e) => onChange(formatPhoneDisplay(e.target.value))}
+                  isInvalid={!!errors.phone}
+                  placeholder="e.g., (123) 456-7890"
+                />
+              )}
             />
             <Form.Control.Feedback type="invalid">
               {errors.phone?.message}
@@ -239,6 +261,7 @@ const AddEmployeeWizard = ({ show, onClose, onComplete }) => {
         <Form.Label>Username <span className="text-danger">*</span></Form.Label>
         <Form.Control
           type="text"
+          autoComplete="off"
           {...register("username")}
           isInvalid={!!errors.username}
         />
@@ -253,6 +276,7 @@ const AddEmployeeWizard = ({ show, onClose, onComplete }) => {
             <Form.Label>Password <span className="text-danger">*</span></Form.Label>
             <Form.Control
               type="password"
+              autoComplete="new-password"
               {...register("password")}
               isInvalid={!!errors.password}
             />
@@ -266,6 +290,7 @@ const AddEmployeeWizard = ({ show, onClose, onComplete }) => {
             <Form.Label>Confirm Password <span className="text-danger">*</span></Form.Label>
             <Form.Control
               type="password"
+              autoComplete="new-password"
               {...register("confirm_password")}
               isInvalid={!!errors.confirm_password}
             />
@@ -332,11 +357,20 @@ const AddEmployeeWizard = ({ show, onClose, onComplete }) => {
     <div className="wizard-form">
       <Form.Group className="mb-3">
         <Form.Label>Business Phone</Form.Label>
-        <Form.Control
-          type="text"
-          {...register("business_phone")}
-          isInvalid={!!errors.business_phone}
-          placeholder="Enter 10-15 digit phone number"
+        <Controller
+          name="business_phone"
+          control={control}
+          defaultValue=""
+          render={({ field: { onChange, value, ref } }) => (
+            <Form.Control
+              type="tel"
+              ref={ref}
+              value={formatPhoneDisplay(value)}
+              onChange={(e) => onChange(formatPhoneDisplay(e.target.value))}
+              isInvalid={!!errors.business_phone}
+              placeholder="e.g., (123) 456-7890"
+            />
+          )}
         />
         <Form.Control.Feedback type="invalid">
           {errors.business_phone?.message}

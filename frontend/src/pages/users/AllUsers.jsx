@@ -150,9 +150,9 @@ const AllUsers = () => {
     const fields = [
       { label: "First Name", name: "first_name", type: "text" },
       { label: "Last Name", name: "last_name", type: "text" },
-      { label: "Username", name: "username", type: "text" },
+      { label: "Username", name: "username", type: "text", inputProps: { autoComplete: "off" } },
       { label: "Email", name: "email", type: "email" },
-      { label: "Phone", name: "phone", type: "text" },
+      { label: "Phone", name: "phone", type: "phone" },
       {
         label: "Profile Image",
         name: "profile_image",
@@ -259,6 +259,7 @@ const AllUsers = () => {
         label: "Password",
         name: "password",
         type: "password",
+        inputProps: { autoComplete: "new-password" },
         helperText: isEditMode ? "Leave blank to keep current password" : "Password must be at least 5 characters",
         required: !isEditMode
       },
@@ -266,6 +267,7 @@ const AllUsers = () => {
         label: "Confirm Password",
         name: "confirm_password",
         type: "password",
+        inputProps: { autoComplete: "new-password" },
         helperText: "Re-enter your password to confirm",
         required: !isEditMode
       },
