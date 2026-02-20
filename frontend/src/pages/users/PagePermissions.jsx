@@ -141,20 +141,20 @@ const PagePermissions = () => {
   return (
     <div className="container mx-auto px-2 min-h-screen">
       <div className="shadow-md rounded-lg p-4">
-        <div className="mb-4 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">Page Permissions</h2>
-            <p className="text-sm text-gray-600">Manage access rights for each page</p>
+        <div className="mb-4">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h2 className="text-xl font-bold text-gray-800 mb-0">Page Permissions</h2>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<SyncIcon />}
+              onClick={handleSyncPages}
+              disabled={syncingPages}
+            >
+              {syncingPages ? 'Syncing...' : 'Sync Pages'}
+            </Button>
           </div>
-        {/*  <Button
-            variant="contained"
-            color="primary"
-            startIcon={<SyncIcon />}
-            onClick={handleSyncPages}
-            disabled={syncingPages}
-          >
-            {syncingPages ? 'Syncing...' : 'Sync Pages'}
-          </Button> */}
+          <p className="text-sm text-gray-600 mt-1 mb-0">Manage access rights for each page</p>
         </div>
 
         {/* Section filter dropdown */}

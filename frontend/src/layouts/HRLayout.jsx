@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
 import useUserRoutes from "@/hooks/useUserRoutes";
 import Header from "@/components/Header";
+import { routes as routesConfig } from "@/routesConfig";
 
 const HRLayout = () => {
   const navigate = useNavigate();
@@ -10,7 +11,9 @@ const HRLayout = () => {
   const { filteredRoutes, loading } = useUserRoutes();
 
   const hrSection = filteredRoutes.find(route => route.id === 'hr');
-  const tabs = hrSection?.tabs || [];
+  // Use permission-based tabs when available; otherwise fall back to full HR tabs from config
+  // so the top nav always shows on /hr (e.g. when production page permissions aren't synced yet)
+  const tabs = (hrSection?.tabs?.length ? hrSection.tabs : routesConfig.hr?.tabs) || [];
 
   const currentActiveTab = tabs.find((tab) => 
     !tab.hidden && location.pathname.startsWith(tab.path)
