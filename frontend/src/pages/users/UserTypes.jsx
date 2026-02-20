@@ -133,6 +133,8 @@ const UserTypes = () => {
       await remove(item.type_id);
       await refresh();
       toast.success(`User Type "${item.type_name}" deleted successfully!`);
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('userTypesUpdated'));
     } catch (error) {
       toast.error("Failed to delete user type");
       console.error("Error deleting user type:", error);
@@ -150,6 +152,8 @@ const UserTypes = () => {
       await refresh();
       toast.success(`User Type "${data.type_name}" updated successfully!`);
       setShowEditPopup(false);
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('userTypesUpdated'));
     } catch (error) {
       toast.error("Failed to update user type");
       console.error("Error updating user type:", error);

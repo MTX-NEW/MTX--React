@@ -50,6 +50,7 @@ const UserGroup = sequelize.define(
       type: DataTypes.STRING(15),
       allowNull: false,
     },
+    // Optional; not used - organisations are top-level
     parent_group_id: {
       type: DataTypes.INTEGER,
       allowNull: true,

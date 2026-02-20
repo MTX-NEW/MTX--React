@@ -311,7 +311,21 @@ const getFullRouteConfig = () => {
       ]
     },
     manageEmails: { id: "manage-emails", path: "/manage-emails", label: "Manage emails" },
-    hr: { id: "hr", path: "/hr", label: "HR" },
+    hr: { 
+      id: "hr", 
+      path: "/hr", 
+      label: "HR",
+      tabs: [
+        { id: "hr-main", name: "HR Main", path: "/hr/main" },
+        { id: "employee-leave", name: "Employee Leave", path: "/hr/employee-leave" },
+        { id: "holidays", name: "Holidays", path: "/hr/holidays" },
+        { id: "appointment-log", name: "Appointment Log", path: "/hr/appointment-log" },
+        { id: "disciplinary-action", name: "Disciplinary Action Form", path: "/hr/disciplinary-action" },
+        { id: "employee-application", name: "Employee Application", path: "/hr/employee-application" },
+        { id: "employment-agreement", name: "Employment Agreement", path: "/hr/employment-agreement" },
+        { id: "employee-termination", name: "Employee Termination Form", path: "/hr/employee-termination" }
+      ]
+    },
     forms: { id: "forms", path: "/forms", label: "Forms" },
     claims: { id: "claims", path: "/claims", label: "Claims" },
     vehicles: { 

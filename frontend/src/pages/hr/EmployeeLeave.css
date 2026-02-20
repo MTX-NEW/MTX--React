@@ -1,0 +1,27 @@
+.employee-leave-container {
+  background-color: #f5f7fa;
+  min-height: 100%;
+}
+
+.employee-leave-container .card {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.employee-leave-container .card-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem 1.25rem;
+}
+
+.employee-leave-container .table th {
+  background-color: #005399;
+  color: #FFFFFF;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.employee-leave-container .badge {
+  font-size: 0.85rem;
+  padding: 0.4em 0.8em;
+}

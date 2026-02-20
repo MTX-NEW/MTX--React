@@ -1,0 +1,57 @@
+# MTX CI/CD: Build on every push/merge to main, then deploy to IONOS VPS.
+# - Build runs in GitHub; if it fails, you see it in the Actions tab and we do NOT deploy.
+# - Deploy runs only when build succeeds: SSH to VPS, pull, install, migrate, build, restart PM2.
+
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  # Optional: run build (no deploy) on PRs to main so you see breakage before merging
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm run install-all
+
+      - name: Build frontend
+        run: npm run build
+
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build
+    # Only deploy on push to main (not on pull_request)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /var/www/mtx
+            git pull origin main
+            npm run install-all
+            node backend/run-all-migrations.js
+            npm run build
+            pm2 restart mtx-backend || pm2 start ecosystem.config.js --env production

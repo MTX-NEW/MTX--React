@@ -1,0 +1,10 @@
+# Migration run order (one migration name per line; lines starting with # are ignored)
+# Add new migrations at the end. Name = filename without .js (e.g. create-my-table)
+create-org-programs-and-providers
+create-claims-tables
+create-employees-table
+update-address-fields-user-groups
+add-website-address-to-user-groups
+add-billing-status-and-edi-settings
+update-employee-type-enum
+add-parent-trip-id

@@ -103,15 +103,16 @@ const UserGroups = () => {
         ) : '-';
       }
     },
-    { 
-      header: "Parent Organisation",
-      accessor: "parent_group_id",
-      render: (value, row) => {
-        if (!value) return '-';
-        const parentGroup = userGroups.find(g => g.group_id === value);
-        return parentGroup ? parentGroup.common_name : value;
-      }
-    },
+    // Parent Organisation - not used; organisations are top-level
+    // { 
+    //   header: "Parent Organisation",
+    //   accessor: "parent_group_id",
+    //   render: (value, row) => {
+    //     if (!value) return '-';
+    //     const parentGroup = userGroups.find(g => g.group_id === value);
+    //     return parentGroup ? parentGroup.common_name : value;
+    //   }
+    // },
     {
       header: "Auto Routing",
       accessor: "auto_routing",
@@ -228,17 +229,18 @@ const UserGroups = () => {
         required: false
       }
     },
-    { 
-      label: "Parent Organisation", 
-      name: "parent_group_id", 
-      type: "select",
-      options: userGroups
-        ?.filter(group => group.status === 'Active')
-        ?.map(group => ({ label: group.full_name, value: group.group_id })) || [],
-      inputProps: {
-        placeholder: "Select parent organisation (optional)"
-      }
-    },
+    // Parent Organisation - not used; organisations are top-level
+    // { 
+    //   label: "Parent Organisation", 
+    //   name: "parent_group_id", 
+    //   type: "select",
+    //   options: userGroups
+    //     ?.filter(group => group.status === 'Active')
+    //     ?.map(group => ({ label: group.full_name, value: group.group_id })) || [],
+    //   inputProps: {
+    //     placeholder: "Select parent organisation (optional)"
+    //   }
+    // },
     {
       label: "Status",
       name: "status",
@@ -282,7 +284,9 @@ const UserGroups = () => {
       await refresh();
       toast.success(`Organisation "${item.full_name}" deleted successfully!`);
     } catch (error) {
-      toast.error("Failed to delete organisation");
+      const msg = error.response?.data?.message || "Failed to delete organisation";
+      const detail = error.response?.data?.detail;
+      toast.error(detail ? `${msg} ${detail}` : msg);
       console.error("Error deleting organisation:", error);
     }
   };

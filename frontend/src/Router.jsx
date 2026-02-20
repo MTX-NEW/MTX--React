@@ -60,6 +60,12 @@ const TripDetail = lazy(() => import("@/components/driverPanel/TripDetail"));
 const DriverSettings = lazy(() => import("@/components/driverPanel/DriverSettings"));
 const DriverTimeOff = lazy(() => import("@/components/driverPanel/DriverTimeOff"));
 
+// Lazy load HR pages
+const HRLayout = lazy(() => import("@/layouts/HRLayout"));
+const HRMain = lazy(() => import("@/pages/hr/HRMain"));
+const EmployeeLeave = lazy(() => import("@/pages/hr/EmployeeLeave"));
+const HRComingSoon = lazy(() => import("@/pages/hr/HRComingSoon"));
+
 // Loading fallback component
 //const LoadingFallback = () => <div className="page-loading">Loading...</div>;
 
@@ -120,7 +126,20 @@ const Router = () => {
             <Route path="manage-programs" element={<ManagePrograms />} />
           </Route>
           <Route path="/manage-emails" element={<ComingSoonLayout />} />
-          <Route path="/hr" element={<ComingSoonLayout />} />
+          
+          {/* HR Routes */}
+          <Route path="/hr" element={<HRLayout />}>
+            <Route index element={<Navigate to="main" replace />} />
+            <Route path="main" element={<HRMain />} />
+            <Route path="employee-leave" element={<EmployeeLeave />} />
+            <Route path="holidays" element={<HRComingSoon pageName="Holidays" />} />
+            <Route path="appointment-log" element={<HRComingSoon pageName="Appointment Log" />} />
+            <Route path="disciplinary-action" element={<HRComingSoon pageName="Disciplinary Action Form" />} />
+            <Route path="employee-application" element={<HRComingSoon pageName="Employee Application" />} />
+            <Route path="employment-agreement" element={<HRComingSoon pageName="Employment Agreement" />} />
+            <Route path="employee-termination" element={<HRComingSoon pageName="Employee Termination Form" />} />
+          </Route>
+          
           <Route path="/forms" element={<ComingSoonLayout />} />
           
           {/* Claims Routes */}

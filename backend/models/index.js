@@ -18,6 +18,7 @@ const TimeSheet = require('./TimeSheet');
 const TimeSheetBreak = require('./TimeSheetBreak');
 const TimeOffRequest = require('./TimeOffRequest');
 const Incentive = require('./Incentive');
+const Employee = require('./Employee');
 
 // Define relationship between Trip and TripSpecialInstruction - REMOVED, now in associations.js
 // Trip.hasOne(TripSpecialInstruction, { foreignKey: 'trip_id', as: 'specialInstructions' });
@@ -46,5 +47,6 @@ module.exports = {
   TimeSheet,
   TimeSheetBreak,
   TimeOffRequest,
-  Incentive
+  Incentive,
+  Employee
 }; 

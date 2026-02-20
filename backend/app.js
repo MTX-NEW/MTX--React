@@ -33,6 +33,7 @@ const ediSettingsRoutes = require('./routes/ediSettings');
 const batchRoutes = require('./routes/batchRoutes');
 const orgProgramRoutes = require('./routes/orgPrograms');
 const providerRoutes = require('./routes/providers');
+const employeeRoutes = require('./routes/employees');
 
 require('./models/associations');
 
@@ -81,6 +82,7 @@ app.use("/api/edi-settings", ediSettingsRoutes);
 app.use("/api/batches", batchRoutes);
 app.use("/api/org-programs", orgProgramRoutes);
 app.use("/api/providers", providerRoutes);
+app.use("/api/employees", employeeRoutes);
 // Debug middleware to log requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);

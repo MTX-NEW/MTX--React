@@ -1,4 +1,8 @@
 const UserGroup = require("../models/UserGroup");
+const User = require("../models/User");
+const Employee = require("../models/Employee");
+const OrgProgram = require("../models/OrgProgram");
+const GroupPermission = require("../models/GroupPermission");
 const { ValidationError, UniqueConstraintError } = require("sequelize");
 
 // Get all user groups
@@ -48,15 +52,38 @@ exports.updateUserGroup = async (req, res) => {
   }
 };
 
-// Delete a user group
+// Delete a user group (organisation) - block if any references exist
 exports.deleteUserGroup = async (req, res) => {
   try {
-    const group = await UserGroup.findByPk(req.params.id);
-    if (!group) return res.status(404).json({ message: "User group not found" });
+    const groupId = req.params.id;
+    const group = await UserGroup.findByPk(groupId);
+    if (!group) return res.status(404).json({ message: "Organisation not found" });
+
+    // Check for references that would violate foreign key constraints
+    const [userCount, employeeCount, programCount, permissionCount] = await Promise.all([
+      User.count({ where: { user_group: groupId } }),
+      Employee.count({ where: { user_group_id: groupId } }),
+      OrgProgram.count({ where: { group_id: groupId } }),
+      GroupPermission.count({ where: { group_id: groupId } }),
+    ]);
+
+    const blockers = [];
+    if (userCount > 0) blockers.push(`${userCount} user(s)`);
+    if (employeeCount > 0) blockers.push(`${employeeCount} employee(s)`);
+    if (programCount > 0) blockers.push(`${programCount} program(s)`);
+    if (permissionCount > 0) blockers.push("organisation permissions");
+
+    if (blockers.length > 0) {
+      return res.status(400).json({
+        message: "Cannot delete organisation while it is in use.",
+        detail: `Reassign or remove: ${blockers.join(", ")} first.`,
+      });
+    }
 
     await group.destroy();
-    res.json({ message: "User group deleted successfully" });
+    res.json({ message: "Organisation deleted successfully" });
   } catch (error) {
+    console.error("Error deleting organisation:", error);
     res.status(500).json({ message: error.message });
   }
 }; 

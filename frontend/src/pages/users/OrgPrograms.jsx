@@ -126,7 +126,9 @@ const OrgPrograms = () => {
       await refresh();
       toast.success(`Program "${item.program_name}" deleted successfully!`);
     } catch (error) {
-      toast.error("Failed to delete program");
+      const msg = error.response?.data?.message || "Failed to delete program";
+      const detail = error.response?.data?.detail;
+      toast.error(detail ? `${msg} ${detail}` : msg);
       console.error("Error deleting program:", error);
     }
   };

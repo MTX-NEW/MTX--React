@@ -397,3 +397,46 @@ export const providerValidationSchema = Yup.object().shape({
     .required("Status is required")
     .oneOf(["Active", "Inactive"], "Invalid status"),
 });
+
+// Employee validation schema (HR Module)
+export const employeeValidationSchema = Yup.object().shape({
+  first_name: Yup.string()
+    .required("First name is required")
+    .max(100, "First name cannot exceed 100 characters"),
+  last_name: Yup.string()
+    .required("Last name is required")
+    .max(100, "Last name cannot exceed 100 characters"),
+  email: Yup.string()
+    .nullable()
+    .email("Invalid email address"),
+  username: Yup.string()
+    .required("Username is required")
+    .min(3, "Username must be at least 3 characters"),
+  password: Yup.string()
+    .required("Password is required")
+    .min(5, "Password must be at least 5 characters"),
+  confirm_password: Yup.string()
+    .oneOf([Yup.ref('password')], "Passwords must match")
+    .required("Confirm password is required"),
+  user_type_id: Yup.number()
+    .required("User type is required")
+    .integer(),
+  user_group_id: Yup.number()
+    .required("User group is required")
+    .integer(),
+  ssn: Yup.string()
+    .nullable()
+    .max(20, "SSN cannot exceed 20 characters"),
+  business_phone: Yup.string()
+    .nullable()
+    .matches(/^[0-9]{10,15}$/, { message: "Invalid phone number", excludeEmptyString: true }),
+  hire_date: Yup.date()
+    .nullable(),
+  last_employment_date: Yup.date()
+    .nullable(),
+  employee_type: Yup.string()
+    .required("Employee type is required")
+    .oneOf(["Salary", "Hourly"], "Invalid employee type"),
+  status: Yup.string()
+    .oneOf(["Active", "Inactive", "Terminated", "On Leave"], "Invalid status"),
+});

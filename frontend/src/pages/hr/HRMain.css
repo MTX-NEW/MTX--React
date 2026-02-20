@@ -1,0 +1,89 @@
+.hr-main-container {
+  background-color: #f5f7fa;
+  min-height: 100%;
+}
+
+.hr-main-container .card {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.hr-main-container .card-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem 1.25rem;
+}
+
+.application-review-card {
+  position: sticky;
+  top: 1rem;
+}
+
+.application-review-card .card-header {
+  background-color: #f8f9fa !important;
+}
+
+.leave-request-item {
+  background-color: #fff;
+  transition: box-shadow 0.2s ease;
+}
+
+.leave-request-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.inactive {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.terminated {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.status-badge.on-leave {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.outstanding-requests {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.leave-request-item {
+  background-color: #fff;
+  transition: all 0.2s ease;
+  border-color: #e9ecef !important;
+}
+
+.leave-request-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #dee2e6 !important;
+}
+
+.leave-request-item .btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.application-review-card .badge {
+  font-size: 0.75rem;
+}
+
+.fw-semibold {
+  font-weight: 600;
+}

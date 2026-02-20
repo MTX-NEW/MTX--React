@@ -1,5 +1,6 @@
 const OrgProgram = require("../models/OrgProgram");
 const UserGroup = require("../models/UserGroup");
+const Provider = require("../models/Provider");
 const { ValidationError, UniqueConstraintError } = require("sequelize");
 
 // Get all programs with organisation info
@@ -108,17 +109,27 @@ exports.updateProgram = async (req, res) => {
   }
 };
 
-// Delete a program
+// Delete a program - block if any providers reference it
 exports.deleteProgram = async (req, res) => {
   try {
-    const program = await OrgProgram.findByPk(req.params.id);
+    const programId = req.params.id;
+    const program = await OrgProgram.findByPk(programId);
     if (!program) {
       return res.status(404).json({ message: "Program not found" });
+    }
+
+    const providerCount = await Provider.count({ where: { program_id: programId } });
+    if (providerCount > 0) {
+      return res.status(400).json({
+        message: "Cannot delete program while it is in use.",
+        detail: `Remove or reassign ${providerCount} provider(s) first.`,
+      });
     }
 
     await program.destroy();
     res.json({ message: "Program deleted successfully" });
   } catch (error) {
+    console.error("Error deleting program:", error);
     res.status(500).json({ message: error.message });
   }
 };

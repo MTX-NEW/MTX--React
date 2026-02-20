@@ -4,8 +4,9 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 
 // Using relative URL prevents mixed content issues when site is served over HTTPS
-//export const API_BASE_URL = '';
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// In production, use empty string for relative URLs (nginx proxies /api/ to backend)
+// In development, use localhost:5000
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 // Set up axios interceptor to include auth token in requests
 const token = localStorage.getItem('token');
@@ -320,4 +321,10 @@ export const orgProgramApi = {
 export const providerApi = {
   ...createApiService('providers'),
   getByProgram: (programId) => axios.get(`${API_BASE_URL}/api/providers/program/${programId}`)
+};
+
+// Employees API (HR Module)
+export const employeeApi = {
+  ...createApiService('employees'),
+  getByStatus: (status) => axios.get(`${API_BASE_URL}/api/employees/status/${status}`)
 };

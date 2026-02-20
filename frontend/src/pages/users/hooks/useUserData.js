@@ -18,20 +18,32 @@ export const useUserData = () => {
     refresh 
   } = useResource(userApi);
 
+  const fetchStaticData = async () => {
+    try {
+      const [typesResponse, groupsResponse] = await Promise.all([
+        userTypeApi.getAll(),
+        groupApi.getAll()
+      ]);
+      setUserTypes(typesResponse.data);
+      setUserGroups(groupsResponse.data);
+    } catch (error) {
+      toast.error("Failed to fetch user types or organisations");
+    }
+  };
+
   useEffect(() => {
-    const fetchStaticData = async () => {
-      try {
-        const [typesResponse, groupsResponse] = await Promise.all([
-          userTypeApi.getAll(),
-          groupApi.getAll()
-        ]);
-        setUserTypes(typesResponse.data);
-        setUserGroups(groupsResponse.data);
-      } catch (error) {
-        toast.error("Failed to fetch user types or organisations");
-      }
-    };
     fetchStaticData();
+    
+    // Listen for custom event when user types are updated
+    const handleUserTypesUpdate = () => {
+      fetchStaticData();
+    };
+    
+    window.addEventListener('userTypesUpdated', handleUserTypesUpdate);
+    
+    return () => {
+      window.removeEventListener('userTypesUpdated', handleUserTypesUpdate);
+    };
   }, []);
 
   const fetchAllowedTypes = async (groupId) => {
@@ -64,6 +76,7 @@ export const useUserData = () => {
     userGroups,
     allowedTypes,
     fetchAllowedTypes,
+    refreshUserTypes: fetchStaticData,
     initialLoad,
     setInitialLoad
   };
