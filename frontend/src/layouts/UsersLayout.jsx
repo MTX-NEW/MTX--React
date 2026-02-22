@@ -17,7 +17,7 @@ const UsersLayout = () => {
   const tabGroups = useMemo(() => {
     console.log('UsersLayout - tabs with group property:', tabs.map(t => ({ name: t.name, group: t.group })));
     
-    const groupOrder = ["Users", "Organisation Setup", "Permissions", "Config"];
+    const groupOrder = ["Users", "Business Entities", "Permissions", "Config"];
     const groups = {};
     
     tabs.forEach(tab => {

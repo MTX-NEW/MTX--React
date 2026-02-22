@@ -51,11 +51,6 @@ const MemberAutocomplete = ({
     };
   }
 
-  // Create a key to force re-render when defaultValue changes
-  const componentKey = defaultValue 
-    ? (typeof defaultValue === 'object' ? defaultValue.member_id : defaultValue) 
-    : 'no-member';
-
   return (
     <Controller
       name={name}
@@ -75,13 +70,18 @@ const MemberAutocomplete = ({
               placeholder={placeholder}
               error={error}
               onSelect={handleSelectMember}
-              key={componentKey} // Add key to force re-render
             />
           </div>
         );
       }}
     />
   );
+};
+
+// Helper to get display label from an option
+const getOptionLabel = (option) => {
+  if (!option) return '';
+  return typeof option === 'object' ? (option.label || '') : '';
 };
 
 // Separate component for async search functionality
@@ -93,7 +93,7 @@ const AsyncMemberSearch = React.memo(({
   error,
   onSelect
 }) => {
-  // Use the async autocomplete hook for searching
+  // Use the async autocomplete hook for searching; pass form value so clear (X) syncs internal state
   const {
     inputValue,
     options,
@@ -101,11 +101,14 @@ const AsyncMemberSearch = React.memo(({
     open,
     selectedOption,
     setOpen,
+    setSelectedOption,
+    setInputValue,
     handleInputChange,
   } = useAsyncAutocomplete(
     (query) => tripMemberApi.searchMembers(query),
-    400, // Debounce time - wait 400ms after typing stops
-    2    // Minimum characters - start searching after 2 chars
+    400,
+    2
+    // Do NOT pass form value here - the sync effect was clearing selection before Controller updated (race). Clear only in handleChange when user clicks X.
   );
 
   // Map API response to autocomplete options format
@@ -115,8 +118,48 @@ const AsyncMemberSearch = React.memo(({
     data: member
   }));
 
-  // Use the default option if there's no selected option
-  const displayValue = selectedOption || defaultOption;
+  // When form value is empty, don't show defaultOption (parent may still pass old member until it re-renders)
+  const displayValue = value ? (selectedOption || defaultOption) : selectedOption;
+
+  const handleChange = (_, newValue) => {
+    fieldOnChange(newValue ? newValue.value : '');
+    if (newValue) {
+      setSelectedOption(newValue);
+      setInputValue(getOptionLabel(newValue)); // show full name in input; parent onSelect is async (getMemberById)
+      if (onSelect) onSelect(newValue.value, newValue.data);
+    } else {
+      setSelectedOption(null);
+      setInputValue('');
+    }
+  };
+
+  const handleInputChangeWrapper = (event, newInputValue, reason) => {
+    // User clicked clear (X) - always clear form and internal state
+    if (reason === 'clear') {
+      setSelectedOption(null);
+      fieldOnChange('');
+      handleInputChange(event, '');
+      return;
+    }
+    // MUI fires 'reset' after SELECTING an option (to sync input to value). Do NOT clear - that was wiping the selection.
+    if (reason === 'reset') {
+      handleInputChange(event, newInputValue);
+      return;
+    }
+    // User cleared the input by typing (empty string)
+    if (newInputValue === '') {
+      setSelectedOption(null);
+      fieldOnChange('');
+      handleInputChange(event, '');
+      return;
+    }
+    // User editing (e.g. backspace): clear selection so input is free
+    if (displayValue && newInputValue !== getOptionLabel(displayValue)) {
+      setSelectedOption(null);
+      fieldOnChange('');
+    }
+    handleInputChange(event, newInputValue);
+  };
 
   return (
     <Autocomplete
@@ -127,24 +170,13 @@ const AsyncMemberSearch = React.memo(({
       options={mappedOptions}
       loading={loading}
       value={displayValue}
-      onChange={(_, newValue) => {
-        // Update form field
-        fieldOnChange(newValue ? newValue.value : '');
-        
-        // Call parent onSelect if provided
-        if (onSelect && newValue) {
-          onSelect(newValue.value, newValue.data);
-        }
+      onChange={handleChange}
+      onInputChange={handleInputChangeWrapper}
+      isOptionEqualToValue={(option, val) => {
+        if (!option || !val) return false;
+        return option.value === (typeof val === 'object' ? val.value : val);
       }}
-      onInputChange={handleInputChange}
-      isOptionEqualToValue={(option, value) => {
-        if (!option || !value) return false;
-        return option.value === (typeof value === 'object' ? value.value : value);
-      }}
-      getOptionLabel={(option) => {
-        if (!option) return '';
-        return typeof option === 'object' ? (option.label || '') : '';
-      }}
+      getOptionLabel={getOptionLabel}
       filterOptions={(x) => x} // Disable client-side filtering
       renderInput={(params) => (
         <TextField

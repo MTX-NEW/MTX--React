@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
+import { FormProvider } from 'react-hook-form';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import UserActions from '@/components/users/allusers/UserActions';
@@ -10,6 +10,7 @@ import useTripFilters from '@/hooks/useTripFilters';
 import { useResource } from '@/hooks/useResource';
 import useMemberLocations from '@/hooks/useMemberLocations';
 import useMemberManagement from '@/hooks/useMemberManagement';
+import useLocationManagement from '@/hooks/useLocationManagement';
 import FormComponent from '@/components/FormComponent';
 
 // Import our components
@@ -67,7 +68,12 @@ const TripRequestsPresenter = ({
   addTripProps,
   editTripProps,
   refreshTrips,
-  memberManagement
+  memberManagement,
+  locationManagement,
+  refetchMembers,
+  tripModalNestedView,
+  setTripModalNestedView,
+  setNewlyCreatedMember
 }) => {
   return (
     <div>
@@ -184,24 +190,127 @@ const TripRequestsPresenter = ({
       {showAddModal && (
         <RightSidebarPopup
           show={showAddModal}
-          title="New Trip Request"
-          onClose={() => setShowAddModal(false)}
+          title={tripModalNestedView === 'member' ? 'New Member' : tripModalNestedView === 'location' ? 'Add Location' : 'New Trip Request'}
+          onClose={() => {
+            setShowAddModal(false);
+            setTripModalNestedView(null);
+          }}
           isWide={true}
         >
-          <TripForm {...addTripProps} />
+          {tripModalNestedView === 'member' && (
+            <>
+              <button
+                type="button"
+                className="add-user-btn secondary-btn mb-3"
+                onClick={() => setTripModalNestedView(null)}
+              >
+                ← Back to Trip Request
+              </button>
+              <FormProvider {...memberManagement.addFormMethods}>
+                <FormComponent
+                  fields={memberManagement.getMemberFields(memberManagement.addFormMethods)}
+                  onSubmit={async (data) => {
+                    try {
+                      const res = await tripMemberApi.create(data);
+                      const created = res.data;
+                      const id = created?.member_id ?? created?.id;
+                      const fullRes = id ? await tripMemberApi.getMemberById(id) : { data: created };
+                      const fullMember = fullRes.data || created;
+                      toast.success('Member created successfully');
+                      refetchMembers();
+                      setTripModalNestedView(null);
+                      setNewlyCreatedMember(fullMember);
+                      memberManagement.addFormMethods.reset();
+                    } catch (err) {
+                      console.error(err);
+                      toast.error('Failed to create member. Please try again.');
+                    }
+                  }}
+                  submitText="Create Member"
+                  isSubmitting={memberManagement.isLoading}
+                />
+              </FormProvider>
+            </>
+          )}
+          {tripModalNestedView === 'location' && (
+            <>
+              <button
+                type="button"
+                className="add-user-btn secondary-btn mb-3"
+                onClick={() => setTripModalNestedView(null)}
+              >
+                ← Back to Trip Request
+              </button>
+              <FormProvider {...locationManagement.addFormMethods}>
+                <FormComponent
+                  fields={locationManagement.getLocationFields()}
+                  onSubmit={async (data) => {
+                    await locationManagement.handleAddSubmit(data);
+                    setTripModalNestedView(null);
+                  }}
+                  submitText="Add Location"
+                  isSubmitting={locationManagement.isLoading}
+                />
+              </FormProvider>
+            </>
+          )}
+          {/* Keep TripForm mounted when nested form is open so filled data is preserved */}
+          <div style={{ display: tripModalNestedView ? 'none' : 'block' }}>
+            <TripForm {...addTripProps} />
+          </div>
         </RightSidebarPopup>
       )}
       
       {showEditModal && selectedTrip && (
         <RightSidebarPopup
           show={showEditModal}
-          title="Edit Trip Request"
-          onClose={() => setShowEditModal(false)}
+          title={tripModalNestedView === 'member' ? 'New Member' : tripModalNestedView === 'location' ? 'Add Location' : 'Edit Trip Request'}
+          onClose={() => {
+            setShowEditModal(false);
+            setTripModalNestedView(null);
+          }}
           isWide={true}
         >
-          <TripForm 
-            {...editTripProps}
-          />
+          {tripModalNestedView === 'member' && (
+            <>
+              <button type="button" className="add-user-btn secondary-btn mb-3" onClick={() => setTripModalNestedView(null)}>← Back to Trip Request</button>
+              <FormProvider {...memberManagement.addFormMethods}>
+                <FormComponent
+                  fields={memberManagement.getMemberFields(memberManagement.addFormMethods)}
+                  onSubmit={async (data) => {
+                    try {
+                      const res = await tripMemberApi.create(data);
+                      const created = res.data;
+                      const id = created?.member_id ?? created?.id;
+                      const fullRes = id ? await tripMemberApi.getMemberById(id) : { data: created };
+                      const fullMember = fullRes.data || created;
+                      toast.success('Member created successfully');
+                      refetchMembers();
+                      setTripModalNestedView(null);
+                      setNewlyCreatedMember(fullMember);
+                      memberManagement.addFormMethods.reset();
+                    } catch (err) {
+                      console.error(err);
+                      toast.error('Failed to create member. Please try again.');
+                    }
+                  }}
+                  submitText="Create Member"
+                  isSubmitting={memberManagement.isLoading}
+                />
+              </FormProvider>
+            </>
+          )}
+          {tripModalNestedView === 'location' && (
+            <>
+              <button type="button" className="add-user-btn secondary-btn mb-3" onClick={() => setTripModalNestedView(null)}>← Back to Trip Request</button>
+              <FormProvider {...locationManagement.addFormMethods}>
+                <FormComponent fields={locationManagement.getLocationFields()} onSubmit={async (data) => { await locationManagement.handleAddSubmit(data); setTripModalNestedView(null); }} submitText="Add Location" isSubmitting={locationManagement.isLoading} />
+              </FormProvider>
+            </>
+          )}
+          <div style={{ display: tripModalNestedView ? 'none' : 'block' }}>
+            <TripForm {...editTripProps} />
+          </div>
         </RightSidebarPopup>
       )}
 
@@ -229,25 +338,71 @@ const TripRequestsPresenter = ({
       {showRecreateModal && selectedTrip && (
         <RightSidebarPopup
           show={showRecreateModal}
-          title="Recreate Trip"
-          onClose={() => setShowRecreateModal(false)}
+          title={tripModalNestedView === 'member' ? 'New Member' : tripModalNestedView === 'location' ? 'Add Location' : 'Recreate Trip'}
+          onClose={() => {
+            setShowRecreateModal(false);
+            setTripModalNestedView(null);
+          }}
           isWide={true}
         >
-          <TripForm
-            initialData={selectedTrip}
-            onSubmit={handleSubmit}
-            isSubmitting={tripsLoading}
-            members={selectedTrip?.TripMember ? [selectedTrip.TripMember] : []}
-            programs={addTripProps.programs}
-            companies={addTripProps.companies}
-            memberLocations={addTripProps.memberLocations}
-            isLoadingLocations={addTripProps.isLoadingLocations}
-            onMemberSelect={addTripProps.onMemberSelect}
-            onEditMember={addTripProps.onEditMember}
-          />
+          {tripModalNestedView === 'member' && (
+            <>
+              <button type="button" className="add-user-btn secondary-btn mb-3" onClick={() => setTripModalNestedView(null)}>← Back to Trip Request</button>
+              <FormProvider {...memberManagement.addFormMethods}>
+                <FormComponent
+                  fields={memberManagement.getMemberFields(memberManagement.addFormMethods)}
+                  onSubmit={async (data) => {
+                    try {
+                      const res = await tripMemberApi.create(data);
+                      const created = res.data;
+                      const id = created?.member_id ?? created?.id;
+                      const fullRes = id ? await tripMemberApi.getMemberById(id) : { data: created };
+                      const fullMember = fullRes.data || created;
+                      toast.success('Member created successfully');
+                      refetchMembers();
+                      setTripModalNestedView(null);
+                      setNewlyCreatedMember(fullMember);
+                      memberManagement.addFormMethods.reset();
+                    } catch (err) {
+                      console.error(err);
+                      toast.error('Failed to create member. Please try again.');
+                    }
+                  }}
+                  submitText="Create Member"
+                  isSubmitting={memberManagement.isLoading}
+                />
+              </FormProvider>
+            </>
+          )}
+          {tripModalNestedView === 'location' && (
+            <>
+              <button type="button" className="add-user-btn secondary-btn mb-3" onClick={() => setTripModalNestedView(null)}>← Back to Trip Request</button>
+              <FormProvider {...locationManagement.addFormMethods}>
+                <FormComponent fields={locationManagement.getLocationFields()} onSubmit={async (data) => { await locationManagement.handleAddSubmit(data); setTripModalNestedView(null); }} submitText="Add Location" isSubmitting={locationManagement.isLoading} />
+              </FormProvider>
+            </>
+          )}
+          <div style={{ display: tripModalNestedView ? 'none' : 'block' }}>
+            <TripForm
+              initialData={selectedTrip}
+              onSubmit={handleSubmit}
+              isSubmitting={tripsLoading}
+              members={selectedTrip?.TripMember ? [selectedTrip.TripMember] : []}
+              programs={addTripProps.programs}
+              companies={addTripProps.companies}
+              memberLocations={addTripProps.memberLocations}
+              isLoadingLocations={addTripProps.isLoadingLocations}
+              onMemberSelect={addTripProps.onMemberSelect}
+              onEditMember={addTripProps.onEditMember}
+              onOpenAddMember={addTripProps.onOpenAddMember}
+              onOpenAddLocation={addTripProps.onOpenAddLocation}
+              newlyCreatedMember={addTripProps.newlyCreatedMember}
+              onClearNewlyCreatedMember={addTripProps.onClearNewlyCreatedMember}
+            />
+          </div>
         </RightSidebarPopup>
       )}
-      
+
       {/* Edit Member Modal */}
       {showEditMemberModal && selectedMemberForEdit && (
         <RightSidebarPopup
@@ -272,6 +427,7 @@ const TripRequestsPresenter = ({
           </FormProvider>
         </RightSidebarPopup>
       )}
+
     </div>
   );
 };
@@ -314,6 +470,10 @@ const TripRequests = () => {
   // Add state for member management
   const [showEditMemberModal, setShowEditMemberModal] = useState(false);
   const [selectedMemberForEdit, setSelectedMemberForEdit] = useState(null);
+
+  // Nested form view inside Add Trip modal (avoids second modal/backdrop)
+  const [tripModalNestedView, setTripModalNestedView] = useState(null); // null | 'member' | 'location'
+  const [newlyCreatedMember, setNewlyCreatedMember] = useState(null);
   
   // Initialize member management hook
   const memberManagement = useMemberManagement();
@@ -342,13 +502,16 @@ const TripRequests = () => {
   // Get necessary data based on current state to avoid loading large datasets unnecessarily
   // Only load full members list when adding a new trip (not when editing)
   const shouldLoadMembers = showAddModal;
-  const { data: members = [], loading: membersLoading, error: membersError } = useResource(
+  const { data: members = [], loading: membersLoading, error: membersError, refresh: refetchMembers } = useResource(
     tripMemberApi, 
     { 
       idField: 'member_id',
       skip: !shouldLoadMembers
     }
   );
+
+  // Location management for "Add New Location" from trip form (reuse same modal as /trip-system/locations)
+  const locationManagement = useLocationManagement();
   
   // Get programs for dropdown via useResource
   const { data: programs = [], loading: programsLoading, error: programsError } = useResource(programApi, { idField: 'program_id' });
@@ -382,7 +545,8 @@ const TripRequests = () => {
   // Trip handlers
   const handleAddTrip = () => {
     setSelectedTrip(null);
-    // Clear member locations
+    setTripModalNestedView(null);
+    setNewlyCreatedMember(null);
     fetchMemberLocations(null);
     setShowAddModal(true);
   };
@@ -595,7 +759,20 @@ const TripRequests = () => {
       memberLocations,
       isLoadingLocations,
       onMemberSelect: handleEditMemberSelect,
-      onEditMember: handleEditMember
+      onEditMember: handleEditMember,
+      onOpenAddMember: () => {
+        memberManagement.addFormMethods.reset({ gender: 'Male' });
+        setTripModalNestedView('member');
+      },
+      onOpenAddLocation: () => {
+        locationManagement.addFormMethods.reset({
+          street_address: '', city: '', state: '', zip: '',
+          building_type: '', building: '', phone: '', location_type: ''
+        });
+        setTripModalNestedView('location');
+      },
+      newlyCreatedMember,
+      onClearNewlyCreatedMember: () => setNewlyCreatedMember(null)
     };
   };
 
@@ -625,7 +802,20 @@ const TripRequests = () => {
       memberLocations: memberLocations || [],
       isLoadingLocations,
       onMemberSelect: handleMemberSelect,
-      onEditMember: handleEditMember
+      onEditMember: handleEditMember,
+      onOpenAddMember: () => {
+        memberManagement.addFormMethods.reset({ gender: 'Male' });
+        setTripModalNestedView('member');
+      },
+      onOpenAddLocation: () => {
+        locationManagement.addFormMethods.reset({
+          street_address: '', city: '', state: '', zip: '',
+          building_type: '', building: '', phone: '', location_type: ''
+        });
+        setTripModalNestedView('location');
+      },
+      newlyCreatedMember,
+      onClearNewlyCreatedMember: () => setNewlyCreatedMember(null)
     };
   };
 
@@ -806,6 +996,11 @@ const TripRequests = () => {
       editTripProps={getEditComponentProps()}
       refreshTrips={refreshTrips}
       memberManagement={memberManagement}
+      locationManagement={locationManagement}
+      refetchMembers={refetchMembers}
+      tripModalNestedView={tripModalNestedView}
+      setTripModalNestedView={setTripModalNestedView}
+      setNewlyCreatedMember={setNewlyCreatedMember}
     />
   );
 };

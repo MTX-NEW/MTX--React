@@ -123,11 +123,11 @@ const TripTable = ({
       header: 'Actions',
       accessor: 'actions',
       actions: [
-        ({ row }) => (
+        ({ row, onEdit: onEditFromTable, onDelete: onDeleteFromTable }) => (
           <DefaultTableActions
             row={row}
-            onEdit={() => onEdit(row)}
-            onDelete={() => onDelete(row.trip_id)}
+            onEdit={() => onEditFromTable(row)}
+            onDelete={() => onDeleteFromTable(row)}
             customActions={[
               {
                 label: "View",
@@ -168,9 +168,14 @@ const TripTable = ({
           columns={tripColumns}
           data={trips}
           isLoading={isLoading}
-          onDelete={onDelete}
+          onDelete={(item) => onDelete(item.trip_id)}
           onEdit={onEdit}
-          deleteConfirmMessage={(item) => `Are you sure you want to delete this trip?`}
+          deleteConfirmMessage={(item) => {
+            const memberName = item?.TripMember
+              ? `${item.TripMember.first_name} ${item.TripMember.last_name}`
+              : 'this trip';
+            return `Delete trip for ${memberName}?`;
+          }}
         />
       )}
     </div>

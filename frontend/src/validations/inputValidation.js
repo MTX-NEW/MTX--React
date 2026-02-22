@@ -308,12 +308,7 @@ export const memberValidationSchema = Yup.object().shape({
   birth_date: Yup.date().nullable(),
   phone: Yup.string()
     .nullable()
-    .max(15, "Phone number cannot exceed 15 characters")
-    
-    .matches(/^[\d-]+$/, { 
-      message: "Phone number must be exactly 10 digits",
-      excludeEmptyString: true
-    }),
+    .test("us-phone", US_PHONE_MESSAGE, (value) => !value || isValidUsPhone(value)),
   gender: Yup.string()
     .required("Gender is required")
     .oneOf(["Male", "Female", "Other"], "Invalid gender value"),

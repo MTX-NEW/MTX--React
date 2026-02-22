@@ -104,10 +104,10 @@ const TripRequestFiltersPresenter = ({
           
           <div className="col-md-1 d-flex align-items-end">
             <button
-              className="btn btn-outline-secondary w-100"
+              type="button"
+              className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center"
               onClick={onClearFilters}
             >
-              <i className="material-icons small me-1"></i>
               Clear
             </button>
           </div>

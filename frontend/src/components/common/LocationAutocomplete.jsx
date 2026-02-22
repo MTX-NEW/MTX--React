@@ -19,8 +19,7 @@ const LocationAutocomplete = ({
   const { control, getValues, watch } = useFormContext();
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [formattedSearchResults, setFormattedSearchResults] = useState([]);
-  console.log('locations', locations);
-  
+
   // Watch for value changes to update the selectedLocation when field is updated programmatically
   const currentValue = watch(name);
   
@@ -31,6 +30,7 @@ const LocationAutocomplete = ({
     loading: searchLoading,
     open,
     setOpen,
+    setInputValue,
     handleInputChange
   } = useAsyncAutocomplete(
     (query) => tripLocationApi.searchLocations(query),
@@ -53,47 +53,36 @@ const LocationAutocomplete = ({
   }, [searchResultsRaw]);
  
 
-  // Convert member-specific locations to options format (only once)
-  const memberLocationOptions = React.useMemo(() => locations.map(loc => ({
+  const formatLocationOption = (loc) => ({
     value: loc.location_id,
-    label: loc.street_address 
+    label: loc.street_address
       ? `${loc.street_address}, ${loc.city || ''}, ${loc.state || ''} ${loc.zip || ''}`
       : `Location #${loc.location_id}`,
-    data: loc,
+    data: loc
+  });
+
+  const memberLocationOptions = React.useMemo(() => locations.map(loc => ({
+    ...formatLocationOption(loc),
     isMemberLocation: true
   })), [locations]);
-  
-  console.log("Member location options:", memberLocationOptions);
-  
-  // Update the selected location when the location list changes or default value changes
+
+  // Sync selected location from form value only when form has a value (don't restore when user cleared)
   useEffect(() => {
-    if (locations.length > 0) {
-      // Check if we have a current value to find in the new locations
-      const valueToFind = currentValue || defaultValue;
-      
-      if (valueToFind) {
-        const locId = typeof valueToFind === 'object' ? valueToFind.location_id : valueToFind;
-        const foundLocation = locations.find(loc => loc.location_id == locId);
-        
-        if (foundLocation && (!selectedLocation || selectedLocation.location_id != locId)) {
-          console.log("Setting selected location from updated locations:", foundLocation);
-          setSelectedLocation(foundLocation);
-        }
+    if (locations.length > 0 && currentValue) {
+      const locId = typeof currentValue === 'object' ? currentValue.location_id : currentValue;
+      const foundLocation = locations.find(loc => loc.location_id == locId);
+      if (foundLocation && (!selectedLocation || selectedLocation.location_id != locId)) {
+        setSelectedLocation(foundLocation);
       }
+    } else if (!currentValue) {
+      setSelectedLocation(null);
     }
-  }, [locations, defaultValue, currentValue, selectedLocation]);
+  }, [locations, currentValue]);
   
-  // Find the default option if provided
   let defaultOption = null;
   if (defaultValue && locations.length > 0) {
     const locId = typeof defaultValue === 'object' ? defaultValue.location_id : defaultValue;
     defaultOption = memberLocationOptions.find(opt => opt.value == locId) || null;
-    console.log("Default option:", defaultOption);
-    // Set initial selected location if we have a default value and no selected location yet
-    if (defaultOption && !selectedLocation) {
-      console.log("Setting selected location from default option:", defaultOption.data);
-      setSelectedLocation(defaultOption.data);
-    }
   }
 
   return (
@@ -121,12 +110,14 @@ const LocationAutocomplete = ({
           displayOptions = [...displayOptions, ...formattedSearchResults];
         }
         
-        // Convert string value to option object if needed
-        const value = field.value 
-          ? (typeof field.value === 'object' 
-              ? field.value 
-              : displayOptions.find(opt => !opt.isHeader && opt.value == field.value) || null)
-          : defaultOption;
+        // Resolve form value to option so MUI can show selection and the clear button (including when selected from search results).
+        const value = field.value
+          ? (typeof field.value === 'object'
+              ? field.value
+              : displayOptions.find(opt => !opt.isHeader && opt.value == field.value) ||
+                (defaultOption && defaultOption.value == field.value ? defaultOption : null) ||
+                (selectedLocation && selectedLocation.location_id == field.value ? formatLocationOption(selectedLocation) : null))
+          : null;
           
         // Make sure selectedLocation is kept in sync with the field value
         React.useEffect(() => {
@@ -134,11 +125,9 @@ const LocationAutocomplete = ({
             // If value is just an ID, try to find the location data
             const locationData = locations.find(loc => loc.location_id == value);
             if (locationData && (!selectedLocation || selectedLocation.location_id != value)) {
-              console.log("Setting selected location from value change:", locationData);
               setSelectedLocation(locationData);
             }
           } else if (value && value.data && (!selectedLocation || selectedLocation.location_id != value.value)) {
-            console.log("Setting selected location from option data:", value.data);
             setSelectedLocation(value.data);
           }
         }, [value, locations]);
@@ -148,26 +137,25 @@ const LocationAutocomplete = ({
             <label>{label} {required && <span className="text-danger">*</span>}</label>
             <Autocomplete
               inputValue={inputValue}
-              onInputChange={handleInputChange}
+              onInputChange={(event, newInputValue, reason) => {
+                if (newInputValue === '') {
+                  field.onChange('');
+                  setSelectedLocation(null);
+                }
+                handleInputChange(event, newInputValue);
+              }}
               options={displayOptions}
               loading={isLoading || searchLoading}
               value={value}
               onChange={(_, newValue) => {
-                // Skip header options
                 if (newValue && newValue.isHeader) return;
-                
-                // Update form field
                 field.onChange(newValue ? newValue.value : '');
-                
-                // Update selected location for details display
                 if (newValue) {
-                  console.log("Setting selected location from selection:", newValue.data);
                   setSelectedLocation(newValue.data);
                 } else {
                   setSelectedLocation(null);
+                  setInputValue('');
                 }
-                
-                // Call parent onChange if provided
                 if (onChange && newValue) {
                   onChange(newValue.value, newValue.data);
                 }

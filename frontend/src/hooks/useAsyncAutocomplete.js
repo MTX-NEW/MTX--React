@@ -5,9 +5,10 @@ import { useState, useEffect, useRef } from 'react';
  * @param {Function} searchFunction - The async function to call for searching
  * @param {number} debounceMs - Debounce time in milliseconds
  * @param {number} minChars - Minimum characters before search is triggered
+ * @param {*} externalValue - Optional. When explicitly null or '', syncs by clearing selectedOption only (not inputValue, so backspace works). Omit (undefined) for components that don't need sync e.g. LocationAutocomplete.
  * @returns {Object} - State and handlers for the autocomplete
  */
-const useAsyncAutocomplete = (searchFunction, debounceMs = 300, minChars = 2) => {
+const useAsyncAutocomplete = (searchFunction, debounceMs = 300, minChars = 2, externalValue = undefined) => {
   const [inputValue, setInputValue] = useState('');
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,21 @@ const useAsyncAutocomplete = (searchFunction, debounceMs = 300, minChars = 2) =>
   
   // Use a ref to store the timeout ID for debouncing
   const debounceTimeout = useRef(null);
+  const prevExternalValueRef = useRef(externalValue);
+
+  // Sync selectedOption only when form value *transitions* from non-empty to empty (e.g. user clicked clear).
+  // Do NOT clear when externalValue is already empty: after user selects, hook re-renders from setSelectedOption
+  // before Controller has the new value, so we'd see externalValue '' and wrongly clear the selection.
+  useEffect(() => {
+    if (externalValue === undefined) return;
+    const prev = prevExternalValueRef.current;
+    prevExternalValueRef.current = externalValue;
+    const isEmpty = externalValue === null || externalValue === '';
+    const wasNonEmpty = prev !== null && prev !== '' && prev !== undefined;
+    if (isEmpty && wasNonEmpty) {
+      setSelectedOption(null);
+    }
+  }, [externalValue]);
 
   // Clear the timeout when component unmounts
   useEffect(() => {
@@ -71,6 +87,7 @@ const useAsyncAutocomplete = (searchFunction, debounceMs = 300, minChars = 2) =>
     selectedOption,
     setOpen,
     setSelectedOption,
+    setInputValue,
     handleInputChange,
     handleChange
   };

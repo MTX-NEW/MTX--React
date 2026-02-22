@@ -31,7 +31,9 @@ const TripFormPresenter = ({
   tripType,
   initialData,
   isEditMode,
-  handleEditMember
+  handleEditMember,
+  onOpenAddMember,
+  onOpenAddLocation
 }) => {
   const { register, control, formState: { errors }, watch, setValue, trigger } = formMethods;
   const currentScheduleType = watch('schedule_type');
@@ -44,13 +46,34 @@ const TripFormPresenter = ({
     <FormProvider {...formMethods}>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <form onSubmit={formMethods.handleSubmit(handleSubmitForm)}>
-          {/* Member Field */}
+          {/* Member Field - button aligned with input row (label has space above input) */}
           <div className="row">
             <div className="col-12 mb-2">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1">
+              <div className="d-flex gap-2 flex-nowrap">
+                <div className="flex-grow-1" style={{ minWidth: '0' }}>
                   {renderMemberField()}
                 </div>
+                {onOpenAddMember && (
+                  <div
+                    style={{
+                      flexShrink: 0,
+                      marginTop: '32px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="add-user-btn btn-sm"
+                      style={{ height: '40px', boxSizing: 'border-box' }}
+                      onClick={onOpenAddMember}
+                      title="Add new member"
+                    >
+                      Add New Member
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -262,13 +285,32 @@ const TripFormPresenter = ({
        
           
           {/* First Leg */}
-          <div className="row">
+          <div className="row align-items-start">
             <div className="col-md-6 mb-2">
               {renderLocationField(0, 'pickup')}
+              {onOpenAddLocation && (
+                <button
+                  type="button"
+                  className="add-user-btn btn-sm mt-1"
+                  onClick={onOpenAddLocation}
+                  title="Add new location"
+                >
+                  Add New Location
+                </button>
+              )}
             </div>
-            
             <div className="col-md-6 mb-2">
               {renderLocationField(0, 'dropoff')}
+              {onOpenAddLocation && (
+                <button
+                  type="button"
+                  className="add-user-btn btn-sm mt-1"
+                  onClick={onOpenAddLocation}
+                  title="Add new location"
+                >
+                  Add New Location
+                </button>
+              )}
             </div>
           </div>
           
@@ -506,7 +548,11 @@ const TripForm = ({
   isLoadingLocations = false,
   onMemberSelect = () => {},
   companies = [],
-  onEditMember = () => {}
+  onEditMember = () => {},
+  onOpenAddMember,
+  onOpenAddLocation,
+  newlyCreatedMember = null,
+  onClearNewlyCreatedMember
 }) => {
   // Initialize form state
   const [tripType, setTripType] = useState('one_way');
@@ -556,6 +602,13 @@ const TripForm = ({
   // Watch for changes
   const selectedMemberId = formMethods.watch('member_id');
   const watchTripType = formMethods.watch('trip_type');
+
+  // When user clears the member field, clear selectedMember so UI and defaultOption stay in sync
+  useEffect(() => {
+    if (selectedMemberId === '' || selectedMemberId == null) {
+      setSelectedMember(null);
+    }
+  }, [selectedMemberId]);
 
   // Initialize from initial data if provided
   useEffect(() => {
@@ -634,6 +687,20 @@ const TripForm = ({
     }
   }, [initialData, formMethods]);
   
+  // When a new member was just created (from nested modal), select them and bind details
+  useEffect(() => {
+    if (!newlyCreatedMember?.member_id || !onClearNewlyCreatedMember) return;
+    formMethods.setValue('member_id', newlyCreatedMember.member_id);
+    if (newlyCreatedMember.program_id) {
+      formMethods.setValue('program_id', newlyCreatedMember.program_id);
+    }
+    setSelectedMember(newlyCreatedMember);
+    if (onMemberSelect) {
+      onMemberSelect(newlyCreatedMember.member_id, newlyCreatedMember);
+    }
+    onClearNewlyCreatedMember();
+  }, [newlyCreatedMember, onClearNewlyCreatedMember, onMemberSelect, formMethods]);
+
   // Handle member selection
   const handleMemberSelect = useCallback((memberId, memberData) => {
     console.log("Member selected in form:", memberData);
@@ -851,14 +918,15 @@ const TripForm = ({
 
   // Custom member field for the form
   const renderMemberField = useCallback(() => {
-    // If editing a trip, use the member from initialData or selectedMember
-    const memberValue = selectedMember || 
-      (initialData?.member_id ? { 
+    // If editing a trip or newly created member, use the member from initialData, selectedMember, or newlyCreatedMember
+    const memberValue = selectedMember ||
+      newlyCreatedMember ||
+      (initialData?.member_id ? {
         member_id: initialData.member_id,
         first_name: initialData?.TripMember?.first_name,
         last_name: initialData?.TripMember?.last_name
       } : null);
-    
+
     return (
         <MemberAutocomplete
           name="member_id"
@@ -866,11 +934,11 @@ const TripForm = ({
           placeholder="Search member by name (min 2 letters)"
           required={true}
           onSelect={handleMemberSelect}
-        defaultValue={memberValue}
-        key={memberValue?.member_id || 'member-select'} // Force re-render on member change
+          defaultValue={memberValue}
+          key={memberValue?.member_id ?? 'member-select'}
         />
     );
-  }, [handleMemberSelect, selectedMember, initialData]);
+  }, [handleMemberSelect, selectedMember, initialData, newlyCreatedMember]);
 
   // Custom location field for the form
   const renderLocationField = useCallback((legIndex, locationType) => {
@@ -939,6 +1007,10 @@ const TripForm = ({
       initialData={initialData}
       isEditMode={isEditMode}
       handleEditMember={handleEditMember}
+      onOpenAddMember={onOpenAddMember}
+      onOpenAddLocation={onOpenAddLocation}
+      newlyCreatedMember={newlyCreatedMember}
+      onClearNewlyCreatedMember={onClearNewlyCreatedMember}
     />
   );
 };

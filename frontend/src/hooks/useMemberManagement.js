@@ -423,7 +423,7 @@ const useMemberManagement = () => {
       { name: 'ahcccs_id', label: 'AHCCCS ID', type: 'text' },
       { name: 'insurance_expiry', label: 'Insurance Expiry', type: 'date' },
       { name: 'birth_date', label: 'Birth Date', type: 'date' },
-      { name: 'phone', label: 'Phone', type: 'text' },
+      { name: 'phone', label: 'Phone', type: 'phone' },
       {
         name: 'gender',
         label: 'Gender',
@@ -485,7 +485,7 @@ const useMemberManagement = () => {
         validateOnChange: true,
         helperText: 'Format: 12345 or 12345-6789'
       },
-      { name: 'phone', label: 'Phone Number', type: 'text' },
+      { name: 'phone', label: 'Phone Number', type: 'phone' },
       {
         name: 'location_type',
         label: 'Location Type',

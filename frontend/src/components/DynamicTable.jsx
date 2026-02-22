@@ -221,7 +221,7 @@ const DynamicTable = ({
       </table>
 
       {/* Pagination controls */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mt={2} mb={2} pl={2} pb={1}>
         {/* Page size selector */}
         <FormControl variant="outlined" size="small" style={{ minWidth: 120 }}>
           <InputLabel id="rows-per-page-label">Rows per page</InputLabel>
