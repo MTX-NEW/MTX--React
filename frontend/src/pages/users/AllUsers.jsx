@@ -12,7 +12,15 @@ import "react-toastify/dist/ReactToastify.css";
 //import { useResource } from "@/hooks/useResource";
 import { useUserData } from '@/pages/users/hooks/useUserData';
 import useUserLocation from '@/hooks/useUserLocation';
-import { FaMapMarkerAlt } from "react-icons/fa";
+import { FaMapMarkerAlt, FaTrashAlt, FaExclamationTriangle, FaArchive } from "react-icons/fa";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography
+} from "@mui/material";
 
 
 const AllUsers = () => {
@@ -24,11 +32,15 @@ const AllUsers = () => {
   // Get all user-related data and operations from the hook
   const {
     users,
+    archivedUsers,
     loading,
     createUser: create,
     updateUser: update,
-    deleteUser: remove,
+    archiveUser,
+    restoreUser,
+    deleteUserPermanently,
     refreshUsers: refresh,
+    refetchArchivedUsers,
     userTypes,
     userGroups,
     allowedTypes,
@@ -36,6 +48,12 @@ const AllUsers = () => {
     initialLoad,
     setInitialLoad
   } = useUserData();
+
+  const [activeTab, setActiveTab] = useState("active"); // "active" | "archived"
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [userToArchive, setUserToArchive] = useState(null);
+  const [deletePermanentConfirmOpen, setDeletePermanentConfirmOpen] = useState(false);
+  const [userToDeletePermanent, setUserToDeletePermanent] = useState(null);
 
   // Get user location functionality
   const {
@@ -54,6 +72,13 @@ const AllUsers = () => {
       Object.values(user).join(" ").toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [users, searchQuery]);
+
+  const filteredArchivedUsers = React.useMemo(() => {
+    if (!searchQuery) return archivedUsers;
+    return (archivedUsers || []).filter(user =>
+      Object.values(user).join(" ").toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [archivedUsers, searchQuery]);
 
   // Handler for opening the location modal with refresh callback
   const handleOpenLocationModal = (user) => {
@@ -398,11 +423,11 @@ const AllUsers = () => {
       header: "Action",
       accessor: "actions",
       actions: [
-        ({ row, onEdit, onDelete }) => (
+        ({ row, onEdit, onArchive }) => (
           <DefaultTableActions 
             row={row} 
             onEdit={onEdit} 
-            onDelete={onDelete}
+            onArchive={onArchive}
             customActions={[
               {
                 label: "Address",
@@ -417,15 +442,100 @@ const AllUsers = () => {
     },
   ];
 
-  // CRUD operations
-  const handleDelete = async (item) => {
+  // Archived users table: same columns but Action = Restore + Delete permanently
+  const archivedColumns = [
+    { header: "First Name", accessor: "first_name" },
+    { header: "Last Name", accessor: "last_name" },
+    { 
+      header: "Profile",
+      accessor: "profile_image",
+      render: (value, row) => (
+        <div className="user-profile-thumbnail">
+          {value ? (
+            <img src={value} alt={`${row.first_name}'s profile`} className="profile-img-small" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+          ) : (
+            <div className="profile-placeholder" style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
+              {row.first_name?.charAt(0)}{row.last_name?.charAt(0)}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    { header: "Username", accessor: "username" },
+    { header: "Email", accessor: "email" },
+    { header: "Phone", accessor: "phone" },
+    { header: "EMP Code", accessor: "emp_code" },
+    { header: "User Type", accessor: "UserType", render: (value) => value?.display_name || 'N/A' },
+    { header: "Status", accessor: "status", render: (value) => <span className={`status-badge ${value?.toLowerCase()}`}>{value}</span> },
+    {
+      header: "Action",
+      accessor: "actions",
+      actions: [
+        ({ row }) => (
+          <div className="actions-cell">
+            <button type="button" className="table-action-btn restore-btn" title="Restore user" onClick={() => handleRestore(row)}>
+              Restore
+            </button>
+            <button type="button" className="action-btn delete-icon" title="Delete permanently" onClick={() => handleDeletePermanentClick(row)}>
+              <FaTrashAlt size={16} />
+            </button>
+          </div>
+        ),
+      ],
+    },
+  ];
+
+  const handleArchiveClick = (item) => {
+    setUserToArchive(item);
+    setArchiveConfirmOpen(true);
+  };
+
+  const handleArchiveConfirm = async () => {
+    if (!userToArchive) return;
     try {
-      await remove(item.id);
-      await refresh();
-      toast.success(`User ${item.first_name} deleted!`);
+      await archiveUser(userToArchive.id);
+      toast.success(`User ${userToArchive.first_name} ${userToArchive.last_name} archived.`);
+      setArchiveConfirmOpen(false);
+      setUserToArchive(null);
     } catch (error) {
-      toast.error("Failed to delete user");
-      console.error("Error deleting user:", error);
+      toast.error(error.response?.data?.message || "Failed to archive user");
+      console.error("Error archiving user:", error);
+    }
+  };
+
+  const handleRestore = async (item) => {
+    try {
+      await restoreUser(item.id);
+      toast.success(`User ${item.first_name} ${item.last_name} restored.`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to restore user");
+      console.error("Error restoring user:", error);
+    }
+  };
+
+  const handleDeletePermanentClick = (item) => {
+    setUserToDeletePermanent(item);
+    setDeletePermanentConfirmOpen(true);
+  };
+
+  const handleDeletePermanentConfirm = async () => {
+    if (!userToDeletePermanent) return;
+    try {
+      await deleteUserPermanently(userToDeletePermanent.id);
+      toast.success("User permanently deleted.");
+      setDeletePermanentConfirmOpen(false);
+      setUserToDeletePermanent(null);
+    } catch (error) {
+      const msg = error.response?.data?.message;
+      const code = error.response?.data?.code;
+      if (code === "HAS_CONNECTIONS" && msg) {
+        toast.error(msg);
+      } else if (code === "NOT_ARCHIVED") {
+        toast.error(msg || "Only archived users can be permanently deleted.");
+      } else {
+        toast.error(msg || "Failed to delete user permanently.");
+      }
+      console.error("Error deleting user permanently:", error);
     }
   };
 
@@ -484,17 +594,37 @@ const AllUsers = () => {
       />
 
       <div className="bg-white rounded-lg shadow p-6">
+        <div className="users-list-subnav">
+          <button
+            type="button"
+            className={`users-list-subnav-tab ${activeTab === "active" ? "active" : ""}`}
+            onClick={() => setActiveTab("active")}
+          >
+            Active users
+          </button>
+          <button
+            type="button"
+            className={`users-list-subnav-tab ${activeTab === "archived" ? "active" : ""}`}
+            onClick={() => setActiveTab("archived")}
+          >
+            Archived users
+          </button>
+        </div>
+
         {initialLoad && loading ? (
           <p>Loading users...</p>
-        ) : (
+        ) : activeTab === "active" ? (
           <DynamicTable
             columns={columns}
             data={filteredUsers}
-            onDelete={handleDelete}
             onEdit={handleEdit}
-            deleteConfirmMessage={(item) =>
-              `Delete user ${item.first_name} ${item.last_name}?`
-            }
+            onArchive={handleArchiveClick}
+          />
+        ) : (
+          <DynamicTable
+            columns={archivedColumns}
+            data={filteredArchivedUsers}
+            onEdit={() => {}}
           />
         )}
       </div>
@@ -558,6 +688,66 @@ const AllUsers = () => {
           </FormProvider>
         </RightSidebarPopup>
       )}
+
+      {/* Archive confirmation dialog (matches Delete confirmation style) */}
+      <Dialog
+        open={archiveConfirmOpen}
+        onClose={() => { setArchiveConfirmOpen(false); setUserToArchive(null); }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle className="dialog-title">
+          <div className="dialog-header">
+            <FaArchive className="dialog-icon" />
+            <div className="dialog-title-text">Confirm Archive</div>
+          </div>
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            {userToArchive
+              ? `Archive user ${userToArchive.first_name} ${userToArchive.last_name}? They will not appear in the active list and can be restored from Archived users.`
+              : ""}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setArchiveConfirmOpen(false); setUserToArchive(null); }}>
+            Cancel
+          </Button>
+          <Button onClick={handleArchiveConfirm} variant="contained" color="primary">
+            Archive
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete permanently confirmation dialog */}
+      <Dialog
+        open={deletePermanentConfirmOpen}
+        onClose={() => { setDeletePermanentConfirmOpen(false); setUserToDeletePermanent(null); }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle className="dialog-title">
+          <div className="dialog-header">
+            <FaExclamationTriangle className="dialog-icon" />
+            <div className="dialog-title-text">Confirm Permanent Delete</div>
+          </div>
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            {userToDeletePermanent
+              ? `Permanently delete ${userToDeletePermanent.first_name} ${userToDeletePermanent.last_name}? This cannot be undone. Only possible if the user has no linked data (trips, time sheets, etc.).`
+              : ""}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setDeletePermanentConfirmOpen(false); setUserToDeletePermanent(null); }}>
+            Cancel
+          </Button>
+          <Button onClick={handleDeletePermanentConfirm} variant="contained" color="error">
+            Delete permanently
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

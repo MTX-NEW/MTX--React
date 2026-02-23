@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearAuthData } from '@/utils/authUtils';
 
 // Always send cookies (e.g., refresh token cookie) with requests
 axios.defaults.withCredentials = true;
@@ -13,6 +14,24 @@ const token = localStorage.getItem('token');
 if (token) {
   axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
+
+// Clear JWT and redirect to login when session is no longer valid (401 or archived 403)
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || '';
+    const isArchived = status === 403 && (message.includes('archived') || message.includes('Archived'));
+    if (status === 401 || isArchived) {
+      clearAuthData();
+      delete axios.defaults.headers.common['Authorization'];
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 const createApiService = (endpoint) => {
   const API_URL = `${API_BASE_URL}/api/${endpoint}`;
@@ -52,7 +71,13 @@ export const authApi = {
     axios.post(`${API_BASE_URL}/api/auth/logout`),
 };
 
-export const userApi = createApiService('users');
+export const userApi = {
+  ...createApiService('users'),
+  getArchived: () => axios.get(`${API_BASE_URL}/api/users/archived`),
+  archive: (id) => axios.post(`${API_BASE_URL}/api/users/${id}/archive`),
+  restore: (id) => axios.post(`${API_BASE_URL}/api/users/${id}/restore`),
+  deletePermanent: (id) => axios.delete(`${API_BASE_URL}/api/users/${id}/permanent`),
+};
 
 export const groupApi = createApiService('user-groups');
 export const userTypeApi = createApiService('user-types');
@@ -249,7 +274,8 @@ export const tripsApi = {
 
 export const programApi = {
   ...createApiService('programs'),
-  getCompanies: () => axios.get(`${API_BASE_URL}/api/programs/companies`)
+  getCompanies: () => axios.get(`${API_BASE_URL}/api/programs/companies`),
+  getByOrganisation: (groupId) => axios.get(`${API_BASE_URL}/api/programs/organisation/${groupId}`)
 };
 
 // Time sheets API services

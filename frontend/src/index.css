@@ -107,16 +107,53 @@ body {
   position: relative;
 }
 
-/* Profile Section in Sidebar */
-.profile-section {
-  font-size: 16px;
+/* Wrapper for profile + popup so popup is positioned inside sidebar and click-outside works */
+.profile-menu-wrapper {
+  position: relative;
   margin-bottom: 20px;
+}
+
+/* Profile Section in Sidebar - clickable to open logout popup */
+.profile-section {
+  font-size: 15px;
+  margin-bottom: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-weight: 500;
-  line-height: 17px;
+  line-height: 1.35;
   color: #005399;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  min-width: 0;
+}
+
+.profile-section:hover {
+  background-color: #0053991A;
+  color: #003e80;
+}
+
+.profile-section .profile-icon {
+  flex-shrink: 0;
+  font-size: 28px;
+  color: inherit;
+}
+
+.profile-section img.profile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Truncate long names in sidebar profile */
+.profile-section-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .profile-icon {
@@ -395,6 +432,40 @@ body {
   background-color: rgba(0, 83, 153, 0.2);
 }
 
+/* Active / Archived users subnav - same width as table below (no overhang) */
+.users-list-subnav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 16px;
+  padding: 0 4px 0 0;
+  background-color: #fff;
+}
+
+.users-list-subnav-tab {
+  padding: 14px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  transition: all 0.2s ease;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+}
+
+.users-list-subnav-tab:hover {
+  color: #0d6efd;
+  background-color: #f8fafc;
+}
+
+.users-list-subnav-tab.active {
+  color: #0d6efd;
+  border-bottom-color: #0d6efd;
+}
+
 /* Add User Button */
 .add-user-btn {
   padding: 10px 25px;
@@ -434,14 +505,34 @@ body {
   /* Darker green on hover */
 }
 
+/* Single card for table + pagination so top and bottom are one rounded unit */
+.table-card {
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 20px;
+  background-color: #fff;
+  isolation: isolate;
+}
+
+.table-card .table-wrapper {
+  margin-top: 0;
+}
+
+/* Table wrapper - no radius on wrapper alone; card clips table + pagination together */
+.table-wrapper {
+  border-radius: 0;
+  overflow: hidden;
+  margin-top: 0;
+  background-color: #fff;
+}
+
 /* Table Styling */
 .table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 0;
   background-color: #FFFFFF;
   color: #2D3F50;
-  /* Dark text color */
 }
 
 .table th,
@@ -455,6 +546,13 @@ body {
   font-weight: 500;
   line-height: 24px;
   color: #FFFFFF;
+}
+
+/* Pagination area - same horizontal padding as table cell padding so left/right align */
+.table-pagination {
+  padding: 12px 15px 16px;
+  background-color: #fff;
+  border-top: 1px solid #eee;
 }
 
 /* Status Badge Styling */
@@ -521,9 +619,19 @@ body {
 }
 
 .form-warning {
-  margin-top: 1px;
+  display: block;
+  margin-top: 0.35rem;
+  margin-bottom: 0;
   color: #FF3A29;
   font-size: 14px;
+  font-weight: 500;
+}
+
+/* Keep helper text and error on separate lines */
+.form-text.text-muted {
+  display: block;
+  margin-top: 0.25rem;
+  margin-bottom: 0;
 }
 
 
@@ -707,6 +815,7 @@ body {
 
 
 .form-warning {
+  display: block;
   color: #dc3545;
   font-size: 0.875em;
   margin-top: 0.25rem;
@@ -1105,24 +1214,44 @@ body {
   }
 }
 
-/* Profile Popup Styles */
+/* Profile Popup Styles - contained inside sidebar, above profile section */
 .profile-popup {
   position: absolute;
-  bottom: 60px;
-  left: 20px;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 8px;
   background-color: #FFFFFF;
   border: 1px solid #E2E8F0;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 10px;
-  width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 14px 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   z-index: 1000;
 }
 
+.profile-popup .profile-details {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 .profile-popup .profile-details p {
-  margin: 4px 0;
+  margin: 0;
+  padding: 2px 0;
   font-size: 14px;
   color: #2D3748;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.profile-popup .profile-details p:first-child {
+  font-weight: 600;
+  color: #1A202C;
+  font-size: 15px;
 }
 
 .logout-btn {
@@ -1131,9 +1260,11 @@ body {
   border: none;
   border-radius: 4px;
   width: 100%;
-  padding: 8px;
+  padding: 10px 12px;
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .logout-btn:hover {

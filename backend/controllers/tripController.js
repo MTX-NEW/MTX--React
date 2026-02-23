@@ -504,7 +504,7 @@ async function createLegsForTrip(tripId, validLegs, tripType, returnPickupTime) 
         dropoff_location: firstLeg.pickup_location,
         scheduled_pickup: returnPickupTime ? formatTimeForDB(returnPickupTime) : null,
         scheduled_dropoff: null,
-        distance: firstLeg.distance,
+        leg_distance: firstLeg.leg_distance,
         is_return: true,
         created_at: new Date(),
         updated_at: new Date()
@@ -513,7 +513,7 @@ async function createLegsForTrip(tripId, validLegs, tripType, returnPickupTime) 
       createdLegs.push(returnLeg);
       
       // Add return leg distance to total
-      totalDistance += firstLeg.distance;
+      totalDistance += firstLeg.leg_distance || 0;
     }
   }
   
@@ -672,7 +672,7 @@ exports.updateTrip = async (req, res) => {
         const { leg_id, ...legDataToCreate } = legData;
         const createdLeg = await TripLeg.create({
           ...legDataToCreate,
-          distance: leg_distance,
+          leg_distance,
           created_at: new Date(),
           updated_at: new Date()
         });
@@ -696,7 +696,7 @@ exports.updateTrip = async (req, res) => {
             dropoff_location: firstLeg.pickup_location,
             scheduled_pickup: return_pickup_time ? formatTimeForDB(return_pickup_time) : null,
             scheduled_dropoff: null,
-            distance: firstLeg.distance,
+            leg_distance: firstLeg.leg_distance,
             is_return: true,
             created_at: new Date(),
             updated_at: new Date()
@@ -705,7 +705,7 @@ exports.updateTrip = async (req, res) => {
           createdLegs.push(returnLeg);
           
           // Add return leg distance to total
-          totalDistance += firstLeg.distance;
+          totalDistance += firstLeg.leg_distance || 0;
         }
       }
 

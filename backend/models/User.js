@@ -104,6 +104,11 @@ const User = sequelize.define(
       allowNull: true,
       comment: 'Base64 encoded or file path to profile image',
     },
+    archived_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When set, user is archived (soft delete)',
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,

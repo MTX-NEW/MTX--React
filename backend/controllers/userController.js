@@ -2,15 +2,24 @@ const User = require("../models/User");
 const UserType = require("../models/UserType");
 const UserGroup = require("../models/UserGroup");
 const TripLocation = require("../models/TripLocation");
-const { ValidationError, UniqueConstraintError } = require("sequelize");
+const Trip = require("../models/Trip");
+const TripLeg = require("../models/TripLeg");
+const TimeSheet = require("../models/TimeSheet");
+const TimeOffRequest = require("../models/TimeOffRequest");
+const Incentive = require("../models/Incentive");
+const Claim = require("../models/Claim");
+const Employee = require("../models/Employee");
+const Batch = require("../models/Batch");
+const { ValidationError, UniqueConstraintError, Op } = require("sequelize");
 
 // Common location attributes to use across all query includes
 const locationAttributes = ['location_id', 'street_address', 'building', 'building_type', 'city', 'state', 'zip', 'latitude', 'longitude'];
 
-// Get all users
+// Get all users (exclude archived)
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll({
+      where: { archived_at: null },
       include: [
         { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
         { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
@@ -114,24 +123,124 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// Delete a user
-exports.deleteUser = async (req, res) => {
+// Get archived users
+exports.getArchivedUsers = async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    await user.destroy();
-    res.json({ message: "User deleted successfully" });
+    const users = await User.findAll({
+      where: { archived_at: { [Op.ne]: null } },
+      include: [
+        { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
+        { model: TripLocation, as: 'location', attributes: locationAttributes }
+      ],
+      order: [['archived_at', 'DESC']]
+    });
+    res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get drivers
+// Archive a user (soft delete)
+exports.archiveUser = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.archived_at) return res.status(400).json({ message: "User is already archived" });
+
+    await user.update({ archived_at: new Date(), updated_at: new Date() });
+    const updated = await User.findByPk(user.id, {
+      include: [
+        { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
+        { model: TripLocation, as: 'location', attributes: locationAttributes }
+      ]
+    });
+    res.json({ message: "User archived successfully", user: updated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Restore an archived user
+exports.restoreUser = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user.archived_at) return res.status(400).json({ message: "User is not archived" });
+
+    await user.update({ archived_at: null, updated_at: new Date() });
+    const updated = await User.findByPk(user.id, {
+      include: [
+        { model: UserType, attributes: ['type_id', 'type_name', 'display_name'] },
+        { model: UserGroup, attributes: ['group_id', 'full_name', 'common_name', 'short_name'] },
+        { model: TripLocation, as: 'location', attributes: locationAttributes }
+      ]
+    });
+    res.json({ message: "User restored successfully", user: updated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Build list of connections for permanent delete (for error message)
+async function getUserConnectionSummary(userId) {
+  const [tripsCreated, tripLegsAsDriver, timeSheets, timeOffRequests, incentives, claimsCreated, batchesCreated, employee] = await Promise.all([
+    Trip.count({ where: { created_by: userId } }),
+    TripLeg.count({ where: { driver_id: userId } }),
+    TimeSheet.count({ where: { user_id: userId } }),
+    TimeOffRequest.count({ where: { user_id: userId } }),
+    Incentive.count({ where: { user_id: userId } }),
+    Claim.count({ where: { created_by: userId } }),
+    Batch.count({ where: { created_by: userId } }),
+    Employee.findOne({ where: { user_id: userId }, attributes: ['id'] })
+  ]);
+  const parts = [];
+  if (tripsCreated > 0) parts.push(`${tripsCreated} trip(s) created`);
+  if (tripLegsAsDriver > 0) parts.push(`${tripLegsAsDriver} trip leg(s) as driver`);
+  if (timeSheets > 0) parts.push(`${timeSheets} time sheet(s)`);
+  if (timeOffRequests > 0) parts.push(`${timeOffRequests} time off request(s)`);
+  if (incentives > 0) parts.push(`${incentives} incentive(s)`);
+  if (claimsCreated > 0) parts.push(`${claimsCreated} claim(s) created`);
+  if (batchesCreated > 0) parts.push(`${batchesCreated} batch(es) created`);
+  if (employee) parts.push('HR employee record');
+  return parts;
+}
+
+// Permanently delete a user (only from archived; show error if linked data exists)
+exports.deleteUserPermanently = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user.archived_at) {
+      return res.status(400).json({
+        message: "Only archived users can be permanently deleted. Archive the user first.",
+        code: "NOT_ARCHIVED"
+      });
+    }
+
+    const connections = await getUserConnectionSummary(user.id);
+    if (connections.length > 0) {
+      return res.status(400).json({
+        message: "Cannot permanently delete this user because they are linked to other data: " + connections.join(', ') + ". Unlink or reassign these records first, or keep the user archived.",
+        code: "HAS_CONNECTIONS",
+        connections
+      });
+    }
+
+    await user.destroy();
+    res.json({ message: "User permanently deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get drivers (non-archived only)
 exports.getDrivers = async (req, res) => {
   console.log('GET /api/users/drivers endpoint called');
   try {
     const drivers = await User.findAll({
+      where: { archived_at: null },
       include: [
         {
           model: UserType,

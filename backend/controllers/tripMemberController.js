@@ -40,7 +40,7 @@ exports.getAllMembers = async (req, res) => {
       include: [
         { 
           model: Program,
-          attributes: ['program_id', 'program_name'],
+          attributes: ['program_id', 'program_name', 'company_id'],
           required: false
         }
       ],
@@ -53,7 +53,7 @@ exports.getAllMembers = async (req, res) => {
       include: [
         { 
           model: Program,
-          attributes: ['program_id', 'program_name'],
+          attributes: ['program_id', 'program_name', 'company_id'],
           include: [
             {
               model: ProgramPlan,
@@ -111,7 +111,7 @@ exports.getMemberById = async (req, res) => {
       include: [
         { 
           model: Program,
-          attributes: ['program_id', 'program_name'],
+          attributes: ['program_id', 'program_name', 'company_id'],
           include: [
             {
               model: ProgramPlan,
@@ -170,7 +170,7 @@ exports.createMember = async (req, res) => {
       include: [
         { 
           model: Program,
-          attributes: ['program_id', 'program_name'],
+          attributes: ['program_id', 'program_name', 'company_id'],
           include: [
             {
               model: ProgramPlan,
@@ -233,7 +233,7 @@ exports.updateMember = async (req, res) => {
       include: [
         { 
           model: Program,
-          attributes: ['program_id', 'program_name'],
+          attributes: ['program_id', 'program_name', 'company_id'],
           include: [
             {
               model: ProgramPlan,

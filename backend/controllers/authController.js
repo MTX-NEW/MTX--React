@@ -84,6 +84,11 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: "Your account is not active. Please contact support." });
     }
 
+    // Block archived users from logging in
+    if (user.archived_at) {
+      return res.status(403).json({ message: "Your account has been archived. Please contact your administrator to restore access." });
+    }
+
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {

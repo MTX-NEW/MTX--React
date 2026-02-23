@@ -310,16 +310,6 @@ const RequestFormPresenter = ({
                         <span className="detail-value">N/A</span>
                       </div>
                     </div>
-                    <div className="location-detail-row">
-                      <div className="location-detail-item">
-                        <span className="detail-label">Lat:</span>
-                        <span className="detail-value">{formMethods.getValues(`legs[0]`)?.pickupLocation?.latitude || 'N/A'}</span>
-                      </div>
-                      <div className="location-detail-item">
-                        <span className="detail-label">Long:</span>
-                        <span className="detail-value">{formMethods.getValues(`legs[0]`)?.pickupLocation?.longitude || 'N/A'}</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
                 
@@ -362,16 +352,6 @@ const RequestFormPresenter = ({
                       <div className="location-detail-item">
                         <span className="detail-label">Building Type:</span>
                         <span className="detail-value">N/A</span>
-                      </div>
-                    </div>
-                    <div className="location-detail-row">
-                      <div className="location-detail-item">
-                        <span className="detail-label">Lat:</span>
-                        <span className="detail-value">{formMethods.getValues(`legs[0]`)?.dropoffLocation?.latitude || 'N/A'}</span>
-                      </div>
-                      <div className="location-detail-item">
-                        <span className="detail-label">Long:</span>
-                        <span className="detail-value">{formMethods.getValues(`legs[0]`)?.dropoffLocation?.longitude || 'N/A'}</span>
                       </div>
                     </div>
                   </div>

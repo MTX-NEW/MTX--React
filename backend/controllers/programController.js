@@ -136,6 +136,25 @@ exports.deleteProgram = async (req, res) => {
   }
 };
 
+// Get programs by organisation (company_id used as organisation/group_id for member form)
+exports.getProgramsByOrganisation = async (req, res) => {
+  try {
+    const groupId = parseInt(req.params.groupId, 10);
+    if (Number.isNaN(groupId)) {
+      return res.status(400).json({ message: "Invalid organisation ID" });
+    }
+    const programs = await Program.findAll({
+      where: { company_id: groupId },
+      include: [{ model: ProgramPlan, as: 'ProgramPlans' }],
+      order: [['program_name', 'ASC']]
+    });
+    res.json(programs);
+  } catch (error) {
+    console.error("Error fetching programs by organisation:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Get companies with their programs
 exports.getCompanies = async (req, res) => {
   try {

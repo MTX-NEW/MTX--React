@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { userApi, userTypeApi, groupApi, groupPermissionsApi } from '@/api/baseApi';
 import { useResource } from '@/hooks/useResource';
+import { useQuery } from '@tanstack/react-query';
 
 export const useUserData = () => {
   const [userTypes, setUserTypes] = useState([]);
@@ -17,6 +18,14 @@ export const useUserData = () => {
     remove,
     refresh 
   } = useResource(userApi);
+
+  const { data: archivedUsers = [], refetch: refetchArchived } = useQuery({
+    queryKey: ['users', 'archived'],
+    queryFn: async () => {
+      const res = await userApi.getArchived();
+      return res.data || [];
+    },
+  });
 
   const fetchStaticData = async () => {
     try {
@@ -65,13 +74,35 @@ export const useUserData = () => {
     }
   };
 
+  const archiveUser = async (id) => {
+    await userApi.archive(id);
+    refresh();
+    refetchArchived();
+  };
+
+  const restoreUser = async (id) => {
+    await userApi.restore(id);
+    refresh();
+    refetchArchived();
+  };
+
+  const deleteUserPermanently = async (id) => {
+    await userApi.deletePermanent(id);
+    refetchArchived();
+  };
+
   return {
     users,
+    archivedUsers,
     loading,
     createUser: create,
     updateUser: update,
     deleteUser: remove,
+    archiveUser,
+    restoreUser,
+    deleteUserPermanently,
     refreshUsers: refresh,
+    refetchArchivedUsers: refetchArchived,
     userTypes,
     userGroups,
     allowedTypes,

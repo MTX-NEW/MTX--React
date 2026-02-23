@@ -1,6 +1,6 @@
 // components/DynamicTable/DynamicTable.jsx
 import React, { useMemo, memo } from "react";
-import { FaEdit, FaTrashAlt, FaExclamationTriangle } from "react-icons/fa";
+import { FaEdit, FaTrashAlt, FaExclamationTriangle, FaArchive } from "react-icons/fa";
 import {
   Dialog,
   DialogTitle,
@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 
 // Memoized table row component to prevent unnecessary re-renders
-const TableRow = memo(({ row, columns, onEdit, handleDeleteClick }) => {
+const TableRow = memo(({ row, columns, onEdit, handleDeleteClick, onArchive }) => {
   return (
     <tr>
       {columns.map((column, colIndex) => (
@@ -34,6 +34,7 @@ const TableRow = memo(({ row, columns, onEdit, handleDeleteClick }) => {
                   row={row}
                   onEdit={onEdit}
                   onDelete={handleDeleteClick}
+                  onArchive={onArchive}
                 />
               ))}
             </div>
@@ -53,7 +54,8 @@ const TableBody = memo(({
   data, 
   displayData, 
   onEdit, 
-  handleDeleteClick 
+  handleDeleteClick,
+  onArchive
 }) => {
   if (isLoading) {
     return (
@@ -82,6 +84,7 @@ const TableBody = memo(({
       columns={columns}
       onEdit={onEdit}
       handleDeleteClick={handleDeleteClick}
+      onArchive={onArchive}
     />
   ));
 });
@@ -91,6 +94,7 @@ const DynamicTable = ({
   data = [],
   onDelete,
   onEdit,
+  onArchive,
   customActions,
   deleteConfirmMessage = (item) => `Are you sure you want to delete ${item.name}?`,
   isLoading = false,
@@ -181,47 +185,52 @@ const DynamicTable = ({
 
   return (
     <>
-      <table className="table" style={tableStyles}>
-        <thead>
-          <tr>
-            {columns.map((column, index) => (
-              <th key={`header-${index}`} className="table-header">
-                {column.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <TableBody
-            isLoading={isLoading}
-            columns={columns}
-            data={data}
-            displayData={displayData}
-            onEdit={onEdit}
-            handleDeleteClick={handleDeleteClick}
-          />
-        </tbody>
-        <style jsx="true">{`
-          .table {
-            border-collapse: collapse;
-            width: 100%;
-          }
-          .table th, .table td {
-            border: 0.8px solid #ddd;
-            padding: 8px;
-          }
-          .table-header {
-            background-color: #f2f2f2;
-            border: 1px solid #ddd;
-          }
-          .table-cell {
-            border: 0.8px solid #ddd;
-          }
-        `}</style>
-      </table>
+      <div className="table-card">
+        <div className="table-wrapper">
+          <table className="table" style={tableStyles}>
+            <thead>
+              <tr>
+                {columns.map((column, index) => (
+                  <th key={`header-${index}`} className="table-header">
+                    {column.header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <TableBody
+                isLoading={isLoading}
+                columns={columns}
+                data={data}
+                displayData={displayData}
+                onEdit={onEdit}
+                handleDeleteClick={handleDeleteClick}
+                onArchive={onArchive}
+              />
+            </tbody>
+            <style jsx="true">{`
+              .table {
+                border-collapse: collapse;
+                width: 100%;
+              }
+              .table th, .table td {
+                border: 0.8px solid #ddd;
+                padding: 8px;
+              }
+              .table-header {
+                background-color: #f2f2f2;
+                border: 1px solid #ddd;
+              }
+              .table-cell {
+                border: 0.8px solid #ddd;
+              }
+            `}</style>
+          </table>
+        </div>
 
-      {/* Pagination controls */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mt={2} mb={2} pl={2} pb={1}>
+        {/* Pagination - inside same card so bottom has radius and aligns with table */}
+        <div className="table-pagination">
+          <Box display="flex" justifyContent="space-between" alignItems="center">
         {/* Page size selector */}
         <FormControl variant="outlined" size="small" style={{ minWidth: 120 }}>
           <InputLabel id="rows-per-page-label">Rows per page</InputLabel>
@@ -251,7 +260,9 @@ const DynamicTable = ({
             shape="rounded"
           />
         </Box>
-      </Box>
+        </Box>
+        </div>
+      </div>
 
       {/* Delete confirmation dialog */}
       <Dialog
@@ -283,7 +294,8 @@ const DynamicTable = ({
 };
 
 // Memoize the DefaultTableActions component
-const DefaultTableActions = memo(({ row, onEdit, onDelete, customActions = [] }) => (
+// When onArchive is provided, show Archive button instead of Delete (use hideDelete with onArchive).
+const DefaultTableActions = memo(({ row, onEdit, onDelete, onArchive, customActions = [] }) => (
   <div className="actions-cell">
     {customActions.map((action, index) => (
       <button
@@ -302,13 +314,23 @@ const DefaultTableActions = memo(({ row, onEdit, onDelete, customActions = [] })
     >
       <FaEdit size={16} />
     </button>
-    <button
-      className="action-btn delete-icon"
-      title="Delete"
-      onClick={() => onDelete(row)}
-    >
-      <FaTrashAlt size={16} />
-    </button>
+    {onArchive ? (
+      <button
+        className="action-btn archive-icon"
+        title="Archive"
+        onClick={() => onArchive(row)}
+      >
+        <FaArchive size={16} />
+      </button>
+    ) : onDelete ? (
+      <button
+        className="action-btn delete-icon"
+        title="Delete"
+        onClick={() => onDelete(row)}
+      >
+        <FaTrashAlt size={16} />
+      </button>
+    ) : null}
   </div>
 ));
 

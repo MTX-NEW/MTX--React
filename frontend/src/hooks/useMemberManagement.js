@@ -4,7 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { useResource } from '@/hooks/useResource';
-import { tripMemberApi, programApi, tripLocationApi } from '@/api/baseApi';
+import { tripMemberApi, programApi, groupApi, tripLocationApi } from '@/api/baseApi';
 import { memberValidationSchema, locationValidationSchema } from '@/validations/inputValidation';
 import { getCityClassification } from '@/utils/arizonaCityClassification';
 
@@ -49,9 +49,31 @@ const useMemberManagement = () => {
     refresh: refetchMembers
   } = useResource(tripMemberApi, { idField: 'member_id' });
 
-  // Get programs for dropdown using react-query
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
+  // Organisations (for Organisation dropdown) from Created Organisation Database
+  const { data: organisations = [] } = useQuery({
+    queryKey: ['organisations'],
+    queryFn: async () => {
+      const response = await groupApi.getAll();
+      return response.data || [];
+    }
+  });
+
+  // Programs by organisation: refetch when user selects an organisation (watch active form)
+  const addOrgId = addFormMethods.watch('company_id');
+  const editOrgId = editFormMethods.watch('company_id');
+  const organisationIdForPrograms = showAddModal ? addOrgId : (showEditModal ? editOrgId : null);
+  const { data: programsByOrganisation = [] } = useQuery({
+    queryKey: ['programs', 'organisation', organisationIdForPrograms],
+    queryFn: async () => {
+      const response = await programApi.getByOrganisation(organisationIdForPrograms);
+      return response.data || [];
+    },
+    enabled: !!organisationIdForPrograms
+  });
+
+  // All programs (for edit: resolve company_id from member's program_id and for program plan options when we have program_id)
+  const { data: allPrograms = [] } = useQuery({
+    queryKey: ['programs', 'all'],
     queryFn: async () => {
       const response = await programApi.getAll();
       return response.data || [];
@@ -124,21 +146,15 @@ const useMemberManagement = () => {
 
   const handleEditMember = (member) => {
     setSelectedMember(member);
-    console.log('Editing member:', member);
-    console.log('Programs:', programs);
-    
-    // Find the program to get company_id
-    const program = programs.find(p => p.program_id === Number(member.program_id));
-    const companyId = program ? program.company_id : '';
-    
-    // Check if member has a selected program plan from the Program object
-    const programPlanId = member.program_plan_id || '';
+    // Resolve organisation (company_id) from member's program
+    const program = (allPrograms || []).find(p => p.program_id === Number(member.program_id));
+    const companyId = program ? program.company_id : (member.Program?.company_id ?? '');
 
     editFormMethods.reset({
       ...member,
       program_id: member.program_id || '',
       company_id: companyId,
-      program_plan_id: programPlanId,
+      program_plan_id: member.program_plan_id || '',
       birth_date: member.birth_date ? new Date(member.birth_date) : null,
       insurance_expiry: member.insurance_expiry ? new Date(member.insurance_expiry) : null
     });
@@ -345,38 +361,26 @@ const useMemberManagement = () => {
 
   // Helper functions for generating form fields
   const getMemberFields = (formContext) => {
-    // Create unique company options from programs
-    const companyOptions = [...new Set(programs.map(p => p.company_id))].map(companyId => {
-      const program = programs.find(p => p.company_id === companyId);
-      return {
-        value: companyId,
-        label: program ? program.company_name : `Company ${companyId}`
-      };
-    });
+    // Organisation options from Created Organisation Database (user groups)
+    const organisationOptions = (organisations || []).map(org => ({
+      value: org.group_id,
+      label: org.common_name || org.full_name || `Organisation ${org.group_id}`
+    }));
 
-    const selectedCompanyId = formContext ? formContext.watch('company_id') : null;
+    const selectedOrganisationId = formContext ? formContext.watch('company_id') : null;
     const selectedProgramId = formContext ? formContext.watch('program_id') : null;
-    
-    // Convert to number for proper comparison since form values might be strings
-    const companyIdNumber = selectedCompanyId ? Number(selectedCompanyId) : null;
-    
-    // Filter programs based on selected company
-    const filteredPrograms = companyIdNumber 
-      ? programs.filter(p => p.company_id === companyIdNumber)
-      : programs;
-    
-    console.log('Selected company ID:', companyIdNumber);
-    console.log('Filtered programs:', filteredPrograms);
-    
-    const programOptions = filteredPrograms.map(program => ({
+
+    // Programs for selected organisation (from API)
+    const programOptions = (programsByOrganisation || []).map(program => ({
       value: program.program_id,
       label: program.program_name
     }));
-    
-    // Get the selected program object to access its plans
-    const selectedProgram = programs.find(p => p.program_id === Number(selectedProgramId));
-    
-    // Get plans from the selected program
+
+    // Selected program (from programmes-by-organisation or allPrograms for edit when programme already set)
+    const selectedProgram = (programsByOrganisation && programsByOrganisation.length > 0)
+      ? programsByOrganisation.find(p => p.program_id === Number(selectedProgramId))
+      : (allPrograms || []).find(p => p.program_id === Number(selectedProgramId));
+
     const programPlanOptions = selectedProgram && selectedProgram.ProgramPlans
       ? selectedProgram.ProgramPlans.map(plan => ({
         value: plan.plan_id,
@@ -389,11 +393,10 @@ const useMemberManagement = () => {
       { name: 'last_name', label: 'Last Name', type: 'text', isRequired: true },
       {
         name: 'company_id',
-        label: 'Company',
+        label: 'Organisation',
         type: 'select',
-        options: companyOptions,
-        onChange: (e) => {
-          // Clear program selection when company changes
+        options: organisationOptions,
+        onChange: () => {
           if (formContext) {
             formContext.setValue('program_id', '');
             formContext.setValue('program_plan_id', '');
@@ -405,9 +408,8 @@ const useMemberManagement = () => {
         label: 'Program',
         type: 'select',
         options: programOptions,
-        disabled: !selectedCompanyId,
-        onChange: (e) => {
-          // Clear program plan selection when program changes
+        disabled: !selectedOrganisationId,
+        onChange: () => {
           if (formContext) {
             formContext.setValue('program_plan_id', '');
           }
@@ -511,7 +513,9 @@ const useMemberManagement = () => {
     // State
     members,
     filteredMembers,
-    programs,
+    programsByOrganisation,
+    allPrograms,
+    organisations,
     selectedMember,
     isLoading,
     showAddModal,

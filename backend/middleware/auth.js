@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-module.exports = (req, res, next) => {
+module.exports = async (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
@@ -18,6 +19,12 @@ module.exports = (req, res, next) => {
     
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+    
+    // Block archived users: check on every request so already-logged-in sessions are invalidated
+    const user = await User.findByPk(decoded.id, { attributes: ['id', 'archived_at'] });
+    if (user?.archived_at) {
+      return res.status(403).json({ message: "Your account has been archived. Please contact your administrator to restore access." });
+    }
     
     // Add user data to request
     req.user = decoded;

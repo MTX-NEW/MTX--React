@@ -260,14 +260,6 @@ const LocationAutocomplete = ({
                     <span className="fw-semibold">Building Type:</span> {selectedLocation.building_type || "N/A"}
                   </div>
                 </div>
-                <div className="row">
-                  <div className="col-md-6">
-                    <span className="fw-semibold">Lat:</span> {selectedLocation.latitude || "N/A"}
-                  </div>
-                  <div className="col-md-6">
-                    <span className="fw-semibold">Long:</span> {selectedLocation.longitude || "N/A"}
-                  </div>
-                </div>
               </div>
             )}
           </div>

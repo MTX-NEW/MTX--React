@@ -1,4 +1,4 @@
-import React, { useState, memo } from "react";
+import React, { useState, useRef, useEffect, memo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBus,
@@ -39,8 +39,20 @@ const Sidebar = () => {
   const location = useLocation();
   const { user: currentUser, logout } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileRef = useRef(null);
 
   const { filteredRoutes, loading } = useUserRoutes();
+
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showProfileMenu]);
 
   const handleProfileClick = () => setShowProfileMenu(prev => !prev);
   
@@ -93,40 +105,43 @@ const Sidebar = () => {
         </ul>
       </nav>
       <div className="sidebar-footer">
-        <div className="profile-section" onClick={handleProfileClick}>
-          {currentUser && currentUser.profile_image ? (
-            <img 
-              src={currentUser.profile_image} 
-              alt="Profile" 
-              className="profile-icon" 
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                objectFit: 'cover'
-              }}
-            />
-          ) : (
-            <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+        <div className="profile-menu-wrapper" ref={profileRef}>
+          <div className="profile-section" onClick={handleProfileClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleProfileClick(); } }}>
+            {currentUser && currentUser.profile_image ? (
+              <img 
+                src={currentUser.profile_image} 
+                alt="Profile" 
+                className="profile-icon" 
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  objectFit: 'cover'
+                }}
+              />
+            ) : (
+              <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+            )}
+            <span className="profile-section-name">
+              {currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'Profile'}
+            </span>
+          </div>
+          {showProfileMenu && currentUser && (
+            <div className="profile-popup">
+              <div className="profile-details">
+                <p>{currentUser.first_name} {currentUser.last_name}</p>
+                <p>{currentUser.email}</p>
+              </div>
+              <button className="logout-btn" onClick={logout}>Logout</button>
+            </div>
           )}
-          {currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'Profile'}
         </div>
         {showSwitchButton && (
           <button className="switch-panel-btn" onClick={handleSwitchPanel}>
-     
             {switchButtonText}
           </button>
         )}
       </div>
-      {showProfileMenu && currentUser && (
-        <div className="profile-popup">
-          <div className="profile-details">
-            <p>{currentUser.first_name} {currentUser.last_name}</p>
-            <p>{currentUser.email}</p>
-          </div>
-          <button className="logout-btn" onClick={logout}>Logout</button>
-        </div>
-      )}
     </div>
   );
 };
