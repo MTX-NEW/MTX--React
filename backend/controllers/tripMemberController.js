@@ -159,6 +159,12 @@ exports.getMemberById = async (req, res) => {
 // Create a new trip member
 exports.createMember = async (req, res) => {
   try {
+    if (req.body.birth_date) {
+      const birthDate = new Date(req.body.birth_date);
+      if (birthDate > new Date()) {
+        return res.status(400).json({ message: "Birth date cannot be in the future" });
+      }
+    }
     const newMember = await TripMember.create({
       ...req.body,
       created_at: new Date(),
@@ -218,6 +224,12 @@ exports.createMember = async (req, res) => {
 // Update a trip member
 exports.updateMember = async (req, res) => {
   try {
+    if (req.body.birth_date) {
+      const birthDate = new Date(req.body.birth_date);
+      if (birthDate > new Date()) {
+        return res.status(400).json({ message: "Birth date cannot be in the future" });
+      }
+    }
     const member = await TripMember.findByPk(req.params.id);
     if (!member) {
       return res.status(404).json({ message: "Member not found" });

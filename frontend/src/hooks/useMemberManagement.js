@@ -417,14 +417,14 @@ const useMemberManagement = () => {
       },
       {
         name: 'program_plan_id',
-        label: 'Program Plan',
+        label: 'Providers',
         type: 'select',
         options: programPlanOptions,
         disabled: !selectedProgramId
       },
       { name: 'ahcccs_id', label: 'AHCCCS ID', type: 'text' },
       { name: 'insurance_expiry', label: 'Insurance Expiry', type: 'date' },
-      { name: 'birth_date', label: 'Birth Date', type: 'date' },
+      { name: 'birth_date', label: 'Birth Date', type: 'date', maxDate: new Date() },
       { name: 'phone', label: 'Phone', type: 'phone' },
       {
         name: 'gender',

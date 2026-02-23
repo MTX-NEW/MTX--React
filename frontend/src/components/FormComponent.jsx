@@ -224,6 +224,7 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
                           shouldValidate: true,
                         })
                       }
+                      maxDate={field.maxDate ? dayjs(field.maxDate) : undefined}
                       slotProps={{
                         textField: {
                           className: "form-control mt-2",

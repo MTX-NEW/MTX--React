@@ -300,12 +300,19 @@ export const memberValidationSchema = Yup.object().shape({
   last_name: Yup.string()
     .required("Last name is required")
     .max(50, "Last name cannot exceed 50 characters"),
-  program_id: Yup.number().nullable(),
+  program_id: Yup.number()
+    .nullable()
+    .transform((value, originalValue) => (originalValue === "" || originalValue === undefined ? null : value)),
+  program_plan_id: Yup.number()
+    .nullable()
+    .transform((value, originalValue) => (originalValue === "" || originalValue === undefined ? null : value)),
   ahcccs_id: Yup.string()
     .nullable()
     .max(50, "AHCCCS ID cannot exceed 50 characters"),
   insurance_expiry: Yup.date().nullable(),
-  birth_date: Yup.date().nullable(),
+  birth_date: Yup.date()
+    .nullable()
+    .max(new Date(), "Birth date cannot be in the future"),
   phone: Yup.string()
     .nullable()
     .test("us-phone", US_PHONE_MESSAGE, (value) => !value || isValidUsPhone(value)),
