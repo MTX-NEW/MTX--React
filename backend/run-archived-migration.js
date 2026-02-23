@@ -2,6 +2,8 @@
 
 const path = require('path');
 // Load .env from project root (same as server.js) so DB credentials match
+// Prefer backend/.env, fallback to project root .env (for local and server)
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const sequelize = require('./db');
 const migration = require('./migrations/add-archived-at-to-users');

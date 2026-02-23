@@ -1,7 +1,26 @@
 const Provider = require("../models/Provider");
 const OrgProgram = require("../models/OrgProgram");
 const UserGroup = require("../models/UserGroup");
+const Program = require("../models/Program");
+const ProgramPlan = require("../models/ProgramPlan");
 const { ValidationError, UniqueConstraintError } = require("sequelize");
+
+// Ensure a ProgramPlan exists in programs table (for member form) when a Provider is created/updated
+async function syncProviderToProgramPlan(provider) {
+  const orgProgram = await OrgProgram.findByPk(provider.program_id);
+  if (!orgProgram) return;
+  const program = await Program.findOne({
+    where: { company_id: orgProgram.group_id, program_name: orgProgram.program_name }
+  });
+  if (!program) return;
+  await ProgramPlan.findOrCreate({
+    where: { program_id: program.program_id, plan_name: provider.provider_name },
+    defaults: {
+      program_id: program.program_id,
+      plan_name: provider.provider_name
+    }
+  });
+}
 
 // Get all providers with program and organisation info
 exports.getAllProviders = async (req, res) => {
@@ -66,6 +85,7 @@ exports.createProvider = async (req, res) => {
       created_at: new Date(),
       updated_at: new Date(),
     });
+    await syncProviderToProgramPlan(newProvider);
     
     // Fetch with program info
     const providerWithProgram = await Provider.findByPk(newProvider.provider_id, {
@@ -112,6 +132,7 @@ exports.updateProvider = async (req, res) => {
       ...req.body,
       updated_at: new Date()
     });
+    await syncProviderToProgramPlan(provider);
     
     // Fetch with program info
     const updatedProvider = await Provider.findByPk(provider.provider_id, {

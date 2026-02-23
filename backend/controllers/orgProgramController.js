@@ -1,7 +1,23 @@
 const OrgProgram = require("../models/OrgProgram");
 const UserGroup = require("../models/UserGroup");
 const Provider = require("../models/Provider");
+const Program = require("../models/Program");
 const { ValidationError, UniqueConstraintError } = require("sequelize");
+
+// Ensure a row exists in programs (for member form / trips) when org_programs is created/updated
+async function syncOneOrgProgramToProgram(orgProgram) {
+  const group = await UserGroup.findByPk(orgProgram.group_id);
+  const companyName = group ? (group.common_name || group.full_name || `Organisation ${orgProgram.group_id}`) : `Organisation ${orgProgram.group_id}`;
+  await Program.findOrCreate({
+    where: { company_id: orgProgram.group_id, program_name: orgProgram.program_name },
+    defaults: {
+      company_id: orgProgram.group_id,
+      company_name: companyName,
+      program_name: orgProgram.program_name,
+      phone: orgProgram.phone || null
+    }
+  });
+}
 
 // Get all programs with organisation info
 exports.getAllPrograms = async (req, res) => {
@@ -52,6 +68,7 @@ exports.createProgram = async (req, res) => {
       created_at: new Date(),
       updated_at: new Date(),
     });
+    await syncOneOrgProgramToProgram(newProgram);
     
     // Fetch with organisation info
     const programWithOrg = await OrgProgram.findByPk(newProgram.program_id, {
@@ -91,6 +108,7 @@ exports.updateProgram = async (req, res) => {
       ...req.body,
       updated_at: new Date()
     });
+    await syncOneOrgProgramToProgram(program);
     
     // Fetch with organisation info
     const updatedProgram = await OrgProgram.findByPk(program.program_id, {

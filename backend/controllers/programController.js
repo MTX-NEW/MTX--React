@@ -1,5 +1,8 @@
 const Program = require("../models/Program");
 const ProgramPlan = require("../models/ProgramPlan");
+const OrgProgram = require("../models/OrgProgram");
+const UserGroup = require("../models/UserGroup");
+const Provider = require("../models/Provider");
 const { ValidationError } = require("sequelize");
 const sequelize = require("sequelize");
 
@@ -136,13 +139,43 @@ exports.deleteProgram = async (req, res) => {
   }
 };
 
-// Get programs by organisation (company_id used as organisation/group_id for member form)
+// Sync org_programs (Manage Programs) into programs table, and Providers into ProgramPlans, so member form and trips see them
+async function syncOrgProgramsToProgramsForGroup(groupId) {
+  const orgPrograms = await OrgProgram.findAll({ where: { group_id: groupId } });
+  if (orgPrograms.length === 0) return;
+  const group = await UserGroup.findByPk(groupId);
+  const companyName = group ? (group.common_name || group.full_name || `Organisation ${groupId}`) : `Organisation ${groupId}`;
+  for (const op of orgPrograms) {
+    const [program] = await Program.findOrCreate({
+      where: { company_id: groupId, program_name: op.program_name },
+      defaults: {
+        company_id: groupId,
+        company_name: companyName,
+        program_name: op.program_name,
+        phone: op.phone || null
+      }
+    });
+    const providers = await Provider.findAll({ where: { program_id: op.program_id } });
+    for (const prov of providers) {
+      await ProgramPlan.findOrCreate({
+        where: { program_id: program.program_id, plan_name: prov.provider_name },
+        defaults: {
+          program_id: program.program_id,
+          plan_name: prov.provider_name
+        }
+      });
+    }
+  }
+}
+
+// Get programs by organisation (company_id = group_id; syncs from org_programs so Manage Programs entries appear)
 exports.getProgramsByOrganisation = async (req, res) => {
   try {
     const groupId = parseInt(req.params.groupId, 10);
     if (Number.isNaN(groupId)) {
       return res.status(400).json({ message: "Invalid organisation ID" });
     }
+    await syncOrgProgramsToProgramsForGroup(groupId);
     const programs = await Program.findAll({
       where: { company_id: groupId },
       include: [{ model: ProgramPlan, as: 'ProgramPlans' }],
