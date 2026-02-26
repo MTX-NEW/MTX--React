@@ -170,7 +170,22 @@ const AllUsers = () => {
   // Form fields configuration
   const getUserFields = (formMethods) => {
     const selectedGroupId = formMethods.watch('user_group');
+    const selectedPaymentStructure = formMethods.watch('paymentStructure');
     const isEditMode = !!itemToEdit;
+
+    const rateLabel =
+      selectedPaymentStructure === 'Pay per Mile'
+        ? 'Rate per Mile ($)'
+        : selectedPaymentStructure === 'Pay per Trip'
+          ? 'Rate per Trip ($)'
+          : 'Hourly Rate ($)';
+
+    const rateHelperText =
+      selectedPaymentStructure === 'Pay per Mile'
+        ? 'Amount paid per mile in dollars'
+        : selectedPaymentStructure === 'Pay per Trip'
+          ? 'Amount paid per trip in dollars'
+          : 'Hourly pay rate in dollars';
     
     const fields = [
       { label: "First Name", name: "first_name", type: "text" },
@@ -268,7 +283,7 @@ const AllUsers = () => {
         options: userGroups
           .filter(group => group.status === 'Active')
           .map(group => ({
-            label: group.common_name,
+            label: group.full_name || group.common_name,
             value: group.group_id
           }))
       },
@@ -337,12 +352,12 @@ const AllUsers = () => {
         ],
       },
       {
-        label: "Hourly Rate ($)",
+        label: rateLabel,
         name: "hourly_rate",
         type: "number",
         step: "0.01",
         min: "0",
-        helperText: "Hourly pay rate in dollars",
+        helperText: rateHelperText,
         defaultValue: 15.00,
       },
     ];

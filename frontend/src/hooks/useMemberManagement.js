@@ -364,7 +364,7 @@ const useMemberManagement = () => {
     // Organisation options from Created Organisation Database (user groups)
     const organisationOptions = (organisations || []).map(org => ({
       value: org.group_id,
-      label: org.common_name || org.full_name || `Organisation ${org.group_id}`
+      label: org.full_name || org.common_name || `Organisation ${org.group_id}`
     }));
 
     const selectedOrganisationId = formContext ? formContext.watch('company_id') : null;

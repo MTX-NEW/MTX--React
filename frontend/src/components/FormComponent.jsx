@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -24,6 +25,10 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
     trigger,
     formState: { errors },
   } = useFormContext();
+  const [passwordVisible, setPasswordVisible] = useState({});
+  const togglePasswordVisible = (fieldName) => {
+    setPasswordVisible((prev) => ({ ...prev, [fieldName]: !prev[fieldName] }));
+  };
 
   // Function to handle immediate validation on change
   const handleOnChange = (e, fieldName) => {
@@ -92,8 +97,48 @@ const FormComponent = ({ fields, onSubmit, submitText = "Submit", isSubmitting =
                   )}
                 </div>
               );
-            case "text":
             case "password":
+              const passwordRegisterOptions = field.validateOnChange
+                ? { ...register(field.name), onChange: (e) => handleOnChange(e, field.name) }
+                : register(field.name);
+              const isPasswordVisible = passwordVisible[field.name];
+              return (
+                <div className="mb-2" key={index}>
+                  <label>{field.label}</label>
+                  <div className="position-relative d-flex align-items-center">
+                    <input
+                      type={isPasswordVisible ? "text" : "password"}
+                      placeholder={field.placeholder}
+                      {...passwordRegisterOptions}
+                      {...(field.inputProps || {})}
+                      className="form-control mt-2 pe-5"
+                      disabled={field.disabled}
+                      readOnly={field.readOnly}
+                    />
+                    <button
+                      type="button"
+                      className="position-absolute border-0 bg-transparent p-0 text-secondary"
+                      style={{ top: '50%', right: '8px', transform: 'translateY(-50%)' }}
+                      onClick={() => togglePasswordVisible(field.name)}
+                      tabIndex={-1}
+                      aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                    >
+                      {isPasswordVisible ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                  </div>
+                  {field.helperText && (
+                    <small className="form-text text-muted">
+                      {field.helperText}
+                    </small>
+                  )}
+                  {errors[field.name] && (
+                    <span className="form-warning">
+                      {errors[field.name].message}
+                    </span>
+                  )}
+                </div>
+              );
+            case "text":
             case "email":
             case "number":
             case "tel":

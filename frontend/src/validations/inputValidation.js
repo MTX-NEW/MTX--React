@@ -77,9 +77,9 @@ export const userValidationSchema = Yup.object().shape({
       "Invalid value for Payment Structure"
     ),
   hourly_rate: Yup.number()
-    .required("Hourly rate is required")
+    .nullable()
+    .transform((value) => (value === '' || value == null || isNaN(value) ? null : value))
     .min(0, "Hourly rate cannot be negative")
-    .transform((value) => (isNaN(value) ? 0 : value))
     .when('paymentStructure', {
       is: 'Pay per Hour',
       then: (schema) => schema.min(1, "Hourly rate must be at least $1.00 for hourly employees"),
