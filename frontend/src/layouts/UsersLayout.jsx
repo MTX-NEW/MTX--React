@@ -15,7 +15,6 @@ const UsersLayout = () => {
 
   // Group tabs by their group property
   const tabGroups = useMemo(() => {
-    console.log('UsersLayout - tabs with group property:', tabs.map(t => ({ name: t.name, group: t.group })));
     
     const groupOrder = ["Users", "Business Entities", "Permissions", "Config"];
     const groups = {};
@@ -25,7 +24,7 @@ const UsersLayout = () => {
       if (!groups[groupName]) {
         groups[groupName] = [];
       }
-      groups[groupName].push(tab.name);
+      groups[groupName].push(tab.displayName || tab.name);
     });
     
     console.log('UsersLayout - grouped tabs:', groups);
@@ -40,7 +39,7 @@ const UsersLayout = () => {
   }, [tabs]);
 
   // Determine active tab directly from location
-  const currentActiveTab = tabs.find((tab) => location.pathname.startsWith(tab.path))?.name || tabs[0]?.name;
+  const currentActiveTab = (tabs.find((tab) => location.pathname.startsWith(tab.path))?.displayName || tabs.find((tab) => location.pathname.startsWith(tab.path))?.name) || (tabs[0]?.displayName || tabs[0]?.name);
 
   // Simplified useEffect - Redirect if base path hit or no match
   useEffect(() => {
@@ -56,7 +55,7 @@ const UsersLayout = () => {
 
   // Handle tab switching
   const handleTabChange = useCallback((tabName) => {
-    const selectedTab = tabs.find((tab) => tab.name === tabName);
+    const selectedTab = tabs.find((tab) => (tab.displayName || tab.name) === tabName);
     if (selectedTab) {
       navigate(selectedTab.path);
     }

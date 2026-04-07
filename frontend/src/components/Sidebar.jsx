@@ -99,7 +99,7 @@ const Sidebar = () => {
               {route.icon && (
                 <FontAwesomeIcon icon={iconMap[route.icon]} className="icon" />
               )}
-              {route.label}
+              {route.displayName || route.label}
             </li>
           ))}
         </ul>
