@@ -39,7 +39,7 @@ export const routes = {
       { id: "all-users", name: "All users", path: "/manage-users/all-users", group: "Users" },
       { id: "user-types", name: "User types", path: "/manage-users/user-types", group: "Users" },
       { id: "clinic-pocs", name: "Clinic POCs", path: "/manage-users/clinic-pocs", group: "Users" },
-      { id: "user-groups", name: "Organisations", displayName: "Organization", path: "/manage-users/user-groups", group: "Business Entities" },
+      { id: "user-groups", name: "Organisations", displayName: "Organisation", path: "/manage-users/user-groups", group: "Business Entities" },
       { id: "org-programs", name: "Programs", displayName: "Insurance Plans", path: "/manage-users/org-programs", group: "Business Entities" },
       { id: "providers", name: "Providers", displayName: "Service Provides", path: "/manage-users/providers", group: "Business Entities" },
       { id: "group-permissions", name: "Organisation permissions", path: "/manage-users/group-permissions", group: "Permissions" },
