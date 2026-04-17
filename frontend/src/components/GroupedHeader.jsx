@@ -25,8 +25,25 @@ const GroupedHeader = ({ tabGroups, activeTab, onTabChange }) => {
     setOpenDropdown(null);
   };
 
+  const handleItemClick = (group, item) => {
+    if (group.onItemSelect) {
+      group.onItemSelect(item);
+    } else {
+      onTabChange(item.value || item.label);
+    }
+    setOpenDropdown(null);
+  };
+
   const isGroupActive = (group) => {
     return group.tabs.includes(activeTab);
+  };
+
+  const isItemActive = (group, item) => {
+    if (group.activeItemValue !== undefined) {
+      return String(group.activeItemValue) === String(item.value);
+    }
+
+    return activeTab === item.label;
   };
 
   return (
@@ -53,15 +70,31 @@ const GroupedHeader = ({ tabGroups, activeTab, onTabChange }) => {
             </button>
             
             <div className={`dropdown-menu ${openDropdown === group.label ? "show" : ""}`}>
-              {group.tabs.map((tab) => (
-                <button
-                  key={tab}
-                  className={`dropdown-item ${activeTab === tab ? "active" : ""}`}
-                  onClick={() => handleTabClick(tab)}
-                >
-                  {tab}
-                </button>
-              ))}
+              {group.items ? (
+                group.items.length > 0 ? (
+                  group.items.map((item) => (
+                    <button
+                      key={item.value ?? item.label}
+                      className={`dropdown-item ${isItemActive(group, item) ? "active" : ""}`}
+                      onClick={() => handleItemClick(group, item)}
+                    >
+                      {item.label}
+                    </button>
+                  ))
+                ) : (
+                  <div className="dropdown-empty">No organisations available</div>
+                )
+              ) : (
+                group.tabs.map((tab) => (
+                  <button
+                    key={tab}
+                    className={`dropdown-item ${activeTab === tab ? "active" : ""}`}
+                    onClick={() => handleTabClick(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))
+              )}
             </div>
           </div>
         ))}
@@ -75,6 +108,14 @@ GroupedHeader.propTypes = {
     PropTypes.shape({
       label: PropTypes.string.isRequired,
       tabs: PropTypes.arrayOf(PropTypes.string).isRequired,
+      items: PropTypes.arrayOf(
+        PropTypes.shape({
+          label: PropTypes.string.isRequired,
+          value: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+        })
+      ),
+      activeItemValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      onItemSelect: PropTypes.func
     })
   ).isRequired,
   activeTab: PropTypes.string.isRequired,

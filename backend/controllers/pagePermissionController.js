@@ -299,12 +299,11 @@ const getFullRouteConfig = () => {
       path: "/manage-users",
       label: "Manage users",
       tabs: [
-        { id: "all-users", name: "All users", path: "/manage-users/all-users", group: "Users" },
-        { id: "user-types", name: "User types", path: "/manage-users/user-types", group: "Users" },
-        { id: "clinic-pocs", name: "Clinic POCs", path: "/manage-users/clinic-pocs", group: "Users" },
-        { id: "user-groups", name: "Organisations", path: "/manage-users/user-groups", group: "Organisation Setup" },
-        { id: "org-programs", name: "Programs", path: "/manage-users/org-programs", group: "Organisation Setup" },
-        { id: "providers", name: "Providers", path: "/manage-users/providers", group: "Organisation Setup" },
+        { id: "all-users", name: "All users", path: "/manage-users/all-users", group: "MTX" },
+        { id: "user-types", name: "User types", path: "/manage-users/user-types", group: "MTX" },
+        { id: "user-groups", name: "Organisations", path: "/manage-users/user-groups", group: "Organisations" },
+        { id: "org-programs", name: "Insurance Plans", path: "/manage-users/org-programs", group: "Organisations" },
+        { id: "providers", name: "Service Providers", path: "/manage-users/providers", group: "Organisations" },
         { id: "group-permissions", name: "Organisation permissions", path: "/manage-users/group-permissions", group: "Permissions" },
         { id: "page-permissions", name: "Page permissions", path: "/manage-users/page-permissions", group: "Permissions" },
         { id: "manage-programs", name: "Manage programs", path: "/manage-users/manage-programs", group: "Config" }
