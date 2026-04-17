@@ -19,7 +19,6 @@ const Register = lazy(() => import("@/pages/auth/Register"));
 // Lazy load users pages
 const AllUsers = lazy(() => import("@/pages/users/AllUsers"));
 const UserGroups = lazy(() => import("@/pages/users/UserGroups"));
-const ClinicPOC = lazy(() => import("@/pages/users/ClinicPOC"));
 const GroupPermissions = lazy(() => import("@/pages/users/GroupPermissions"));
 const PagePermissions = lazy(() => import("@/pages/users/PagePermissions"));
 const UserTypes = lazy(() => import("@/pages/users/UserTypes"));
@@ -119,7 +118,6 @@ const Router = () => {
             <Route path="user-groups" element={<UserGroups />} />
             <Route path="org-programs" element={<OrgPrograms />} />
             <Route path="providers" element={<Providers />} />
-            <Route path="clinic-pocs" element={<ClinicPOC />} />
             <Route path="group-permissions" element={<GroupPermissions />} />
             <Route path="page-permissions" element={<PagePermissions />} />
             <Route path="user-types" element={<UserTypes />} />

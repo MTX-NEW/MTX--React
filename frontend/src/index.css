@@ -319,6 +319,292 @@ body {
   margin-right: 6px;
 }
 
+.organisations-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+  background-color: transparent;
+}
+
+.organisations-hero {
+  background: linear-gradient(135deg, #eef8ff 0%, #ffffff 100%);
+  border: 1px solid #d7e8f7;
+  border-radius: 18px;
+  padding: 28px 32px;
+  box-shadow: 0 12px 30px rgba(0, 83, 153, 0.08);
+}
+
+.organisations-kicker {
+  color: #005399;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.organisations-hero h1 {
+  color: #12344d;
+  font-size: 32px;
+  margin: 0;
+}
+
+.organisations-subtitle {
+  color: #52687a;
+  margin: 10px 0 0;
+  max-width: 620px;
+}
+
+.organisations-panel {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+}
+
+.organisations-selector-panel {
+  padding-bottom: 20px;
+}
+
+.organisations-panel-header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.organisations-panel-eyebrow {
+  color: #005399;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.organisations-panel-title {
+  color: #12344d;
+  font-size: 24px;
+  margin: 0;
+}
+
+.organisations-filter-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.organisations-filter-grid.single-column {
+  grid-template-columns: minmax(260px, 420px);
+}
+
+.organisations-selector-row {
+  align-items: end;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.organisations-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.organisations-field span {
+  color: #12344d;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.organisations-field select {
+  appearance: none;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  color: #12344d;
+  font-size: 14px;
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.organisations-field select:focus {
+  border-color: #005399;
+  box-shadow: 0 0 0 3px rgba(0, 83, 153, 0.15);
+  outline: none;
+}
+
+.organisations-field select:disabled {
+  background-color: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.organisations-empty-state {
+  align-items: center;
+  background: #ffffff;
+  border: 1px dashed #bfd4e6;
+  border-radius: 8px;
+  color: #52687a;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 240px;
+  padding: 32px;
+  text-align: center;
+}
+
+.organisations-empty-state h2 {
+  color: #12344d;
+  margin: 0 0 10px;
+}
+
+.organisations-summary-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.organisations-summary-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  border: 1px solid #d7e8f7;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.organisations-summary-card span {
+  color: #52687a;
+  display: block;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.organisations-summary-card strong {
+  color: #12344d;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.organisations-detail-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.organisations-detail-span {
+  grid-column: 1 / -1;
+}
+
+.organisations-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.organisations-entity-header {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.organisations-entity-tabs {
+  border-bottom: 1px solid #e0e0e0;
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.organisations-entity-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.organisations-provider-note {
+  color: #64748b;
+  font-size: 14px;
+  margin: 16px 0 0;
+}
+
+.organisations-delete-dialog-text {
+  color: #475569;
+  margin: 0 0 12px;
+}
+
+.organisations-delete-dialog-text:last-child {
+  margin-bottom: 0;
+}
+
+.organisations-delete-dialog-name {
+  color: #12344d;
+  font-weight: 700;
+}
+
+.organisations-detail-label {
+  color: #64748b;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.organisations-detail-grid p {
+  color: #12344d;
+  margin: 0;
+}
+
+.organisations-loading {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 320px;
+}
+
+@media (max-width: 768px) {
+  .organisations-hero,
+  .organisations-panel,
+  .organisations-empty-state {
+    padding: 20px;
+  }
+
+  .organisations-panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .organisations-filter-grid.single-column {
+    grid-template-columns: 1fr;
+  }
+
+  .organisations-actions {
+    width: 100%;
+  }
+
+  .organisations-entity-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .organisations-entity-tabs {
+    width: 100%;
+  }
+
+  .organisations-entity-actions {
+    justify-content: flex-start;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .organisations-selector-row {
+    align-items: stretch;
+  }
+}
+
 /* Filter Panel Styling */
 .filter-panel {
   background-color: #fff;
@@ -485,6 +771,11 @@ body {
   /* Darker green on hover */
 }
 
+.add-user-btn:disabled {
+  background-color: #94A3B8;
+  cursor: not-allowed;
+}
+
 /* Add User Button */
 .table-action-btn {
   padding: 5px 15px;
@@ -503,6 +794,16 @@ body {
 .table-action-btn:hover {
   background-color: #16A34A;
   /* Darker green on hover */
+}
+
+.table-action-btn.organisations-delete-btn {
+  background-color: #FEE2E2;
+  border: 1px solid #EF4444;
+  color: #B91C1C;
+}
+
+.table-action-btn.organisations-delete-btn:hover {
+  background-color: #FECACA;
 }
 
 /* Single card for table + pagination so top and bottom are one rounded unit */

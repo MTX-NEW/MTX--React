@@ -53,6 +53,8 @@
   top: 100%;
   left: 0;
   min-width: 200px;
+  max-height: min(360px, calc(100vh - 120px));
+  overflow-y: auto;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -75,6 +77,7 @@
 
 .dropdown-item {
   display: block;
+  position: relative;
   width: 100%;
   padding: 10px 16px;
   border: none;
@@ -107,6 +110,12 @@
   height: 20px;
   background-color: #0d6efd;
   border-radius: 0 2px 2px 0;
+}
+
+.dropdown-empty {
+  color: #6b7280;
+  font-size: 14px;
+  padding: 10px 16px;
 }
 
 /* Responsive */
